@@ -16,7 +16,7 @@ function DetailRow({ label, value, mono }: { label: string; value: string | numb
   );
 }
 
-function AccountCard({ a, active, onClick, accent }: {
+function AccountCard({ a, active, onClick, accent: _accent }: {
   a: typeof ACCOUNTS[0]; active: boolean; onClick: () => void; accent: string;
 }) {
   return (

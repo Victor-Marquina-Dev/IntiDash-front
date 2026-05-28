@@ -108,7 +108,7 @@ function CategoryBreakdown({ rows }: { rows: Transaction[] }) {
   );
 }
 
-function TxDetail({ tx, onClose, accent }: { tx: Transaction; onClose: () => void; accent: string }) {
+function TxDetail({ tx, onClose, accent: _accent }: { tx: Transaction; onClose: () => void; accent: string }) {
   return (
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>

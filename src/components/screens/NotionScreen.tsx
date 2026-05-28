@@ -54,10 +54,9 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
   const [syncStatus, setSyncStatus]     = React.useState<Status>('idle');
   const [syncResult, setSyncResult]     = React.useState<SyncResult | null>(null);
   const [deleteStatus, setDeleteStatus] = React.useState<Status>('idle');
-  const [backStatus, setBackStatus]     = React.useState<Status>('idle');
+  const [backStatus, setBackStatus]     = React.useState<Status>('loading');
 
   React.useEffect(() => {
-    setBackStatus('loading');
     fetch(`${API}/health`)
       .then(r => r.json())
       .then(() => {

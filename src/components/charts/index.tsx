@@ -184,14 +184,15 @@ export function Donut({ segments, size = 180, thickness = 22, centerLabel, cente
   const r = size / 2 - thickness / 2 - 2;
   const C2 = 2 * Math.PI * r;
   const total = segments.reduce((s, x) => s + x.v, 0);
-  let acc = 0;
+  const segs = segments.reduce<{ s: { len: number; off: number }[]; r: number }>(
+    ({ s, r }, seg) => { const len = (seg.v / total) * C2; return { s: [...s, { len, off: -r }], r: r + len }; },
+    { s: [], r: 0 }
+  ).s;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(63,86,28,0.06)" strokeWidth={thickness} />
       {segments.map((s, i) => {
-        const len = (s.v / total) * C2;
-        const off = -acc;
-        acc += len;
+        const { len, off } = segs[i];
         return (
           <circle key={i} cx={cx} cy={cy} r={r} fill="none"
             stroke={s.c} strokeWidth={thickness}

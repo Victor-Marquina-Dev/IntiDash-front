@@ -9,13 +9,15 @@ export interface IconProps {
 }
 
 const _ico = (p: React.ReactNode, vb = '0 0 24 24') =>
-  ({ size = 18, strokeWidth = 1.75, style }: IconProps) => (
-    <svg width={size} height={size} viewBox={vb} fill="none"
-      stroke="currentColor" strokeWidth={strokeWidth}
-      strokeLinecap="round" strokeLinejoin="round" style={style}>
-      {p}
-    </svg>
-  );
+  function SvgIcon({ size = 18, strokeWidth = 1.75, style }: IconProps) {
+    return (
+      <svg width={size} height={size} viewBox={vb} fill="none"
+        stroke="currentColor" strokeWidth={strokeWidth}
+        strokeLinecap="round" strokeLinejoin="round" style={style}>
+        {p}
+      </svg>
+    );
+  };
 
 export const Icon = {
   home:      _ico(<><path d="M3 12 L12 4 L21 12" /><path d="M5 10 V20 H19 V10" /></>),
