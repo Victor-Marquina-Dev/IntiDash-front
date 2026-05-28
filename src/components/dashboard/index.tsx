@@ -49,9 +49,7 @@ export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScr
   }, [sidebarOpen]);
 
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  React.useEffect(() => {
-    if (!isMobile) setMobileOpen(false);
-  }, [isMobile]);
+  const mobileDrawerOpen = isMobile && mobileOpen;
 
   const [screen, setScreen] = React.useState<ScreenId>('home');
   const accent = tweaks.accent;
@@ -82,7 +80,7 @@ export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScr
       display: 'flex', fontFamily: 'Inter, system-ui, sans-serif',
       letterSpacing: -0.1,
     }}>
-      {isMobile && mobileOpen && (
+      {mobileDrawerOpen && (
         <div
           onClick={() => setMobileOpen(false)}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 90 }}
@@ -91,7 +89,7 @@ export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScr
       <Sidebar
         active={screen} setActive={handleSetScreen}
         expanded={sidebarOpen} setExpanded={setSidebarOpen}
-        mobile={isMobile} mobileOpen={mobileOpen}
+        mobile={isMobile} mobileOpen={mobileDrawerOpen}
       />
       <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <TopBar screen={screen} onToggleSidebar={handleToggle} />
