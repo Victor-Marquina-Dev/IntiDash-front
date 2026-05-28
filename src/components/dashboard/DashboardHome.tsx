@@ -5,63 +5,69 @@ import { Icon } from '@/components/icons';
 import { Card, CardHeader, Tag, Delta, Button, Eyebrow, SubKpi } from '@/components/ui';
 import { Sparkline, ResponsiveSparkline, DualAreaChart, Donut, PairedBars, ProgressBar, RadialProgress } from '@/components/charts';
 import { ALL_TX } from '@/lib/mock-data';
+import { useBreakpoint, type BP } from '@/lib/breakpoints';
 import type { Tweaks } from '@/components/tweaks';
 
 // ── Hero balance ─────────────────────────────────────────────────────────
-function HeroBalance({ accent }: { accent: string }) {
+function HeroBalance({ accent, bp }: { accent: string; bp: BP }) {
   const data = [10100,10800,11200,10900,11800,12100,11900,12320,12100,12500,12840];
+  const isDesktop = bp === 'desktop';
   return (
-    <Card pad={26} style={{ gridColumn: 'span 8' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: 32, alignItems: 'stretch' }}>
+    <Card pad={26} style={{ gridColumn: isDesktop ? 'span 8' : 'span 12' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0, 1fr) 320px' : '1fr', gap: 32, alignItems: 'stretch' }}>
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
           <Eyebrow icon={<Icon.wallet size={12} />}>
             <span style={{ whiteSpace: 'nowrap' }}>Balance total · todas las cuentas</span>
           </Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 14, whiteSpace: 'nowrap' }}>
-            <div style={{ fontSize: 54, fontWeight: 600, color: C.text, letterSpacing: -2, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-              <span style={{ opacity: 0.45, fontWeight: 500, marginRight: 4, fontSize: 36 }}>S/</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: bp === 'mobile' ? 40 : 54, fontWeight: 600, color: C.text, letterSpacing: -2, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+              <span style={{ opacity: 0.45, fontWeight: 500, marginRight: 4, fontSize: bp === 'mobile' ? 28 : 36 }}>S/</span>
               12,840
-              <span style={{ opacity: 0.4, fontSize: 30, fontWeight: 500, letterSpacing: -1 }}>.50</span>
+              <span style={{ opacity: 0.4, fontSize: bp === 'mobile' ? 22 : 30, fontWeight: 500, letterSpacing: -1 }}>.50</span>
             </div>
             <Tag dot={C.pos} color={C.primary} bg="rgba(140,160,90,0.18)">↑ 4.2% este mes</Tag>
           </div>
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            display: 'grid', gridTemplateColumns: bp === 'mobile' ? '1fr 1fr' : 'repeat(3, minmax(0, 1fr))',
             gap: 20, marginTop: 'auto', paddingTop: 22,
             fontSize: 12.5, color: C.textDim,
           }}>
             <SubKpi label="Cambio mensual" value="+S/ 520.30" pos />
             <SubKpi label="Cuentas activas" value="3" />
-            <SubKpi label="Sincronización" value="hace 5 min" muted />
+            {bp !== 'mobile' && <SubKpi label="Sincronización" value="hace 5 min" muted />}
           </div>
         </div>
-        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: C.textMute }}>
-            <span style={{ letterSpacing: 0.2 }}>Evolución 6 meses</span>
-            <span style={{ color: C.pos, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>+S/ 2,740</span>
+        {isDesktop && (
+          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: C.textMute }}>
+              <span style={{ letterSpacing: 0.2 }}>Evolución 6 meses</span>
+              <span style={{ color: C.pos, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>+S/ 2,740</span>
+            </div>
+            <div style={{ width: '100%' }}>
+              <ResponsiveSparkline data={data} color={accent} height={92} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>
+              <span>may</span><span>jun</span><span>jul</span><span>ago</span><span>sep</span><span>oct</span><span>nov</span>
+            </div>
           </div>
-          <div style={{ width: '100%' }}>
-            <ResponsiveSparkline data={data} color={accent} height={92} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>
-            <span>may</span><span>jun</span><span>jul</span><span>ago</span><span>sep</span><span>oct</span><span>nov</span>
-          </div>
-        </div>
+        )}
       </div>
     </Card>
   );
 }
 
 // ── KPI rail ─────────────────────────────────────────────────────────────
-function KpiRail({ showCharts }: { showCharts: boolean }) {
+function KpiRail({ showCharts, bp }: { showCharts: boolean; bp: BP }) {
   const items = [
     { label: 'Ingresos', value: 'S/ 5,200', delta: '+8.2%', kind: 'pos' as const, I: Icon.arrowUp,   data: [3800,4200,4500,4100,4700,4900,4600,5000,4800,5100,5200] },
     { label: 'Gastos',   value: 'S/ 3,180', delta: '−2.1%', kind: 'neg' as const, I: Icon.arrowDown, data: [2800,3000,3200,2900,3400,3300,3100,3500,3200,3250,3180] },
     { label: 'Ahorro',   value: 'S/ 2,020', delta: '38%',   kind: 'pos' as const, I: Icon.trendUp,   data: [800,900,1000,1100,1200,1400,1600,1700,1800,1900,2020] },
     { label: 'Deuda',    value: 'S/ 4,150', delta: '−S/ 300', kind: 'pos' as const, I: Icon.trendDown, data: [5500,5200,5000,4800,4750,4600,4500,4450,4350,4300,4150] },
   ];
+  const cols = bp === 'tablet' ? 'repeat(4, 1fr)' : '1fr 1fr';
+  const span = bp === 'desktop' ? 'span 4' : 'span 12';
   return (
-    <div style={{ gridColumn: 'span 4', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+    <div style={{ gridColumn: span, display: 'grid', gridTemplateColumns: cols, gap: 12 }}>
       {items.map((it, i) => (
         <Card key={i} pad={16} hoverable>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -90,14 +96,15 @@ function KpiRail({ showCharts }: { showCharts: boolean }) {
 }
 
 // ── Chart card ───────────────────────────────────────────────────────────
-function ChartCard({ chartType, accent }: { chartType: Tweaks['chartType']; accent: string }) {
+function ChartCard({ chartType, accent, bp }: { chartType: Tweaks['chartType']; accent: string; bp: BP }) {
+  const span = bp === 'mobile' ? 'span 12' : 'span 8';
   return (
-    <Card style={{ gridColumn: 'span 8' }}>
+    <Card style={{ gridColumn: span }}>
       <CardHeader
         title="Ingresos vs gastos"
         subtitle="Comparativa mensual · proyección hasta diciembre"
         right={
-          <div style={{ display: 'flex', gap: 16, fontSize: 11.5, color: C.textDim }}>
+          <div style={{ display: 'flex', gap: 16, fontSize: 11.5, color: C.textDim, flexWrap: 'wrap' }}>
             <Legend color={C.pos} label="Ingresos" value="S/ 5,200" />
             <Legend color={C.neg} label="Gastos" value="S/ 3,180" />
             <Legend color={accent} label="Neto" value="+S/ 2,020" />
@@ -122,7 +129,7 @@ function Legend({ color, label, value }: { color: string; label: string; value: 
 }
 
 // ── Categories donut ─────────────────────────────────────────────────────
-function CategoriesDonut() {
+function CategoriesDonut({ bp }: { bp: BP }) {
   const segs = [
     { label: 'Comida',        v: 890, c: C.neg,     I: Icon.utensils },
     { label: 'Transporte',    v: 420, c: C.warn,    I: Icon.car },
@@ -132,8 +139,9 @@ function CategoriesDonut() {
     { label: 'Otros',         v: 870, c: C.cyan,    I: Icon.more },
   ];
   const total = segs.reduce((s, x) => s + x.v, 0);
+  const span = bp === 'desktop' ? 'span 4' : bp === 'tablet' ? 'span 4' : 'span 12';
   return (
-    <Card style={{ gridColumn: 'span 4' }}>
+    <Card style={{ gridColumn: span }}>
       <CardHeader title="Dónde se va el dinero" subtitle="Por categoría · noviembre" action="Ver todo" />
       <div style={{ display: 'flex', gap: 18, alignItems: 'center', flex: 1 }}>
         <Donut segments={segs} size={150} thickness={18} centerLabel="GASTO TOTAL" centerValue="S/ 3,180" />
@@ -152,7 +160,7 @@ function CategoriesDonut() {
 }
 
 // ── Categories grid ──────────────────────────────────────────────────────
-function CategoriesGrid() {
+function CategoriesGrid({ bp }: { bp: BP }) {
   const cats = [
     { n: 'Comida',        v: 890, p: 65, I: Icon.utensils, c: C.neg,     vs: '+32% vs oct' },
     { n: 'Transporte',    v: 420, p: 42, I: Icon.car,      c: C.warn,    vs: '+5% vs oct' },
@@ -165,10 +173,11 @@ function CategoriesGrid() {
     { n: 'Hogar',         v: 240, p: 38, I: Icon.house,    c: C.warn,    vs: '−5%' },
     { n: 'Otros',         v: 90,  p: 12, I: Icon.more,     c: C.textDim, vs: '—' },
   ];
+  const cols = bp === 'desktop' ? 'repeat(5, 1fr)' : bp === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)';
   return (
     <Card>
       <CardHeader title="Categorías de gasto" subtitle="10 categorías · presupuesto restante por categoría" action="Gestionar" />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: cols, gap: 14 }}>
         {cats.map((cat, i) => (
           <div key={i} className="fz-cat" style={{ padding: 12, borderRadius: 12, background: '#fff', border: `1px solid ${C.border}` }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -193,8 +202,15 @@ function CategoriesGrid() {
 }
 
 // ── Recent transactions ──────────────────────────────────────────────────
-function RecentTransactions() {
+function RecentTransactions({ bp }: { bp: BP }) {
   const rows = ALL_TX.slice(0, 7);
+  const isMobile = bp === 'mobile';
+  const isDesktop = bp === 'desktop';
+  const gridCols = isMobile
+    ? '36px 1fr 130px'
+    : isDesktop
+    ? '36px 1fr 140px 120px 130px'
+    : '36px 1fr 120px 130px';
   return (
     <Card>
       <CardHeader
@@ -202,7 +218,7 @@ function RecentTransactions() {
         right={
           <div style={{ display: 'flex', gap: 8 }}>
             <Button ghost size="sm" icon={<Icon.filter size={12} />}>Filtrar</Button>
-            <Button ghost size="sm" icon={<Icon.download size={12} />}>Exportar</Button>
+            {isDesktop && <Button ghost size="sm" icon={<Icon.download size={12} />}>Exportar</Button>}
           </div>
         }
         action="Ver todas"
@@ -210,7 +226,7 @@ function RecentTransactions() {
       <div>
         {rows.map((r, i) => (
           <div key={i} className="fz-row" style={{
-            display: 'grid', gridTemplateColumns: '36px 1fr 140px 120px 130px',
+            display: 'grid', gridTemplateColumns: gridCols,
             gap: 12, alignItems: 'center', padding: '12px 0',
             borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : 'none',
           }}>
@@ -221,15 +237,19 @@ function RecentTransactions() {
               <div style={{ fontSize: 13.5, color: C.text, fontWeight: 500 }}>{r.desc}</div>
               <div style={{ fontSize: 11.5, color: C.textMute, marginTop: 2 }}>{r.cat}</div>
             </div>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px 3px 6px', borderRadius: 6,
-              background: 'rgba(63,86,28,0.05)', border: `1px solid ${C.border}`,
-              fontSize: 11, color: C.textDim, fontVariantNumeric: 'tabular-nums',
-            }}>
-              <span style={{ width: 14, height: 10, borderRadius: 2, background: r.acc.startsWith('Visa') ? '#1A3A6E' : C.primary, display: 'inline-block' }} />
-              {r.acc}
-            </span>
-            <div style={{ fontSize: 11.5, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>{r.date}</div>
+            {!isMobile && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 8px 3px 6px', borderRadius: 6,
+                background: 'rgba(63,86,28,0.05)', border: `1px solid ${C.border}`,
+                fontSize: 11, color: C.textDim, fontVariantNumeric: 'tabular-nums',
+              }}>
+                <span style={{ width: 14, height: 10, borderRadius: 2, background: r.acc.startsWith('Visa') ? '#1A3A6E' : C.primary, display: 'inline-block' }} />
+                {r.acc}
+              </span>
+            )}
+            {isDesktop && (
+              <div style={{ fontSize: 11.5, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>{r.date}</div>
+            )}
             <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'right', color: r.sign === '+' ? C.pos : C.text, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.2 }}>
               <span style={{ opacity: 0.6, marginRight: 1 }}>{r.sign}</span>S/<span>{r.amt}</span>
             </div>
@@ -355,20 +375,29 @@ function Insights() {
 
 // ── DashboardHome ─────────────────────────────────────────────────────────
 export function DashboardHome({ tweaks }: { tweaks: Tweaks }) {
+  const bp = useBreakpoint();
   const accent = tweaks.accent;
-  const gap = tweaks.density === 'compact' ? 14 : 20;
-  const pad = tweaks.density === 'compact' ? '18px 24px 32px' : '24px 32px 40px';
+  const isMobile = bp === 'mobile';
+  const isDesktop = bp === 'desktop';
+
+  const gap = isMobile ? 12 : tweaks.density === 'compact' ? 14 : 20;
+  const pad = isMobile ? '12px 16px 24px' : tweaks.density === 'compact' ? '18px 24px 32px' : '24px 32px 40px';
+
+  const railStyle: React.CSSProperties = isDesktop
+    ? { display: 'flex', flexDirection: 'column', gap, minWidth: 0 }
+    : { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap };
+
   return (
-    <div style={{ padding: pad, display: 'grid', gridTemplateColumns: '1fr 360px', gap }}>
+    <div style={{ padding: pad, display: 'grid', gridTemplateColumns: isDesktop ? '1fr 360px' : '1fr', gap }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap, minWidth: 0 }}>
-        <HeroBalance accent={accent} />
-        <KpiRail showCharts={tweaks.microCharts} />
-        <ChartCard chartType={tweaks.chartType} accent={accent} />
-        <CategoriesDonut />
-        <div style={{ gridColumn: 'span 12' }}><CategoriesGrid /></div>
-        <div style={{ gridColumn: 'span 12' }}><RecentTransactions /></div>
+        <HeroBalance accent={accent} bp={bp} />
+        <KpiRail showCharts={tweaks.microCharts} bp={bp} />
+        <ChartCard chartType={tweaks.chartType} accent={accent} bp={bp} />
+        <CategoriesDonut bp={bp} />
+        <div style={{ gridColumn: 'span 12' }}><CategoriesGrid bp={bp} /></div>
+        <div style={{ gridColumn: 'span 12' }}><RecentTransactions bp={bp} /></div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap, minWidth: 0 }}>
+      <div style={railStyle}>
         <Goals accent={accent} />
         <Debts />
         <Insights />
