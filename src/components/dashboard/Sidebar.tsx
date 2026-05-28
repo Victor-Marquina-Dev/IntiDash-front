@@ -5,7 +5,7 @@ import { Icon } from '@/components/icons';
 
 export type ScreenId = 'home' | 'tx' | 'cards' | 'goals' | 'charts' | 'debts' | 'notion';
 
-const GearIcon     = Icon.gear;
+const GearIcon      = Icon.gear;
 const PanelLeftIcon = Icon.panelLeft;
 
 interface SidebarProps {
@@ -13,6 +13,8 @@ interface SidebarProps {
   setActive: (id: ScreenId) => void;
   expanded: boolean;
   setExpanded: (fn: (prev: boolean) => boolean) => void;
+  mobile?: boolean;
+  mobileOpen?: boolean;
 }
 
 const NAV: { id: ScreenId; label: string; I: (typeof Icon)[keyof typeof Icon] }[] = [
@@ -24,17 +26,31 @@ const NAV: { id: ScreenId; label: string; I: (typeof Icon)[keyof typeof Icon] }[
   { id: 'debts',  label: 'Deudas',         I: Icon.cards },
 ];
 
-export function Sidebar({ active, setActive, expanded, setExpanded }: Readonly<SidebarProps>) {
-  const w = expanded ? 220 : 68;
+export function Sidebar({ active, setActive, expanded, setExpanded, mobile = false, mobileOpen = false }: Readonly<SidebarProps>) {
+  const show = mobile ? true : expanded;
+  const w = show ? 220 : 68;
+
   return (
     <aside style={{
-      width: w, flexShrink: 0,
+      width: mobile ? 220 : w,
+      flexShrink: 0,
       background: C.navbar,
       borderRight: `1px solid ${C.navbarBorder}`,
-      display: 'flex', flexDirection: 'column',
+      display: 'flex',
+      flexDirection: 'column',
       padding: '20px 12px',
-      transition: 'width .25s cubic-bezier(.2,.8,.2,1)',
       gap: 4,
+      ...(mobile ? {
+        position: 'fixed',
+        top: 0, left: 0,
+        height: '100vh',
+        zIndex: 100,
+        transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform .25s cubic-bezier(.2,.8,.2,1)',
+        boxShadow: mobileOpen ? '4px 0 24px rgba(0,0,0,0.2)' : 'none',
+      } : {
+        transition: 'width .25s cubic-bezier(.2,.8,.2,1)',
+      }),
     }}>
       {/* Brand */}
       <div style={{
@@ -50,7 +66,7 @@ export function Sidebar({ active, setActive, expanded, setExpanded }: Readonly<S
           letterSpacing: -0.5, flexShrink: 0,
           boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
         }}>F</div>
-        {expanded && (
+        {show && (
           <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Florín</div>
             <div style={{ fontSize: 11, color: C.navbarTextDim }}>Victor Marquina</div>
@@ -66,12 +82,12 @@ export function Sidebar({ active, setActive, expanded, setExpanded }: Readonly<S
             className="fz-nav"
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
-              padding: expanded ? '10px 12px' : '10px',
+              padding: show ? '10px 12px' : '10px',
               background: isActive ? 'rgba(255,255,255,0.10)' : 'transparent',
               color: isActive ? '#fff' : C.navbarText,
               border: 'none', borderRadius: 10, cursor: 'pointer',
               fontFamily: 'Inter', fontSize: 13, fontWeight: isActive ? 600 : 500,
-              justifyContent: expanded ? 'flex-start' : 'center',
+              justifyContent: show ? 'flex-start' : 'center',
               transition: 'all .15s',
               position: 'relative',
             }}>
@@ -84,7 +100,7 @@ export function Sidebar({ active, setActive, expanded, setExpanded }: Readonly<S
               }} />
             )}
             <n.I size={18} />
-            {expanded && <span>{n.label}</span>}
+            {show && <span>{n.label}</span>}
           </button>
         );
       })}
@@ -96,12 +112,12 @@ export function Sidebar({ active, setActive, expanded, setExpanded }: Readonly<S
         className="fz-nav"
         style={{
           display: 'flex', alignItems: 'center', gap: 12,
-          padding: expanded ? '10px 12px' : '10px',
+          padding: show ? '10px 12px' : '10px',
           background: active === 'notion' ? 'rgba(255,255,255,0.10)' : 'transparent',
           color: active === 'notion' ? '#fff' : C.navbarText,
           border: 'none', borderRadius: 10, cursor: 'pointer',
           fontFamily: 'Inter', fontSize: 13, fontWeight: active === 'notion' ? 600 : 500,
-          justifyContent: expanded ? 'flex-start' : 'center',
+          justifyContent: show ? 'flex-start' : 'center',
           position: 'relative',
         }}>
         {active === 'notion' && (
@@ -113,22 +129,24 @@ export function Sidebar({ active, setActive, expanded, setExpanded }: Readonly<S
           }} />
         )}
         <GearIcon size={18} />
-        {expanded && <span>Ajustes</span>}
+        {show && <span>Ajustes</span>}
       </button>
 
-      <button
-        onClick={() => setExpanded(e => !e)}
-        className="fz-nav" style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: expanded ? '10px 12px' : '10px',
-          background: 'transparent', color: C.navbarTextDim,
-          border: 'none', borderRadius: 10, cursor: 'pointer',
-          fontFamily: 'Inter', fontSize: 12,
-          justifyContent: expanded ? 'flex-start' : 'center',
-        }}>
-        <PanelLeftIcon size={16} />
-        {expanded && <span>Colapsar</span>}
-      </button>
+      {!mobile && (
+        <button
+          onClick={() => setExpanded(e => !e)}
+          className="fz-nav" style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: show ? '10px 12px' : '10px',
+            background: 'transparent', color: C.navbarTextDim,
+            border: 'none', borderRadius: 10, cursor: 'pointer',
+            fontFamily: 'Inter', fontSize: 12,
+            justifyContent: show ? 'flex-start' : 'center',
+          }}>
+          <PanelLeftIcon size={16} />
+          {show && <span>Colapsar</span>}
+        </button>
+      )}
     </aside>
   );
 }
