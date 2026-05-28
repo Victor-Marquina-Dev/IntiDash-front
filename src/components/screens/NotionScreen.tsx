@@ -5,7 +5,7 @@ import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
 import { Card, CardHeader, Tag, Button, Eyebrow } from '@/components/ui';
 
-const API = 'http://localhost:3001';
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 interface DataSource { id: string; name: string }
 
