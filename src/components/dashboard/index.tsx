@@ -33,10 +33,11 @@ interface DashboardProps {
   AccountsScreen?: React.ComponentType<{ accent: string }>;
   GoalsScreen?: React.ComponentType<{ accent: string }>;
   AnalyticsScreen?: React.ComponentType<{ accent: string }>;
+  DeudaScreen?: React.ComponentType<{ accent: string }>;
   NotionScreen?: React.ComponentType<{ accent: string }>;
 }
 
-export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScreen, AnalyticsScreen, NotionScreen }: Readonly<DashboardProps>) {
+export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScreen, AnalyticsScreen, DeudaScreen, NotionScreen }: Readonly<DashboardProps>) {
   const bp = useBreakpoint();
   const isMobile = bp === 'mobile';
 
@@ -70,7 +71,7 @@ export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScr
     cards:  AccountsScreen     ? <AccountsScreen accent={accent} />    : <Stub label="Cuentas" />,
     goals:  GoalsScreen        ? <GoalsScreen accent={accent} />       : <Stub label="Objetivos" />,
     charts: AnalyticsScreen    ? <AnalyticsScreen accent={accent} />   : <Stub label="Análisis" />,
-    debts:  <Stub label="Deudas" />,
+    debts:  DeudaScreen ? <DeudaScreen accent={accent} /> : <Stub label="Deudas" />,
     notion: NotionScreen       ? <NotionScreen accent={accent} />      : <Stub label="Ajustes" />,
   };
 
