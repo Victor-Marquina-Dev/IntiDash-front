@@ -1,0 +1,25 @@
+export const C = {
+  bg: '#E5E5E7',
+  card: '#FFFFFF',
+  cardHi: '#FAFAF8',
+  soft: '#C9D5A5',
+  border: 'rgba(63,86,28,0.10)',
+  borderHi: 'rgba(63,86,28,0.22)',
+  text: '#2A3B13',
+  textDim: '#5B6B3F',
+  textMute: '#AEB5C0',
+  primary: '#3F561C',
+  olive: '#8CA05A',
+  pos: '#8CA05A',
+  neg: '#3F561C',
+  warn: '#AEB5C0',
+  purple: '#8CA05A',
+  pink: '#3F561C',
+  cyan: '#C9D5A5',
+  navbar: '#3F561C',
+  navbarText: 'rgba(255,255,255,0.78)',
+  navbarTextDim: 'rgba(255,255,255,0.46)',
+  navbarBorder: 'rgba(255,255,255,0.10)',
+} as const;
+
+export type Colors = typeof C;
