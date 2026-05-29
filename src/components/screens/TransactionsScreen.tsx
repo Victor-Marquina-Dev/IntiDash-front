@@ -5,7 +5,69 @@ import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
 import { Card, CardHeader, Button, Eyebrow, Delta } from '@/components/ui';
 import { ProgressBar } from '@/components/charts';
-import { ALL_TX, CATS, ACCS, Transaction } from '@/lib/mock-data';
+import type { Transaction } from '@/lib/mock-data';
+import type { IconComponent } from '@/components/icons';
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+
+interface DbTransaction {
+  id: string;
+  descripcion: string;
+  monto: number | null;
+  tipo: string;
+  categoria: string;
+  cuenta: string;
+  fecha: string | null;
+  notas: string | null;
+  syncedAt: string;
+}
+
+function catIcon(cat: string, tipo: string): { I: IconComponent; c: string } {
+  if (tipo === 'ingreso') return { I: Icon.arrowDown, c: C.pos };
+  const map: Record<string, { I: IconComponent; c: string }> = {
+    'Comida':          { I: Icon.utensils, c: C.neg },
+    'Transporte':      { I: Icon.car,      c: C.warn },
+    'Compras':         { I: Icon.bag,      c: C.primary },
+    'Suscripciones':   { I: Icon.music,    c: '#8B5CF6' },
+    'Deudas':          { I: Icon.cards,    c: '#EC4899' },
+    'Entretenimiento': { I: Icon.film,     c: C.primary },
+    'Hogar':           { I: Icon.house,    c: C.warn },
+    'Salud':           { I: Icon.heart,    c: C.pos },
+    'Educación':       { I: Icon.book,     c: '#06B6D4' },
+  };
+  return map[cat] ?? { I: Icon.trendUp, c: C.primary };
+}
+
+function fmtTxDate(fecha: string | null): { date: string; d: string } {
+  if (!fecha) return { date: '—', d: '1970-01-01' };
+  const dt = new Date(fecha);
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const day = dt.getDate();
+  const mon = meses[dt.getMonth()];
+  const h = String(dt.getHours()).padStart(2, '0');
+  const m = String(dt.getMinutes()).padStart(2, '0');
+  const d = dt.toISOString().slice(0, 10);
+  const dateStr = (h === '00' && m === '00') ? `${day} ${mon}` : `${day} ${mon} · ${h}:${m}`;
+  return { date: dateStr, d };
+}
+
+function dbToUiTx(t: DbTransaction): Transaction {
+  const { I, c } = catIcon(t.categoria, t.tipo);
+  const { date, d } = fmtTxDate(t.fecha);
+  const amt = t.monto != null
+    ? Math.abs(t.monto).toLocaleString('es-PE', { minimumFractionDigits: 2 })
+    : '0.00';
+  return {
+    I, c,
+    desc: t.descripcion || '(sin descripción)',
+    cat:  t.categoria   || 'Otros',
+    date,
+    d,
+    sign: t.tipo === 'ingreso' ? '+' : '−',
+    amt,
+    acc:  t.cuenta || 'Sin cuenta',
+  };
+}
 
 function AccountChip({ acc }: { acc: string }) {
   return (
@@ -31,14 +93,17 @@ function groupByDate(rows: Transaction[]) {
 }
 
 function formatDay(iso: string) {
-  const today = '2026-11-18', yest = '2026-11-17';
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const yest = new Date(now); yest.setDate(yest.getDate() - 1);
+  const yestStr = yest.toISOString().slice(0, 10);
   const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const dias  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-  if (iso === today) return 'Hoy · martes';
-  if (iso === yest)  return 'Ayer · lunes';
-  const [y, m, d] = iso.split('-').map(Number);
-  const dt = new Date(y, m - 1, d);
-  return `${dias[dt.getDay()]} ${d} ${meses[m - 1]}`;
+  if (iso === todayStr) return `Hoy · ${dias[now.getDay()]}`;
+  if (iso === yestStr)  return `Ayer · ${dias[yest.getDay()]}`;
+  const [y, mo, d] = iso.split('-').map(Number);
+  const dt = new Date(y, mo - 1, d);
+  return `${dias[dt.getDay()]} ${d} ${meses[mo - 1]}`;
 }
 
 function netForDay(items: Transaction[]) {
@@ -125,8 +190,8 @@ function TxDetail({ tx, onClose, accent: _accent }: { tx: Transaction; onClose: 
         {tx.sign}S/ {tx.amt}
       </div>
       {[
-        ['Fecha',   tx.date],
-        ['Cuenta',  tx.acc],
+        ['Fecha',     tx.date],
+        ['Cuenta',    tx.acc],
         ['Categoría', tx.cat],
       ].map(([label, value]) => (
         <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0', borderBottom: `1px solid ${C.border}` }}>
@@ -142,18 +207,56 @@ function TxDetail({ tx, onClose, accent: _accent }: { tx: Transaction; onClose: 
   );
 }
 
+function EmptyState({ onGoSettings }: { onGoSettings?: () => void }) {
+  return (
+    <Card pad={40} style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6 }}>Sin transacciones</div>
+      <div style={{ fontSize: 12.5, color: C.textMute, marginBottom: 20, lineHeight: 1.6 }}>
+        Configura tu base de datos de transacciones en Ajustes<br />y haz clic en «Sincronizar transacciones».
+      </div>
+      {onGoSettings && (
+        <Button primary icon={<Icon.gear size={13} />} onClick={onGoSettings}>Ir a Ajustes</Button>
+      )}
+    </Card>
+  );
+}
+
 interface TransactionsScreenProps {
   accent: string;
   density: string;
+  onGoSettings?: () => void;
 }
 
-export function TransactionsScreen({ accent, density }: TransactionsScreenProps) {
+export function TransactionsScreen({ accent, density, onGoSettings }: TransactionsScreenProps) {
+  const [txList, setTxList] = React.useState<Transaction[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [cat, setCat] = React.useState('Todas');
   const [acc, setAcc] = React.useState('Todas');
   const [q, setQ] = React.useState('');
   const [selected, setSelected] = React.useState<Transaction | null>(null);
 
-  const filtered = ALL_TX.filter(r =>
+  React.useEffect(() => {
+    fetch(`${API}/notion-payments/transactions`)
+      .then(r => r.json())
+      .then((rows: DbTransaction[]) => {
+        setTxList(rows.map(dbToUiTx));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const cats = React.useMemo(() => {
+    const s = new Set(txList.map(t => t.cat));
+    return ['Todas', ...[...s].sort()];
+  }, [txList]);
+
+  const accs = React.useMemo(() => {
+    const s = new Set(txList.map(t => t.acc));
+    return ['Todas', ...[...s].sort()];
+  }, [txList]);
+
+  const filtered = txList.filter(r =>
     (cat === 'Todas' || r.cat === cat) &&
     (acc === 'Todas' || r.acc === acc) &&
     (q === '' || r.desc.toLowerCase().includes(q.toLowerCase()))
@@ -166,6 +269,14 @@ export function TransactionsScreen({ accent, density }: TransactionsScreenProps)
   const fmt = (v: number) => 'S/ ' + v.toLocaleString('es-PE', { minimumFractionDigits: 2 });
   const fmtSigned = (v: number) => (v >= 0 ? '+S/ ' : '−S/ ') + Math.abs(v).toLocaleString('es-PE', { minimumFractionDigits: 2 });
 
+  if (loading) {
+    return (
+      <div style={{ padding: '60px 32px', textAlign: 'center', color: C.textMute, fontSize: 13 }}>
+        Cargando transacciones…
+      </div>
+    );
+  }
+
   return (
     <div style={{
       padding: density === 'compact' ? '18px 24px 32px' : '24px 32px 40px',
@@ -174,85 +285,88 @@ export function TransactionsScreen({ accent, density }: TransactionsScreenProps)
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          <SummaryStat label="Ingresos"  value={fmt(income)}       delta="+8.2%" kind="pos"     I={Icon.arrowUp} />
-          <SummaryStat label="Gastos"    value={fmt(expense)}      delta="−2.1%" kind="neg"     I={Icon.arrowDown} />
-          <SummaryStat label="Neto"      value={fmtSigned(net)}    sub={`${filtered.length} transacciones`} kind="primary" I={Icon.trendUp} />
+          <SummaryStat label="Ingresos" value={fmt(income)}    kind="pos"     I={Icon.arrowUp} />
+          <SummaryStat label="Gastos"   value={fmt(expense)}   kind="neg"     I={Icon.arrowDown} />
+          <SummaryStat label="Neto"     value={fmtSigned(net)} sub={`${filtered.length} transacciones`} kind="primary" I={Icon.trendUp} />
         </div>
 
-        <Card pad={14}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="fz-search" style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10,
-              background: 'rgba(63,86,28,0.04)', border: `1px solid ${C.border}`,
-              minWidth: 240, flex: 1, color: C.textDim, fontSize: 13,
-            }}>
-              <Icon.search size={15} />
-              <input
-                placeholder="Buscar transacciones…"
-                value={q}
-                onChange={e => setQ(e.target.value)}
-                style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 13, color: C.text }}
-              />
-              {q && (
-                <button onClick={() => setQ('')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: C.textMute, fontSize: 14, padding: 0 }}>×</button>
-              )}
-            </div>
-            <FilterPills label="Categoría" options={CATS} value={cat} onChange={setCat} />
-            <FilterPills label="Cuenta"    options={ACCS} value={acc} onChange={setAcc} />
-            <Button ghost size="sm" icon={<Icon.calendar size={12} />}>
-              nov 2026 <Icon.chevron size={12} style={{ marginLeft: 2, opacity: 0.6 }} />
-            </Button>
-          </div>
-        </Card>
-
-        <Card pad={0}>
-          {groups.length === 0 && (
-            <div style={{ padding: 60, textAlign: 'center', color: C.textMute, fontSize: 13 }}>
-              No hay transacciones que coincidan con los filtros.
-            </div>
-          )}
-          {groups.map((g, gi) => (
-            <div key={g.d}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px 10px',
-                borderTop: gi > 0 ? `1px solid ${C.border}` : 'none',
-                background: 'rgba(63,86,28,0.02)',
-              }}>
-                <Eyebrow>{formatDay(g.d)}</Eyebrow>
-                <div style={{ flex: 1, height: 1, background: C.border, marginLeft: 4 }} />
-                <div style={{ fontSize: 11, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>
-                  {g.items.length} mov · {netForDay(g.items)}
+        {txList.length === 0
+          ? <EmptyState onGoSettings={onGoSettings} />
+          : (
+          <>
+            <Card pad={14}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div className="fz-search" style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10,
+                  background: 'rgba(63,86,28,0.04)', border: `1px solid ${C.border}`,
+                  minWidth: 240, flex: 1, color: C.textDim, fontSize: 13,
+                }}>
+                  <Icon.search size={15} />
+                  <input
+                    placeholder="Buscar transacciones…"
+                    value={q}
+                    onChange={e => setQ(e.target.value)}
+                    style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 13, color: C.text }}
+                  />
+                  {q && (
+                    <button onClick={() => setQ('')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: C.textMute, fontSize: 14, padding: 0 }}>×</button>
+                  )}
                 </div>
+                <FilterPills label="Categoría" options={cats} value={cat} onChange={v => { setCat(v); setSelected(null); }} />
+                <FilterPills label="Cuenta"    options={accs} value={acc} onChange={v => { setAcc(v); setSelected(null); }} />
               </div>
-              {g.items.map((r, ri) => (
-                <div
-                  key={ri}
-                  onClick={() => setSelected(r)}
-                  className="fz-row"
-                  style={{
-                    display: 'grid', gridTemplateColumns: '36px 1fr 140px 100px 120px',
-                    gap: 12, alignItems: 'center', padding: '11px 20px',
-                    cursor: 'pointer',
-                    background: selected === r ? 'rgba(63,86,28,0.06)' : 'transparent',
-                    borderBottom: ri < g.items.length - 1 ? `1px solid ${C.border}` : 'none',
+            </Card>
+
+            <Card pad={0}>
+              {groups.length === 0 && (
+                <div style={{ padding: 60, textAlign: 'center', color: C.textMute, fontSize: 13 }}>
+                  No hay transacciones que coincidan con los filtros.
+                </div>
+              )}
+              {groups.map((g, gi) => (
+                <div key={g.d}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px 10px',
+                    borderTop: gi > 0 ? `1px solid ${C.border}` : 'none',
+                    background: 'rgba(63,86,28,0.02)',
                   }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: r.c + '1A', color: r.c, display: 'grid', placeItems: 'center' }}>
-                    <r.I size={15} />
+                    <Eyebrow>{formatDay(g.d)}</Eyebrow>
+                    <div style={{ flex: 1, height: 1, background: C.border, marginLeft: 4 }} />
+                    <div style={{ fontSize: 11, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>
+                      {g.items.length} mov · {netForDay(g.items)}
+                    </div>
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, color: C.text, fontWeight: 500 }}>{r.desc}</div>
-                    <div style={{ fontSize: 11.5, color: C.textMute, marginTop: 2 }}>{r.cat}</div>
-                  </div>
-                  <AccountChip acc={r.acc} />
-                  <div style={{ fontSize: 11.5, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>{r.date.split('·')[1]?.trim()}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'right', color: r.sign === '+' ? C.pos : C.text, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.2 }}>
-                    <span style={{ opacity: 0.6, marginRight: 1 }}>{r.sign}</span>S/<span>{r.amt}</span>
-                  </div>
+                  {g.items.map((r, ri) => (
+                    <div
+                      key={ri}
+                      onClick={() => setSelected(r)}
+                      className="fz-row"
+                      style={{
+                        display: 'grid', gridTemplateColumns: '36px 1fr 140px 100px 120px',
+                        gap: 12, alignItems: 'center', padding: '11px 20px',
+                        cursor: 'pointer',
+                        background: selected === r ? 'rgba(63,86,28,0.06)' : 'transparent',
+                        borderBottom: ri < g.items.length - 1 ? `1px solid ${C.border}` : 'none',
+                      }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: r.c + '1A', color: r.c, display: 'grid', placeItems: 'center' }}>
+                        <r.I size={15} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13.5, color: C.text, fontWeight: 500 }}>{r.desc}</div>
+                        <div style={{ fontSize: 11.5, color: C.textMute, marginTop: 2 }}>{r.cat}</div>
+                      </div>
+                      <AccountChip acc={r.acc} />
+                      <div style={{ fontSize: 11.5, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>{r.date.split('·')[1]?.trim()}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'right', color: r.sign === '+' ? C.pos : C.text, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.2 }}>
+                        <span style={{ opacity: 0.6, marginRight: 1 }}>{r.sign}</span>S/<span>{r.amt}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
-            </div>
-          ))}
-        </Card>
+            </Card>
+          </>
+        )}
       </div>
 
       <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
