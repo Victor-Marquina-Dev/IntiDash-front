@@ -1,32 +1,76 @@
 'use client';
 
+import React from 'react';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
 import { Card, CardHeader, Tag, Delta, Button, Eyebrow, SubKpi } from '@/components/ui';
-import { Sparkline, ResponsiveSparkline, DualAreaChart, Donut, PairedBars, ProgressBar, RadialProgress } from '@/components/charts';
+import { Sparkline, DualAreaChart, Donut, PairedBars, ProgressBar, RadialProgress } from '@/components/charts';
 import { ALL_TX } from '@/lib/mock-data';
 import { useBreakpoint, type BP } from '@/lib/breakpoints';
 import type { Tweaks } from '@/components/tweaks';
 
+// ── Mini bar chart ────────────────────────────────────────────────────────
+function MiniBarChart({ data, color, labels, height = 88 }: { data: number[]; color: string; labels: string[]; height?: number }) {
+  const W = 300, H = height;
+  const padB = 18, padT = 4;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const n = data.length;
+  const slotW = W / n;
+  const barW = Math.max(4, slotW * 0.52);
+  const id = React.useId();
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+      <defs>
+        <linearGradient id={`${id}-a`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="1" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.28" />
+        </linearGradient>
+      </defs>
+      {data.map((v, i) => {
+        const bh = Math.max(3, ((v - min) / range) * (H - padT - padB));
+        const x = i * slotW + (slotW - barW) / 2;
+        const y = H - padB - bh;
+        const isLast = i === n - 1;
+        return (
+          <g key={i}>
+            <rect x={x} y={y} width={barW} height={bh} rx={3}
+              fill={isLast ? color : `url(#${id}-a)`}
+              opacity={isLast ? 1 : 0.55 + (i / (n - 1)) * 0.45}
+            />
+            {(i === 0 || i === n - 1 || i === Math.floor(n / 2)) && (
+              <text x={x + barW / 2} y={H - 4} textAnchor="middle"
+                fontSize="9" fill={color} opacity="0.65" fontFamily="Inter">
+                {labels[i]}
+              </text>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 // ── Hero balance ─────────────────────────────────────────────────────────
 function HeroBalance({ accent, bp }: { accent: string; bp: BP }) {
-  const data = [10100,10800,11200,10900,11800,12100,11900,12320,12100,12500,12840];
+  const data   = [10100,10800,11200,10900,11800,12100,11900,12320,12100,12500,12840];
+  const labels = ['may','jun','jul','ago','sep','oct','nov','—','—','—','nov'];
   const isDesktop = bp === 'desktop';
   const numSize  = bp === 'mobile' ? 44 : 62;
   const prefSize = bp === 'mobile' ? 26 : 36;
   const decSize  = bp === 'mobile' ? 24 : 34;
   return (
     <Card pad={30} style={{ gridColumn: isDesktop ? 'span 8' : 'span 12' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0, 1fr) 300px' : '1fr', gap: 36, alignItems: 'stretch' }}>
-        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0, 1fr) 280px' : '1fr', gap: 36, alignItems: 'center' }}>
 
-          {/* Eyebrow */}
+        {/* Columna izquierda — centrada */}
+        <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <Eyebrow icon={<Icon.wallet size={12} />}>
             Balance total · todas las cuentas
           </Eyebrow>
 
-          {/* Número principal + badge */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
             <div style={{
               fontSize: numSize, fontWeight: 700, color: C.text,
               letterSpacing: -2.5, lineHeight: 1, fontVariantNumeric: 'tabular-nums',
@@ -40,11 +84,10 @@ function HeroBalance({ accent, bp }: { accent: string; bp: BP }) {
             </Tag>
           </div>
 
-          {/* SubKPIs */}
           <div style={{
             display: 'grid',
             gridTemplateColumns: bp === 'mobile' ? '1fr 1fr' : 'repeat(3, minmax(0, 1fr))',
-            gap: 24, marginTop: 'auto', paddingTop: 26,
+            gap: 24, marginTop: 28, width: '100%',
           }}>
             <SubKpi label="Cambio mensual"  value="+S/ 520.30" pos />
             <SubKpi label="Cuentas activas" value="3" />
@@ -52,19 +95,14 @@ function HeroBalance({ accent, bp }: { accent: string; bp: BP }) {
           </div>
         </div>
 
-        {/* Sparkline — solo desktop */}
+        {/* Columna derecha — barras — solo desktop */}
         {isDesktop && (
-          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: C.textMute }}>
-              <span style={{ letterSpacing: 0.2 }}>Evolución 6 meses</span>
-              <span style={{ color: C.pos, fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>+S/ 2,740</span>
+          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 10.5, color: C.textMute, letterSpacing: 0.4, textTransform: 'uppercase', fontWeight: 600 }}>Evolución</span>
+              <span style={{ fontSize: 11.5, color: C.pos, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>+S/ 2,740</span>
             </div>
-            <div style={{ width: '100%' }}>
-              <ResponsiveSparkline data={data} color={accent} height={92} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>
-              <span>may</span><span>jun</span><span>jul</span><span>ago</span><span>sep</span><span>oct</span><span>nov</span>
-            </div>
+            <MiniBarChart data={data} color={accent} labels={labels} height={96} />
           </div>
         )}
       </div>
