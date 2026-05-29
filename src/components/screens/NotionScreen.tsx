@@ -15,6 +15,7 @@ interface NotionConfig {
   notionDataSourceId: string | null;
   notionDataSourceName: string | null;
   notionDataSources: DataSource[];
+  txDataSourceId: string | null;
 }
 
 interface SyncResult { pulled: number; pushed: number; totalNotion: number }
@@ -49,6 +50,9 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
   const [token, setToken] = React.useState('');
   const [databases, setDatabases] = React.useState<DataSource[]>([]);
   const [selectedId, setSelectedId] = React.useState('');
+  const [selectedTxId, setSelectedTxId] = React.useState('');
+  const [syncTxStatus, setSyncTxStatus] = React.useState<Status>('idle');
+  const [syncTxCount, setSyncTxCount] = React.useState<number | null>(null);
   const [searchStatus, setSearchStatus] = React.useState<Status>('idle');
   const [saveStatus, setSaveStatus]     = React.useState<Status>('idle');
   const [syncStatus, setSyncStatus]     = React.useState<Status>('idle');
@@ -70,6 +74,7 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
           setDatabases(data.notionDataSources);
           setSelectedId(data.notionDataSourceId ?? '');
         }
+        setSelectedTxId(data.txDataSourceId ?? '');
       })
       .catch(() => setBackStatus('error'));
   }, []);
@@ -99,7 +104,11 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
       const r = await fetch(`${API}/notion-payments/config`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notionToken: token || undefined, notionDataSources: ds }),
+        body: JSON.stringify({
+          notionToken: token || undefined,
+          notionDataSources: ds,
+          txDataSourceId: selectedTxId || null,
+        }),
       });
       if (!r.ok) throw new Error();
       const data: NotionConfig = await r.json();
@@ -107,6 +116,18 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
       setSaveStatus('ok');
       setToken('');
     } catch { setSaveStatus('error'); }
+  }
+
+  async function handleSyncTx() {
+    setSyncTxStatus('loading');
+    setSyncTxCount(null);
+    try {
+      const r = await fetch(`${API}/notion-payments/sync-transactions`, { method: 'POST' });
+      if (!r.ok) { const e = await r.json(); throw new Error(e.message); }
+      const data: { synced: number } = await r.json();
+      setSyncTxCount(data.synced);
+      setSyncTxStatus('ok');
+    } catch { setSyncTxStatus('error'); }
   }
 
   async function handleSync() {
@@ -163,7 +184,7 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
           right={<StatusBadge status={config?.isConfigured ? 'ok' : 'idle'} msg={config?.isConfigured ? 'Configurado' : 'Sin configurar'} />}
         />
         {config && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
             <div style={{ padding: 14, borderRadius: 10, background: 'rgba(63,86,28,0.03)', border: `1px solid ${C.border}` }}>
               <Eyebrow>Token activo</Eyebrow>
               <div style={{ marginTop: 6, fontSize: 13, fontFamily: 'monospace', color: C.text, letterSpacing: 0.3 }}>
@@ -171,9 +192,18 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
               </div>
             </div>
             <div style={{ padding: 14, borderRadius: 10, background: 'rgba(63,86,28,0.03)', border: `1px solid ${C.border}` }}>
-              <Eyebrow>Base de datos</Eyebrow>
+              <Eyebrow>BD · Cuentas</Eyebrow>
               <div style={{ marginTop: 6, fontSize: 13, color: C.text }}>
                 {config.notionDataSourceName ?? <span style={{ color: C.textMute }}>Sin seleccionar</span>}
+              </div>
+            </div>
+            <div style={{ padding: 14, borderRadius: 10, background: 'rgba(63,86,28,0.03)', border: `1px solid ${C.border}` }}>
+              <Eyebrow>BD · Transacciones</Eyebrow>
+              <div style={{ marginTop: 6, fontSize: 13, color: C.text }}>
+                {config.txDataSourceId
+                  ? (databases.find(d => d.id === config.txDataSourceId)?.name ?? config.txDataSourceId.slice(0, 12) + '…')
+                  : <span style={{ color: C.textMute }}>Sin seleccionar</span>
+                }
               </div>
             </div>
           </div>
@@ -216,19 +246,37 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
           </div>
 
           {databases.length > 0 && (
-            <div>
-              <label style={{ fontSize: 11.5, color: C.textMute, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, display: 'block', marginBottom: 6 }}>
-                Seleccionar base de datos
-              </label>
-              <select
-                value={selectedId}
-                onChange={e => setSelectedId(e.target.value)}
-                style={{ ...inputStyle, cursor: 'pointer' }}
-              >
-                {databases.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 11.5, color: C.textMute, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, display: 'block', marginBottom: 6 }}>
+                  BD · Cuentas
+                </label>
+                <select
+                  value={selectedId}
+                  onChange={e => setSelectedId(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="">— Sin seleccionar —</option>
+                  {databases.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11.5, color: C.textMute, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, display: 'block', marginBottom: 6 }}>
+                  BD · Transacciones
+                </label>
+                <select
+                  value={selectedTxId}
+                  onChange={e => setSelectedTxId(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="">— Sin seleccionar —</option>
+                  {databases.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -252,27 +300,47 @@ export function NotionScreen({ accent }: Readonly<NotionScreenProps>) {
       <Card>
         <CardHeader
           title="Sincronización"
-          subtitle="Importa transacciones desde la base de datos de Notion"
+          subtitle="Importa datos desde las bases de datos de Notion"
           right={<Tag bg={`${accent}18`} color={accent} dot={accent}>Beta</Tag>}
         />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <Button
-            primary
-            icon={<Icon.arrowUp size={14} />}
-            onClick={handleSync}
-            disabled={syncStatus === 'loading' || !config?.isConfigured}
-          >
-            {syncStatus === 'loading' ? 'Sincronizando…' : 'Sincronizar ahora'}
-          </Button>
-          {syncStatus !== 'idle' && (
-            <StatusBadge
-              status={syncStatus}
-              msg={syncResult ? `${syncResult.pulled} importadas · ${syncResult.totalNotion} en Notion` : undefined}
-            />
-          )}
-          {!config?.isConfigured && (
-            <span style={{ fontSize: 12, color: C.textMute }}>Configura el token primero</span>
-          )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.textMute, width: 110, flexShrink: 0 }}>Cuentas</div>
+            <Button
+              primary
+              icon={<Icon.arrowUp size={14} />}
+              onClick={handleSync}
+              disabled={syncStatus === 'loading' || !config?.isConfigured}
+            >
+              {syncStatus === 'loading' ? 'Sincronizando…' : 'Sincronizar cuentas'}
+            </Button>
+            {syncStatus !== 'idle' && (
+              <StatusBadge
+                status={syncStatus}
+                msg={syncResult ? `${syncResult.pulled} importadas · ${syncResult.totalNotion} en Notion` : undefined}
+              />
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.textMute, width: 110, flexShrink: 0 }}>Transacciones</div>
+            <Button
+              primary
+              icon={<Icon.arrowUp size={14} />}
+              onClick={handleSyncTx}
+              disabled={syncTxStatus === 'loading' || !config?.txDataSourceId}
+            >
+              {syncTxStatus === 'loading' ? 'Sincronizando…' : 'Sincronizar transacciones'}
+            </Button>
+            {syncTxStatus !== 'idle' && (
+              <StatusBadge
+                status={syncTxStatus}
+                msg={syncTxCount != null ? `${syncTxCount} transacciones importadas` : undefined}
+              />
+            )}
+            {!config?.txDataSourceId && (
+              <span style={{ fontSize: 12, color: C.textMute }}>Selecciona la BD de transacciones</span>
+            )}
+          </div>
         </div>
       </Card>
 
