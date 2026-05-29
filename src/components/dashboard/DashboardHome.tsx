@@ -12,31 +12,47 @@ import type { Tweaks } from '@/components/tweaks';
 function HeroBalance({ accent, bp }: { accent: string; bp: BP }) {
   const data = [10100,10800,11200,10900,11800,12100,11900,12320,12100,12500,12840];
   const isDesktop = bp === 'desktop';
+  const numSize  = bp === 'mobile' ? 44 : 62;
+  const prefSize = bp === 'mobile' ? 26 : 36;
+  const decSize  = bp === 'mobile' ? 24 : 34;
   return (
-    <Card pad={26} style={{ gridColumn: isDesktop ? 'span 8' : 'span 12' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0, 1fr) 320px' : '1fr', gap: 32, alignItems: 'stretch' }}>
+    <Card pad={30} style={{ gridColumn: isDesktop ? 'span 8' : 'span 12' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? 'minmax(0, 1fr) 300px' : '1fr', gap: 36, alignItems: 'stretch' }}>
         <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+
+          {/* Eyebrow */}
           <Eyebrow icon={<Icon.wallet size={12} />}>
-            <span style={{ whiteSpace: 'nowrap' }}>Balance total · todas las cuentas</span>
+            Balance total · todas las cuentas
           </Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 14, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: bp === 'mobile' ? 40 : 54, fontWeight: 600, color: C.text, letterSpacing: -2, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-              <span style={{ opacity: 0.45, fontWeight: 500, marginRight: 4, fontSize: bp === 'mobile' ? 28 : 36 }}>S/</span>
+
+          {/* Número principal + badge */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
+            <div style={{
+              fontSize: numSize, fontWeight: 700, color: C.text,
+              letterSpacing: -2.5, lineHeight: 1, fontVariantNumeric: 'tabular-nums',
+            }}>
+              <span style={{ color: C.textDim, fontWeight: 500, marginRight: 3, fontSize: prefSize, letterSpacing: -1 }}>S/</span>
               12,840
-              <span style={{ opacity: 0.4, fontSize: bp === 'mobile' ? 22 : 30, fontWeight: 500, letterSpacing: -1 }}>.50</span>
+              <span style={{ color: C.textMute, fontSize: decSize, fontWeight: 400, letterSpacing: -1 }}>.50</span>
             </div>
-            <Tag dot={C.pos} color={C.primary} bg="rgba(140,160,90,0.18)">↑ 4.2% este mes</Tag>
+            <Tag dot={C.pos} color={C.pos} bg={`${C.pos}18`} style={{ fontSize: 12, fontWeight: 500, padding: '4px 11px' }}>
+              ↑ 4.2% este mes
+            </Tag>
           </div>
+
+          {/* SubKPIs */}
           <div style={{
-            display: 'grid', gridTemplateColumns: bp === 'mobile' ? '1fr 1fr' : 'repeat(3, minmax(0, 1fr))',
-            gap: 20, marginTop: 'auto', paddingTop: 22,
-            fontSize: 12.5, color: C.textDim,
+            display: 'grid',
+            gridTemplateColumns: bp === 'mobile' ? '1fr 1fr' : 'repeat(3, minmax(0, 1fr))',
+            gap: 24, marginTop: 'auto', paddingTop: 26,
           }}>
-            <SubKpi label="Cambio mensual" value="+S/ 520.30" pos />
+            <SubKpi label="Cambio mensual"  value="+S/ 520.30" pos />
             <SubKpi label="Cuentas activas" value="3" />
             {bp !== 'mobile' && <SubKpi label="Sincronización" value="hace 5 min" muted />}
           </div>
         </div>
+
+        {/* Sparkline — solo desktop */}
         {isDesktop && (
           <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: C.textMute }}>

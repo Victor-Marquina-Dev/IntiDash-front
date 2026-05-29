@@ -176,11 +176,11 @@ interface SubKpiProps {
 export function SubKpi({ label, value, pos, muted }: SubKpiProps) {
   return (
     <div>
-      <div style={{ fontSize: 10, color: C.textMute, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 11, color: C.textMute, textTransform: 'uppercase', letterSpacing: 1.1, fontWeight: 600 }}>{label}</div>
       <div style={{
-        fontSize: 14.5, fontWeight: 500, marginTop: 4,
+        fontSize: 17, fontWeight: 600, marginTop: 5,
         color: pos ? C.pos : muted ? C.textDim : C.text,
-        fontVariantNumeric: 'tabular-nums', letterSpacing: -0.2,
+        fontVariantNumeric: 'tabular-nums', letterSpacing: -0.4,
       }}>{value}</div>
     </div>
   );
