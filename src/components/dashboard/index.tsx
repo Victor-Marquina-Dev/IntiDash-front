@@ -29,7 +29,7 @@ function Stub({ label }: Readonly<{ label: string }>) {
 
 interface DashboardProps {
   tweaks: Tweaks;
-  TransactionsScreen?: React.ComponentType<{ accent: string; density: string }>;
+  TransactionsScreen?: React.ComponentType<{ accent: string; density: string; onGoSettings?: () => void }>;
   AccountsScreen?: React.ComponentType<{ accent: string }>;
   GoalsScreen?: React.ComponentType<{ accent: string }>;
   AnalyticsScreen?: React.ComponentType<{ accent: string }>;
@@ -67,7 +67,7 @@ export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScr
 
   const screens: Record<ScreenId, React.ReactNode> = {
     home:   <DashboardHome tweaks={tweaks} />,
-    tx:     TransactionsScreen ? <TransactionsScreen accent={accent} density={tweaks.density} /> : <Stub label="Transacciones" />,
+    tx:     TransactionsScreen ? <TransactionsScreen accent={accent} density={tweaks.density} onGoSettings={() => handleSetScreen('notion')} /> : <Stub label="Transacciones" />,
     cards:  AccountsScreen     ? <AccountsScreen accent={accent} />    : <Stub label="Cuentas" />,
     goals:  GoalsScreen        ? <GoalsScreen accent={accent} />       : <Stub label="Objetivos" />,
     charts: AnalyticsScreen    ? <AnalyticsScreen accent={accent} />   : <Stub label="Análisis" />,
