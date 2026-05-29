@@ -8,7 +8,9 @@ import { ProgressBar } from '@/components/charts';
 import type { Transaction } from '@/lib/mock-data';
 import type { IconComponent } from '@/components/icons';
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const API     = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const PRUEBA  = process.env.NEXT_PUBLIC_DATA_MODE === 'prueba';
+const TX_URL  = PRUEBA ? `${API}/prueba/transactions` : `${API}/notion-payments/transactions`;
 
 interface DbTransaction {
   id: string;
@@ -237,7 +239,7 @@ export function TransactionsScreen({ accent, density, onGoSettings }: Transactio
   const [selected, setSelected] = React.useState<Transaction | null>(null);
 
   React.useEffect(() => {
-    fetch(`${API}/notion-payments/transactions`)
+    fetch(TX_URL)
       .then(r => r.json())
       .then((rows: DbTransaction[]) => {
         setTxList(rows.map(dbToUiTx));
