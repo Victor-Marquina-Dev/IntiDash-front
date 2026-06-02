@@ -13,8 +13,8 @@ export interface Tweaks {
 const DEFAULTS: Tweaks = {
   accent: '#3F561C',
   chartType: 'area',
-  density: 'regular',
-  microCharts: true,
+  density: 'compact',
+  microCharts: false,
 };
 
 const STORAGE_KEY = 'fz.tweaks';
@@ -78,14 +78,6 @@ export function TweaksPanel({ tweaks, setTweak }: TweaksPanelProps) {
                 }} />
               ))}
             </div>
-          </Row>
-
-          <Row label="Densidad">
-            <SegControl
-              options={['compact', 'regular']}
-              value={tweaks.density}
-              onChange={v => setTweak('density', v as Tweaks['density'])}
-            />
           </Row>
 
           <div style={{ fontSize: 11, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 4 }}>

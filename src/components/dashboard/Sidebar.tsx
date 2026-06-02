@@ -55,24 +55,60 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
       {/* Brand */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        padding: '4px 6px 18px', borderBottom: `1px solid ${C.navbarBorder}`,
-        marginBottom: 8,
+        padding: show ? '6px 8px 14px' : '6px 0 14px',
+        justifyContent: show ? 'flex-start' : 'center',
       }}>
         <div style={{
-          width: 32, height: 32, borderRadius: 8,
-          background: C.olive,
+          width: 36, height: 36, borderRadius: 10,
+          background: 'linear-gradient(135deg, #A8C066 0%, #6B8A30 100%)',
           display: 'grid', placeItems: 'center',
-          color: '#fff', fontWeight: 700, fontSize: 15,
-          letterSpacing: -0.5, flexShrink: 0,
-          boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+          color: '#fff', fontWeight: 800, fontSize: 17,
+          letterSpacing: -1, flexShrink: 0,
+          boxShadow: '0 6px 18px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.22)',
         }}>F</div>
         {show && (
           <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Florín</div>
-            <div style={{ fontSize: 11, color: C.navbarTextDim }}>Victor Marquina</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: -0.4 }}>Florín</div>
+            <div style={{ fontSize: 10.5, color: C.navbarTextDim, letterSpacing: 0.2, marginTop: 1 }}>finanzas personal</div>
           </div>
         )}
       </div>
+
+      {/* User card */}
+      {show && (
+        <div style={{
+          margin: '0 0 12px',
+          padding: '10px 12px',
+          borderRadius: 12,
+          background: 'rgba(0,0,0,0.22)',
+          border: `1px solid ${C.navbarBorder}`,
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #B8CC78 0%, #8CA05A 100%)',
+            display: 'grid', placeItems: 'center',
+            color: '#fff', fontWeight: 700, fontSize: 13,
+            letterSpacing: -0.3, flexShrink: 0,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.20)',
+          }}>VM</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: '#fff', letterSpacing: -0.2 }}>Victor Marquina</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: '#8ECC5C',
+                boxShadow: '0 0 0 2px rgba(142,204,92,0.3)',
+                flexShrink: 0,
+              }} />
+              <span style={{ fontSize: 10.5, color: C.navbarTextDim, letterSpacing: 0.1 }}>Personal</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Separador */}
+      <div style={{ height: 1, background: C.navbarBorder, margin: '0 4px 10px' }} />
 
       {NAV.map(n => {
         const isActive = n.id === active;

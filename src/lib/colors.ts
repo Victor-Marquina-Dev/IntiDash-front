@@ -11,7 +11,7 @@ export const C = {
   primary: '#3F561C',
   olive: '#8CA05A',
   pos: '#8CA05A',
-  neg: '#3F561C',
+  neg: '#C84040',
   warn: '#AEB5C0',
   purple: '#8CA05A',
   pink: '#3F561C',

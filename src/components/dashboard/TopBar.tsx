@@ -1,132 +1,197 @@
 'use client';
 
+import React from 'react';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
-import { Button } from '@/components/ui';
 import { ScreenId } from './Sidebar';
 import { useBreakpoint } from '@/lib/breakpoints';
 
-const PanelLeftIcon = Icon.panelLeft;
-const SearchIcon    = Icon.search;
-const CalendarIcon  = Icon.calendar;
-const ChevronIcon   = Icon.chevron;
-const BellIcon      = Icon.bell;
-const PlusIcon      = Icon.plus;
+const GearIcon = Icon.gear;
+
+const NAV_TABS: { id: ScreenId; label: string; I: (typeof Icon)[keyof typeof Icon] }[] = [
+  { id: 'home',   label: 'Dashboard',     I: Icon.home },
+  { id: 'cards',  label: 'Cuentas',       I: Icon.wallet },
+  { id: 'tx',     label: 'Transacciones', I: Icon.list },
+  { id: 'charts', label: 'Análisis',      I: Icon.chart },
+  { id: 'goals',  label: 'Objetivos',     I: Icon.target },
+  { id: 'debts',  label: 'Deudas',        I: Icon.cards },
+];
 
 interface TopBarProps {
   screen?: ScreenId;
-  onToggleSidebar?: () => void;
+  setActive?: (id: ScreenId) => void;
 }
 
-const TITLES: Record<ScreenId, { t: string; s: string }> = {
-  home:   { t: 'Buenos días, Victor',  s: 'Martes, 18 de noviembre · esto pasó en tus finanzas' },
-  tx:     { t: 'Transacciones',        s: '24 movimientos este mes · sincronizadas hace 5 min' },
-  cards:  { t: 'Cuentas',              s: '3 cuentas activas · 1 tarjeta de crédito' },
-  goals:  { t: 'Objetivos',            s: '3 activas · 2 completadas este año' },
-  charts: { t: 'Análisis',             s: 'Inteligencia sobre tus finanzas' },
-  debts:  { t: 'Deudas',               s: '2 activas · próximo pago en 9 días' },
-  notion: { t: 'Ajustes',              s: 'Configuración de Notion y sincronización' },
-};
+/* ─── NavTab ─────────────────────────────────────────────────────────────── */
+function NavTab({
+  tab, isActive, showLabel, onClick,
+}: Readonly<{
+  tab: (typeof NAV_TABS)[number];
+  isActive: boolean;
+  showLabel: boolean;
+  onClick: () => void;
+}>) {
+  const [hovered, setHovered] = React.useState(false);
 
-const iconBtn: React.CSSProperties = {
-  position: 'relative',
-  width: 36, height: 36, borderRadius: 10,
-  background: 'rgba(63,86,28,0.04)',
-  border: `1px solid ${C.border}`,
-  color: C.textDim, cursor: 'pointer',
-  display: 'grid', placeItems: 'center',
-};
+  let bg: string = 'transparent';
+  if (isActive)     bg = C.olive;
+  else if (hovered) bg = `${C.olive}18`;
 
-export function TopBar({ screen = 'home', onToggleSidebar }: Readonly<TopBarProps>) {
+  let color: string = C.textDim;
+  if (isActive)     color = '#fff';
+  else if (hovered) color = C.text;
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        padding: showLabel ? '7px 13px' : '7px 10px',
+        borderRadius: 8,
+        background: bg,
+        border: 'none',
+        color,
+        cursor: 'pointer',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        fontSize: 13,
+        fontWeight: isActive ? 600 : 500,
+        letterSpacing: isActive ? -0.2 : 0,
+        transition: 'background 0.14s, color 0.14s',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+        userSelect: 'none',
+      }}
+    >
+      <tab.I size={13} strokeWidth={isActive ? 2.1 : 1.7} />
+      {showLabel && tab.label}
+    </button>
+  );
+}
+
+/* ─── TopBar ─────────────────────────────────────────────────────────────── */
+export function TopBar({ screen = 'home', setActive }: Readonly<TopBarProps>) {
   const bp = useBreakpoint();
-  const isMobile = bp === 'mobile';
+  const isMobile  = bp === 'mobile';
+  const isTablet  = bp === 'tablet';
   const isDesktop = bp === 'desktop';
-  const tt = TITLES[screen] ?? TITLES.home;
+
+  const isSettingsActive = screen === 'notion';
+  const [gearHovered, setGearHovered] = React.useState(false);
+
+  const activeLabel = NAV_TABS.find(t => t.id === screen)?.label ?? 'Dashboard';
+  const ActiveIcon  = NAV_TABS.find(t => t.id === screen)?.I;
+
+  let sidePad = 36;
+  if (isMobile)      sidePad = 18;
+  else if (isTablet) sidePad = 24;
+
+  let gearBg: string = 'transparent';
+  if (isSettingsActive) gearBg = `${C.olive}14`;
+  else if (gearHovered) gearBg = `${C.olive}09`;
+
+  let gearBorder: string = `${C.olive}22`;
+  if (isSettingsActive) gearBorder = `${C.olive}55`;
+  else if (gearHovered) gearBorder = `${C.olive}33`;
+
+  let gearColor: string = C.textDim;
+  if (isSettingsActive) gearColor = C.navbar;
+  else if (gearHovered) gearColor = C.text;
 
   return (
     <header style={{
-      display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 14,
-      padding: isMobile ? '14px 16px' : '18px 28px',
+      height: isMobile ? 58 : 68,
+      background: 'rgba(250,251,248,0.94)',
+      backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
       borderBottom: `1px solid ${C.border}`,
-      background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(14px)',
-      WebkitBackdropFilter: 'blur(14px)',
-      position: 'sticky', top: 0, zIndex: 10,
+      position: 'sticky', top: 0, zIndex: 20,
+      flexShrink: 0,
     }}>
-      {onToggleSidebar && (
-        <button onClick={onToggleSidebar} className="fz-icon-btn" aria-label="Alternar barra lateral" style={{
-          width: 34, height: 34, borderRadius: 9,
-          background: 'transparent', border: '1px solid transparent',
-          color: C.textDim, cursor: 'pointer',
-          display: 'grid', placeItems: 'center', flexShrink: 0,
-        }}>
-          <PanelLeftIcon size={17} />
-        </button>
-      )}
-
-      <div style={{ flex: isMobile ? 1 : undefined, minWidth: 0 }}>
-        <div style={{ fontSize: isMobile ? 16 : 19, fontWeight: 600, letterSpacing: -0.4, color: C.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {tt.t}
-        </div>
-        {!isMobile && (
-          <div style={{ fontSize: 12.5, color: C.textMute, marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: C.pos }} />
-            {tt.s}
-          </div>
-        )}
-      </div>
-
-      <div style={{ flex: 1 }} />
-
-      {isDesktop && (
-        <div className="fz-search" style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px 12px', borderRadius: 10,
-          background: 'rgba(63,86,28,0.04)', border: `1px solid ${C.border}`,
-          minWidth: 240, color: C.textDim, fontSize: 13,
-        }}>
-          <SearchIcon size={15} />
-          <span style={{ flex: 1 }}>Buscar transacciones…</span>
-          <kbd style={{
-            fontSize: 10, padding: '1px 6px', borderRadius: 4,
-            border: `1px solid ${C.border}`, background: '#fff',
-            fontFamily: 'Inter', color: C.textDim,
-          }}>⌘K</kbd>
-        </div>
-      )}
-
-      {isDesktop && (
-        <Button icon={<CalendarIcon size={14} />}>
-          Últimos 30 días
-          <ChevronIcon size={14} style={{ marginLeft: 2, opacity: 0.6 }} />
-        </Button>
-      )}
-
-      {!isMobile && (
-        <button className="fz-icon-btn" style={iconBtn}>
-          <BellIcon size={17} />
-          <span style={{
-            position: 'absolute', top: 7, right: 7,
-            width: 7, height: 7, borderRadius: '50%', background: C.olive,
-            border: '2px solid #fff',
-          }} />
-        </button>
-      )}
-
-      {isDesktop && <Button primary icon={<PlusIcon size={14} />}>Nueva transacción</Button>}
-
-      {isMobile && (
-        <button className="fz-icon-btn" style={iconBtn}>
-          <PlusIcon size={16} />
-        </button>
-      )}
-
       <div style={{
-        width: 36, height: 36, borderRadius: '50%',
-        background: C.olive, display: 'grid', placeItems: 'center',
-        color: '#fff', fontWeight: 600, fontSize: 13,
-        marginLeft: 4, border: `1.5px solid ${C.border}`,
-        flexShrink: 0,
-      }}>VM</div>
+        display: 'flex', alignItems: 'center', height: '100%', gap: 8,
+        maxWidth: 1800, marginLeft: 'auto', marginRight: 'auto',
+        paddingLeft: sidePad, paddingRight: sidePad,
+        boxSizing: 'border-box',
+      }}>
+
+      {/* ── Mobile ── */}
+      {isMobile && (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+          {ActiveIcon && (
+            <span style={{ color: C.olive, display: 'flex' }}>
+              <ActiveIcon size={16} strokeWidth={2} />
+            </span>
+          )}
+          <span style={{
+            fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: -0.5,
+            fontFamily: 'Inter, system-ui, sans-serif',
+          }}>
+            {activeLabel}
+          </span>
+        </div>
+      )}
+
+      {/* ── Spacer izquierdo ── */}
+      {!isMobile && <div style={{ flex: 1 }} />}
+
+      {/* ── Nav tabs ── */}
+      {!isMobile && (
+        <nav style={{ display: 'flex', alignItems: 'center', gap: isTablet ? 2 : 3 }}>
+          {NAV_TABS.map(tab => (
+            <NavTab
+              key={tab.id}
+              tab={tab}
+              isActive={tab.id === screen}
+              showLabel={isDesktop || tab.id === screen}
+              onClick={() => setActive?.(tab.id)}
+            />
+          ))}
+        </nav>
+      )}
+
+      {/* ── Zona derecha ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        flexShrink: 0, flexGrow: isMobile ? 0 : 1,
+        justifyContent: isMobile ? 'flex-start' : 'flex-end',
+      }}>
+
+        {/* Ajustes */}
+        <button
+          onClick={() => setActive?.('notion')}
+          onMouseEnter={() => setGearHovered(true)}
+          onMouseLeave={() => setGearHovered(false)}
+          title="Ajustes"
+          style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: gearBg,
+            border: `1px solid ${gearBorder}`,
+            color: gearColor,
+            cursor: 'pointer', display: 'grid', placeItems: 'center',
+            transition: 'all 0.14s', flexShrink: 0,
+          }}
+        >
+          <GearIcon size={14} strokeWidth={isSettingsActive ? 2 : 1.7} />
+        </button>
+
+        {/* Divider */}
+        <div style={{ width: 1, height: 18, background: C.border, flexShrink: 0 }} />
+
+        {/* Avatar */}
+        <div style={{
+          width: 32, height: 32, borderRadius: '50%',
+          background: `linear-gradient(140deg, #A4BE6A 0%, ${C.navbar} 100%)`,
+          display: 'grid', placeItems: 'center',
+          color: '#fff', fontWeight: 700, fontSize: 11.5, letterSpacing: 0.4,
+          fontFamily: 'Inter, system-ui, sans-serif', flexShrink: 0,
+          boxShadow: `0 0 0 2px rgba(250,251,248,1), 0 0 0 3px ${C.olive}40`,
+          userSelect: 'none', cursor: 'default',
+        }}>
+          VM
+        </div>
+      </div>
+      </div>
     </header>
   );
 }

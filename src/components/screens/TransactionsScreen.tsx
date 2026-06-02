@@ -4,7 +4,6 @@ import React from 'react';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
 import { Card, CardHeader, Button, Eyebrow, Delta } from '@/components/ui';
-import { ProgressBar } from '@/components/charts';
 import type { Transaction } from '@/lib/mock-data';
 import type { IconComponent } from '@/components/icons';
 
@@ -150,30 +149,6 @@ function FilterPills({ label, options, value, onChange }: {
   );
 }
 
-function CategoryBreakdown({ rows }: { rows: Transaction[] }) {
-  const bycat: Record<string, number> = {};
-  for (const r of rows.filter(r => r.sign === '−')) {
-    bycat[r.cat] = (bycat[r.cat] || 0) + parseFloat(r.amt.replace(/,/g, ''));
-  }
-  const cats = Object.entries(bycat).sort((a, b) => b[1] - a[1]).slice(0, 6);
-  const max = cats[0]?.[1] ?? 1;
-  return (
-    <Card>
-      <CardHeader title="Por categoría" subtitle="Este período" />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {cats.map(([cat, v], i) => (
-          <div key={i}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontSize: 12.5, color: C.text }}>{cat}</span>
-              <span style={{ fontSize: 12.5, color: C.textDim, fontVariantNumeric: 'tabular-nums' }}>S/ {v.toFixed(2)}</span>
-            </div>
-            <ProgressBar pct={(v / max) * 100} color={C.primary} height={4} />
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
 
 function TxDetail({ tx, onClose, accent: _accent }: { tx: Transaction; onClose: () => void; accent: string }) {
   return (
@@ -282,7 +257,7 @@ export function TransactionsScreen({ accent, density, onGoSettings }: Transactio
   return (
     <div style={{
       padding: density === 'compact' ? '18px 24px 32px' : '24px 32px 40px',
-      display: 'grid', gridTemplateColumns: selected ? '1fr 380px' : '1fr 280px',
+      display: 'grid', gridTemplateColumns: selected ? '1fr 380px' : '1fr',
       gap: density === 'compact' ? 14 : 20,
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
@@ -369,14 +344,14 @@ export function TransactionsScreen({ accent, density, onGoSettings }: Transactio
             </Card>
           </>
         )}
+
       </div>
 
-      <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-        {selected
-          ? <TxDetail tx={selected} onClose={() => setSelected(null)} accent={accent} />
-          : <CategoryBreakdown rows={filtered} />
-        }
-      </aside>
+      {selected && (
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+          <TxDetail tx={selected} onClose={() => setSelected(null)} accent={accent} />
+        </aside>
+      )}
     </div>
   );
 }

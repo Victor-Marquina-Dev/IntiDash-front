@@ -1,6 +1,6 @@
 'use client';
 
-import { useTweaks, TweaksPanel } from '@/components/tweaks';
+import { useTweaks } from '@/components/tweaks';
 import { Dashboard } from '@/components/dashboard';
 import { TransactionsScreen } from '@/components/screens/TransactionsScreen';
 import { AccountsScreen } from '@/components/screens/AccountsScreen';
@@ -23,7 +23,6 @@ export default function Home() {
         DeudaScreen={DeudaScreen}
         NotionScreen={NotionScreen}
       />
-      <TweaksPanel tweaks={tweaks} setTweak={setTweak} />
     </>
   );
 }
