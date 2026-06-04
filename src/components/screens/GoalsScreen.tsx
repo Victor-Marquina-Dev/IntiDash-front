@@ -7,10 +7,10 @@ import { Card, CardHeader, Tag, Eyebrow, Delta } from '@/components/ui';
 import { ProgressBar } from '@/components/charts';
 import { GOALS, COMPLETED_GOALS } from '@/lib/mock-data';
 
-function SummaryStat({ label, value, sub, delta, kind, I }: {
+function SummaryStat({ label, value, sub, delta, kind, I }: Readonly<{
   label: string; value: string; sub?: string; delta?: string;
   kind: 'pos' | 'neg' | 'primary'; I: (typeof Icon)[keyof typeof Icon];
-}) {
+}>) {
   const color = kind === 'pos' ? C.pos : kind === 'neg' ? C.neg : C.primary;
   return (
     <Card pad={18}>
@@ -28,7 +28,7 @@ function SummaryStat({ label, value, sub, delta, kind, I }: {
   );
 }
 
-function GoalCard({ g }: { g: typeof GOALS[0] }) {
+function GoalCard({ g }: Readonly<{ g: typeof GOALS[0] }>) {
   const pct = Math.round((g.cur / g.tgt) * 100);
   return (
     <Card pad={22}>

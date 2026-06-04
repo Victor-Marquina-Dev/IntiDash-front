@@ -83,6 +83,12 @@ interface ButtonProps {
   children?: React.ReactNode;
   primary?: boolean;
   ghost?: boolean;
+  /** "Ver tabla →" style: text link, olive, no border */
+  link?: boolean;
+  /** "+ Nuevo" style: pill with tinted background */
+  create?: boolean;
+  /** accent color for create variant (defaults to C.neg) */
+  accent?: string;
   icon?: React.ReactNode;
   onClick?: () => void;
   style?: React.CSSProperties;
@@ -90,11 +96,44 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
-export function Button({ children, primary, ghost, icon, onClick, style, size = 'md', disabled }: Readonly<ButtonProps>) {
+export function Button({ children, primary, ghost, link, create, accent, icon, onClick, style, size = 'md', disabled }: Readonly<ButtonProps>) {
   const sizes = {
     sm: { padding: '6px 10px', fontSize: 12.5 },
     md: { padding: '8px 14px', fontSize: 13.5 },
   };
+
+  if (link) {
+    return (
+      <button onClick={onClick} disabled={disabled} style={{
+        background: 'none', border: 'none', padding: '4px 0',
+        cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        fontSize: 11, fontWeight: 600, color: C.olive,
+        fontFamily: 'var(--font-ui), system-ui, sans-serif', letterSpacing: -0.1,
+        ...style,
+      }}>
+        {icon}{children} →
+      </button>
+    );
+  }
+
+  if (create) {
+    const c = accent ?? C.neg;
+    return (
+      <button onClick={onClick} disabled={disabled} style={{
+        padding: '4px 10px', borderRadius: 7, cursor: disabled ? 'not-allowed' : 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        fontSize: 11, fontWeight: 600, color: c,
+        background: `${c}15`, border: `1px solid ${c}30`,
+        fontFamily: 'var(--font-ui), system-ui, sans-serif', letterSpacing: -0.1,
+        opacity: disabled ? 0.5 : 1, transition: 'all .15s',
+        ...style,
+      }}>
+        {icon}{children}
+      </button>
+    );
+  }
+
   return (
     <button
       onClick={onClick}
@@ -103,7 +142,7 @@ export function Button({ children, primary, ghost, icon, onClick, style, size = 
       style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
         border: '1px solid', borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer',
-        fontWeight: 500, fontFamily: 'Inter', letterSpacing: -0.1,
+        fontWeight: 500, fontFamily: 'var(--font-ui)', letterSpacing: -0.1,
         transition: 'all .15s', opacity: disabled ? 0.5 : 1,
         ...sizes[size],
         background: primary ? C.primary : ghost ? 'transparent' : '#fff',
@@ -137,7 +176,7 @@ export function CardHeader({ title, subtitle, action, right }: CardHeaderProps) 
         <button className="fz-link" style={{
           background: 'none', border: 'none', cursor: 'pointer',
           color: C.textDim, fontSize: 12, display: 'inline-flex',
-          alignItems: 'center', gap: 4, fontFamily: 'Inter',
+          alignItems: 'center', gap: 4, fontFamily: 'var(--font-ui)',
         }}>
           {action} <Icon.arrowRight size={12} />
         </button>
@@ -157,7 +196,7 @@ export function Eyebrow({ children, icon }: EyebrowProps) {
     <div style={{
       display: 'inline-flex', alignItems: 'center', gap: 7,
       fontSize: 10.5, color: C.textDim, fontWeight: 600,
-      textTransform: 'uppercase', letterSpacing: 1.2, fontFamily: 'Inter',
+      textTransform: 'uppercase', letterSpacing: 1.2, fontFamily: 'var(--font-ui)',
     }}>
       {icon}
       {children}

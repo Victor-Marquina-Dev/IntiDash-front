@@ -28,6 +28,8 @@ function Stub({ label }: Readonly<{ label: string }>) {
 
 interface DashboardProps {
   tweaks: Tweaks;
+  user?: { name: string; email: string; role: string } | null;
+  onLogout?: () => void;
   TransactionsScreen?: React.ComponentType<{ accent: string; density: string; onGoSettings?: () => void }>;
   AccountsScreen?: React.ComponentType<{ accent: string }>;
   GoalsScreen?: React.ComponentType<{ accent: string }>;
@@ -36,12 +38,13 @@ interface DashboardProps {
   NotionScreen?: React.ComponentType<{ accent: string }>;
 }
 
-export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScreen, AnalyticsScreen, DeudaScreen, NotionScreen }: Readonly<DashboardProps>) {
+export function Dashboard({ tweaks, user = null, onLogout, TransactionsScreen, AccountsScreen, GoalsScreen, AnalyticsScreen, DeudaScreen, NotionScreen }: Readonly<DashboardProps>) {
   const [screen, setScreen] = React.useState<ScreenId>('home');
+  const [darkMode, setDarkMode] = React.useState(false);
   const accent = tweaks.accent;
 
   const screens: Record<ScreenId, React.ReactNode> = {
-    home:   <DashboardHome tweaks={tweaks} />,
+    home:   <DashboardHome tweaks={tweaks} onNavigate={(s) => setScreen(s as ScreenId)} darkMode={darkMode} />,
     tx:     TransactionsScreen ? <TransactionsScreen accent={accent} density={tweaks.density} onGoSettings={() => setScreen('notion')} /> : <Stub label="Transacciones" />,
     cards:  AccountsScreen     ? <AccountsScreen accent={accent} />  : <Stub label="Cuentas" />,
     goals:  GoalsScreen        ? <GoalsScreen accent={accent} />     : <Stub label="Objetivos" />,
@@ -54,9 +57,9 @@ export function Dashboard({ tweaks, TransactionsScreen, AccountsScreen, GoalsScr
     <div style={{
       minHeight: '100vh', background: C.bg, color: C.text,
       display: 'flex', flexDirection: 'column',
-      fontFamily: 'Inter, system-ui, sans-serif', letterSpacing: -0.1,
+      fontFamily: 'var(--font-ui), system-ui, sans-serif', letterSpacing: -0.1,
     }}>
-      <TopBar screen={screen} setActive={setScreen} />
+      <TopBar screen={screen} setActive={setScreen} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} user={user} onLogout={onLogout} />
       <main style={{ flex: 1, minWidth: 0 }}>
         {screens[screen]}
       </main>

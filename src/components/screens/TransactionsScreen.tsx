@@ -1,27 +1,15 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
-import { Card, CardHeader, Button, Eyebrow, Delta } from '@/components/ui';
+import { Card, Button, Eyebrow, Delta } from '@/components/ui';
 import type { Transaction } from '@/lib/mock-data';
 import type { IconComponent } from '@/components/icons';
+import { notionPaymentsService } from '@/shared/services/notion-payments.service';
+import type { DbTransaction } from '@/shared/types/finance.types';
 
-const API     = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 const PRUEBA  = process.env.NEXT_PUBLIC_DATA_MODE === 'prueba';
-const TX_URL  = PRUEBA ? `${API}/prueba/transactions` : `${API}/notion-payments/transactions`;
-
-interface DbTransaction {
-  id: string;
-  descripcion: string;
-  monto: number | null;
-  tipo: string;
-  categoria: string;
-  cuenta: string;
-  fecha: string | null;
-  notas: string | null;
-  syncedAt: string;
-}
 
 function catIcon(cat: string, tipo: string): { I: IconComponent; c: string } {
   if (tipo === 'ingreso') return { I: Icon.arrowDown, c: C.pos };
@@ -70,7 +58,7 @@ function dbToUiTx(t: DbTransaction): Transaction {
   };
 }
 
-function AccountChip({ acc }: { acc: string }) {
+function AccountChip({ acc }: Readonly<{ acc: string }>) {
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -112,10 +100,10 @@ function netForDay(items: Transaction[]) {
   return (n >= 0 ? '+' : '−') + 'S/ ' + Math.abs(n).toLocaleString('es-PE', { minimumFractionDigits: 2 });
 }
 
-function SummaryStat({ label, value, sub, delta, kind, I }: {
+function SummaryStat({ label, value, sub, delta, kind, I }: Readonly<{
   label: string; value: string; sub?: string; delta?: string;
   kind: 'pos' | 'neg' | 'primary'; I: (typeof Icon)[keyof typeof Icon];
-}) {
+}>) {
   const color = kind === 'pos' ? C.pos : kind === 'neg' ? C.neg : C.primary;
   return (
     <Card pad={18}>
@@ -133,16 +121,16 @@ function SummaryStat({ label, value, sub, delta, kind, I }: {
   );
 }
 
-function FilterPills({ label, options, value, onChange }: {
+function FilterPills({ label, options, value, onChange }: Readonly<{
   label: string; options: string[]; value: string; onChange: (v: string) => void;
-}) {
+}>) {
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 8px 6px 10px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#fff', fontSize: 12.5, color: C.text }}>
       <span style={{ color: C.textMute }}>{label}:</span>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        style={{ border: 'none', outline: 'none', background: 'transparent', fontFamily: 'Inter', fontSize: 12.5, color: C.text, cursor: 'pointer' }}>
+        style={{ border: 'none', outline: 'none', background: 'transparent', fontFamily: 'var(--font-ui)', fontSize: 12.5, color: C.text, cursor: 'pointer' }}>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>
@@ -150,7 +138,7 @@ function FilterPills({ label, options, value, onChange }: {
 }
 
 
-function TxDetail({ tx, onClose, accent: _accent }: { tx: Transaction; onClose: () => void; accent: string }) {
+function TxDetail({ tx, onClose, accent: _accent }: Readonly<{ tx: Transaction; onClose: () => void; accent: string }>) {
   return (
     <Card>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
@@ -161,7 +149,7 @@ function TxDetail({ tx, onClose, accent: _accent }: { tx: Transaction; onClose: 
           <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{tx.desc}</div>
           <div style={{ fontSize: 12, color: C.textMute }}>{tx.cat}</div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMute, fontSize: 18 }}>×</button>
+        <button onClick={onClose} aria-label="Cerrar detalle de transaccion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMute, fontSize: 18 }}>×</button>
       </div>
       <div style={{ fontSize: 36, fontWeight: 600, color: tx.sign === '+' ? C.pos : C.text, fontVariantNumeric: 'tabular-nums', letterSpacing: -1.2, marginBottom: 16 }}>
         {tx.sign}S/ {tx.amt}
@@ -184,7 +172,7 @@ function TxDetail({ tx, onClose, accent: _accent }: { tx: Transaction; onClose: 
   );
 }
 
-function EmptyState({ onGoSettings }: { onGoSettings?: () => void }) {
+function EmptyState({ onGoSettings }: Readonly<{ onGoSettings?: () => void }>) {
   return (
     <Card pad={40} style={{ textAlign: 'center' }}>
       <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
@@ -214,8 +202,7 @@ export function TransactionsScreen({ accent, density, onGoSettings }: Transactio
   const [selected, setSelected] = React.useState<Transaction | null>(null);
 
   React.useEffect(() => {
-    fetch(TX_URL)
-      .then(r => r.json())
+    notionPaymentsService.getTransactions(PRUEBA ? 'prueba' : undefined)
       .then((rows: DbTransaction[]) => {
         setTxList(rows.map(dbToUiTx));
         setLoading(false);
@@ -286,7 +273,7 @@ export function TransactionsScreen({ accent, density, onGoSettings }: Transactio
                     style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 13, color: C.text }}
                   />
                   {q && (
-                    <button onClick={() => setQ('')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: C.textMute, fontSize: 14, padding: 0 }}>×</button>
+                    <button onClick={() => setQ('')} aria-label="Limpiar busqueda" style={{ border: 'none', background: 'none', cursor: 'pointer', color: C.textMute, fontSize: 14, padding: 0 }}>×</button>
                   )}
                 </div>
                 <FilterPills label="Categoría" options={cats} value={cat} onChange={v => { setCat(v); setSelected(null); }} />

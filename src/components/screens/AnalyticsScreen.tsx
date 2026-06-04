@@ -6,10 +6,10 @@ import { Icon } from '@/components/icons';
 import { Card, CardHeader, Tag, Eyebrow, Delta } from '@/components/ui';
 import { Sparkline, PairedBars, ProgressBar } from '@/components/charts';
 
-function SummaryStat({ label, value, sub, delta, kind, I }: {
+function SummaryStat({ label, value, sub, delta, kind, I }: Readonly<{
   label: string; value: string; sub?: string; delta?: string;
   kind: 'pos' | 'neg' | 'primary'; I: (typeof Icon)[keyof typeof Icon];
-}) {
+}>) {
   const color = kind === 'pos' ? C.pos : kind === 'neg' ? C.neg : C.primary;
   return (
     <Card pad={18}>
@@ -31,7 +31,7 @@ interface AnalyticsScreenProps {
   accent: string;
 }
 
-export function AnalyticsScreen({ accent }: AnalyticsScreenProps) {
+export function AnalyticsScreen({ accent }: Readonly<AnalyticsScreenProps>) {
   const netWorth = [10100,10800,11200,10900,11800,12100,11900,12320,12100,12500,12840,13050];
   const months   = ['dic','ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov'];
 

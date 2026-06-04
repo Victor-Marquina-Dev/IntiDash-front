@@ -57,6 +57,9 @@ export const Icon = {
   db:        _ico(<><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5 V12 C3 13.66 7.03 15 12 15 S21 13.66 21 12 V5" /><path d="M3 12 V19 C3 20.66 7.03 22 12 22 S21 20.66 21 19 V12" /></>),
   trash:     _ico(<><path d="M3 6 H21" /><path d="M8 6 V4 a1 1 0 0 1 1 -1 H15 a1 1 0 0 1 1 1 V6" /><path d="M19 6 L18 20 a1 1 0 0 1 -1 1 H7 a1 1 0 0 1 -1 -1 L5 6" /></>),
   refresh:   _ico(<><path d="M21 8 A9 9 0 0 0 5 5 L2 8" /><path d="M3 16 A9 9 0 0 0 19 19 L22 16" /><path d="M21 2 V8 H15" /><path d="M3 22 V16 H9" /></>),
+  edit:      _ico(<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></>),
+  moon:      _ico(<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />),
+  sun:       _ico(<><circle cx="12" cy="12" r="4.5" /><path d="M12 2V4M12 20V22M2 12H4M20 12H22M4.93 4.93L6.34 6.34M17.66 17.66L19.07 19.07M4.93 19.07L6.34 17.66M17.66 6.34L19.07 4.93" /></>),
 };
 
 export type IconKey = keyof typeof Icon;

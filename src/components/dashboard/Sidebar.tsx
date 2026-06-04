@@ -122,7 +122,7 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
               background: isActive ? 'rgba(255,255,255,0.10)' : 'transparent',
               color: isActive ? '#fff' : C.navbarText,
               border: 'none', borderRadius: 10, cursor: 'pointer',
-              fontFamily: 'Inter', fontSize: 13, fontWeight: isActive ? 600 : 500,
+              fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: isActive ? 600 : 500,
               justifyContent: show ? 'flex-start' : 'center',
               transition: 'all .15s',
               position: 'relative',
@@ -152,7 +152,7 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
           background: active === 'notion' ? 'rgba(255,255,255,0.10)' : 'transparent',
           color: active === 'notion' ? '#fff' : C.navbarText,
           border: 'none', borderRadius: 10, cursor: 'pointer',
-          fontFamily: 'Inter', fontSize: 13, fontWeight: active === 'notion' ? 600 : 500,
+          fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: active === 'notion' ? 600 : 500,
           justifyContent: show ? 'flex-start' : 'center',
           position: 'relative',
         }}>
@@ -176,7 +176,7 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
             padding: show ? '10px 12px' : '10px',
             background: 'transparent', color: C.navbarTextDim,
             border: 'none', borderRadius: 10, cursor: 'pointer',
-            fontFamily: 'Inter', fontSize: 12,
+            fontFamily: 'var(--font-ui)', fontSize: 12,
             justifyContent: show ? 'flex-start' : 'center',
           }}>
           <PanelLeftIcon size={16} />
