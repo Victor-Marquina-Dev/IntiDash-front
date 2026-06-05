@@ -32,6 +32,11 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Playwright
+e2e/.auth/
+playwright-report/
+test-results/
+
 # Archivos temporales/erróneos
 tsx
 finanzas-1.0-back@0.1.0
