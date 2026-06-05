@@ -48,6 +48,7 @@ export const notionPaymentsService = {
   getGastosDeudas: () => getOr<GastoDeudaRow[]>(`${base}/gastos-deudas`, []),
   getDeudasSuscripciones: () => getOr<DeudaRow[]>(`${base}/deudas-suscripciones`, []),
   getCuentasBancarias: () => getOr<CuentaBancariaRow[]>(`${base}/cuentas-bancarias`, []),
+  updateCuenta: (id: string, data: Partial<CuentaBancariaRow>) => apiClient.patch<{ ok: boolean }>(`${base}/cuentas-bancarias/${id}`, data),
   getTransferencias: () => getOr<TransferenciaRow[]>(`${base}/transferencias`, []),
   getCategoriasGastos: () => getOr<CategoriaRow[]>(`${base}/categorias-gastos`, []),
   getCategoriasIngreso: () => getOr<CategoriaRow[]>(`${base}/categorias-ingreso`, []),

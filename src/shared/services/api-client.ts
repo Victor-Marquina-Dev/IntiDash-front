@@ -15,13 +15,29 @@ function resolveUrl(path: string): string {
   return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
+// ── Workspace activo ───────────────────────────────────────────────────────
+const WS_KEY = 'fz.active_workspace';
+
+export function getActiveWorkspace(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(WS_KEY);
+}
+
+export function setActiveWorkspace(id: string | null): void {
+  if (typeof window === 'undefined') return;
+  if (id) localStorage.setItem(WS_KEY, id);
+  else localStorage.removeItem(WS_KEY);
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { body, headers, ...rest } = options;
+  const activeWs = getActiveWorkspace();
   const response = await fetch(resolveUrl(path), {
     ...rest,
     credentials: 'include',
     headers: {
       ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(activeWs ? { 'X-Workspace-Id': activeWs } : {}),
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

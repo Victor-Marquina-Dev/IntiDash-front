@@ -1,10 +1,12 @@
 import { apiClient } from './api-client';
 
+export type UserRole = 'admin' | 'user';
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: UserRole;
 }
 
 interface AuthResponse {
