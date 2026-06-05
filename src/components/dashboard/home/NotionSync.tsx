@@ -6,16 +6,20 @@ import { Icon } from '@/components/icons';
 import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
 import { NOTION_SYNC_ENDPOINTS, notionPaymentsService } from '@/shared/services/notion-payments.service';
 import { NotionDataModal, type NSCat, type NSCta, type NSDeu, type NSGasD, type NSGasU, type NSIng, type NSPre, type NSTrf } from './NotionDataModal';
+import { getActiveWorkspace } from '@/shared/services/workspace.service';
 
-const LS_LAST_SYNC = 'notion_last_sync';
+const lsKey = () => `notion_last_sync_${getActiveWorkspace() ?? 'default'}`;
 
-export function NotionSync() {
+export function NotionSync({ darkMode = false, canWrite = true }: Readonly<{ darkMode?: boolean; canWrite?: boolean }>) {
+  const [hovered, setHovered] = React.useState(false);
   const [syncing,    setSyncing]    = React.useState(false);
   const [done,       setDone]       = React.useState(0);
   const [failCnt,    setFailCnt]    = React.useState(0);
-  const [lastSync,   setLastSync]   = React.useState<string|null>(() => typeof window !== 'undefined' ? localStorage.getItem(LS_LAST_SYNC) : null);
+  const [lastSync,   setLastSync]   = React.useState<string|null>(() => typeof window !== 'undefined' ? localStorage.getItem(lsKey()) : null);
   const [token,      setToken]      = React.useState('');
-  const [maskedTok,  setMaskedTok]  = React.useState<string|null>(null);
+  const [maskedTok,    setMaskedTok]    = React.useState<string|null>(null);
+  const [isConfigured, setIsConfigured] = React.useState(false);
+  const [configLoaded, setConfigLoaded] = React.useState(false);
   const [savingTok,  setSavingTok]  = React.useState(false);
   const [tokStatus,  setTokStatus]  = React.useState<'idle'|'ok'|'error'>('idle');
   const [modalOpen,  setModalOpen]  = React.useState(false);
@@ -34,10 +38,12 @@ export function NotionSync() {
 
   React.useEffect(() => {
     notionPaymentsService.getConfig()
-      .then((d: { notionTokenMasked?: string|null }|null) => {
+      .then((d: { notionTokenMasked?: string|null; isConfigured?: boolean }|null) => {
         if (d?.notionTokenMasked) setMaskedTok(d.notionTokenMasked);
+        setIsConfigured(Boolean(d?.isConfigured));
+        setConfigLoaded(true);
       })
-      .catch(() => {});
+      .catch(() => { setConfigLoaded(true); });
   }, []);
 
   async function loadData() {
@@ -58,11 +64,12 @@ export function NotionSync() {
   }
 
   async function handleSaveToken() {
-    if (!token.trim()) return;
+    if (!canWrite || !token.trim()) return;
     setSavingTok(true); setTokStatus('idle');
     try {
       const d = await notionPaymentsService.saveConfig({ notionToken: token });
       if (d.notionTokenMasked) setMaskedTok(d.notionTokenMasked);
+      setIsConfigured(Boolean(d.isConfigured));
       setToken(''); setTokStatus('ok');
       setTimeout(() => setTokStatus('idle'), 3000);
     } catch { setTokStatus('error'); setTimeout(() => setTokStatus('idle'), 3000); }
@@ -70,6 +77,7 @@ export function NotionSync() {
   }
 
   async function handleSync() {
+    if (!canWrite || !isConfigured) return;
     setSyncing(true); setDone(0); setFailCnt(0);
     let ok = 0; let err = 0;
     await Promise.allSettled(
@@ -79,11 +87,13 @@ export function NotionSync() {
           .catch(() => { err++; setFailCnt(err); })
       )
     );
-    const now = new Date().toISOString();
-    localStorage.setItem(LS_LAST_SYNC, now);
-    setLastSync(now);
+    if (ok > 0) {
+      const now = new Date().toISOString();
+      localStorage.setItem(lsKey(), now);
+      setLastSync(now);
+      dispatchDataSynced();
+    }
     setSyncing(false);
-    dispatchDataSynced();
   }
 
   React.useEffect(() => {
@@ -98,39 +108,48 @@ export function NotionSync() {
 
   const subtitle = React.useMemo(() => {
     if (syncing) return `Sincronizando... ${done}/${NOTION_SYNC_ENDPOINTS.length} tablas`;
-    if (!lastSync) return 'Sin sincronizar';
-    if (!nowMs) return `Ultima sync registrada - ${NOTION_SYNC_ENDPOINTS.length} tablas`;
+    if (!canWrite && configLoaded && !maskedTok) return 'Solo lectura. La sincronizacion la gestiona el dueno o editor';
+    if (!canWrite && configLoaded && maskedTok && !isConfigured) return 'Solo lectura. Las tablas se configuran desde una cuenta con permisos';
+    if (configLoaded && !maskedTok) return 'Configura tu token de Notion para sincronizar';
+    if (configLoaded && maskedTok && !isConfigured) return 'Configura las tablas en Ajustes para sincronizar';
+    if (!lastSync) return 'Sin sincronizar aún';
+    if (!nowMs) return `Última sync registrada — ${NOTION_SYNC_ENDPOINTS.length} tablas`;
     const mins = Math.floor((nowMs - new Date(lastSync).getTime()) / 60000);
     const when = mins < 1 ? 'hace un momento' : mins < 60 ? `hace ${mins} min` : `hace ${Math.floor(mins / 60)} h`;
-    return `Ultima sync ${when} - ${NOTION_SYNC_ENDPOINTS.length} tablas`;
-  }, [done, lastSync, nowMs, syncing]);
+    return `Última sync ${when} — ${NOTION_SYNC_ENDPOINTS.length} tablas`;
+  }, [canWrite, configLoaded, done, isConfigured, lastSync, maskedTok, nowMs, syncing]);
 
   const totalRec = ingresos.length + gastosU.length + gastosD.length + deudas.length + cuentas.length + transf.length + catGastos.length + catIngreso.length + prestamos.length;
 
   return (
     <>
-      <div style={{
-        borderRadius: 22,
-        background: '#FFFFFF',
-        border: '1px solid rgba(17,24,39,0.08)',
-        boxShadow: '0 1px 2px rgba(17,24,39,.04)',
-        fontFamily: 'var(--font-ui),system-ui,sans-serif',
-        overflow: 'hidden',
-      }}>
+      <div
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          borderRadius: 22,
+          background: darkMode ? 'linear-gradient(145deg,#1A1D21,#16181C)' : '#FFFFFF',
+          border: `1px solid ${hovered ? (darkMode ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : (darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.08)')}`,
+          boxShadow: hovered ? (darkMode ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : (darkMode ? '0 4px 24px rgba(0,0,0,.4)' : '0 1px 2px rgba(17,24,39,.04)'),
+          fontFamily: 'var(--font-ui),system-ui,sans-serif',
+          overflow: 'hidden',
+          transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+          transition: 'transform .25s, box-shadow .25s, border-color .25s',
+        }}>
         {/* Header estilo card */}
         <div style={{ display:'flex', alignItems:'center', height:42, padding:'0 16px', boxSizing:'border-box' }}>
           <span style={{ fontSize:15, lineHeight:1, fontWeight:900, marginRight:8 }}>📋</span>
-          <span style={{ fontSize:12, fontWeight:800, color:C.textDim, letterSpacing:1.5, textTransform:'uppercase', fontFamily:'var(--font-ui),system-ui,sans-serif' }}>
+          <span style={{ fontSize:12, fontWeight:800, color: darkMode ? 'rgba(255,255,255,0.38)' : C.textDim, letterSpacing:1.5, textTransform:'uppercase', fontFamily:'var(--font-ui),system-ui,sans-serif' }}>
             Sincronizar Notion
           </span>
         </div>
 
         <div style={{ padding:'0 16px 16px' }}>
-          <div style={{ fontSize:11, color:C.textMute, marginTop:2 }}>
+          <div style={{ fontSize: 11, color: darkMode ? 'rgba(255,255,255,0.32)' : C.textMute, fontWeight: 600 }}>
             {subtitle}
           </div>
           {failCnt > 0 && !syncing && (
-            <div style={{ fontSize:10, color:C.neg, marginBottom:8 }}>
+            <div style={{ fontSize:10, color:C.neg, marginTop:6, marginBottom:8 }}>
               {failCnt} tabla{failCnt !== 1 ? 's' : ''} no sincronizada{failCnt !== 1 ? 's' : ''}
             </div>
           )}
@@ -162,54 +181,59 @@ export function NotionSync() {
           >
             <Icon.download size={13} />Descargar
           </button>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            style={{
-              marginLeft:'auto',
-              padding:'8px 16px', borderRadius:9, flexShrink:0,
-              background:syncing?C.border:C.primary, color:syncing?C.textMute:'#fff',
-              border:'none', cursor:syncing?'default':'pointer',
-              fontSize:12, fontWeight:600,
-              fontFamily:'var(--font-ui), system-ui, sans-serif',
-              transition:'background 0.2s',
-            }}
-          >
-            {syncing ? `${done}/${NOTION_SYNC_ENDPOINTS.length}` : 'Sincronizar'}
-          </button>
+          {canWrite && (
+            <button
+              onClick={handleSync}
+              disabled={syncing || !isConfigured}
+              style={{
+                marginLeft:'auto',
+                padding:'8px 16px', borderRadius:9, flexShrink:0,
+                background:(syncing || !isConfigured)?C.border:C.primary,
+                color:(syncing || !isConfigured)?C.textMute:'#fff',
+                border:'none', cursor:(syncing || !isConfigured)?'default':'pointer',
+                fontSize:12, fontWeight:600,
+                fontFamily:'var(--font-ui), system-ui, sans-serif',
+                transition:'background 0.2s',
+              }}
+            >
+              {syncing ? `${done}/${NOTION_SYNC_ENDPOINTS.length}` : 'Sincronizar'}
+            </button>
+          )}
         </div>
 
         {/* Fila 2: token */}
-        <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:12 }}>
-          <input
-            type="password"
-            placeholder={maskedTok ?? 'secret_xxxxxxxxxxxxxxxxxxxxxxxx'}
-            value={token}
-            onChange={e => setToken(e.target.value)}
-            onKeyDown={e => { if (e.key==='Enter') handleSaveToken(); }}
-            style={{
-              flex:1, padding:'7px 10px', borderRadius:8,
-              border:`1px solid ${C.border}`, background:C.cardHi,
-              fontFamily:'var(--font-ui)', fontSize:12, color:C.text, outline:'none',
-            }}
-          />
-          <button
-            onClick={handleSaveToken}
-            disabled={!token.trim() || savingTok}
-            style={{
-              display:'flex', alignItems:'center', gap:5,
-              padding:'7px 12px', borderRadius:8, flexShrink:0, cursor:'pointer',
-              fontFamily:'var(--font-ui)', fontSize:12, fontWeight:500,
-              background: tokStatus==='ok' ? `${C.pos}12` : tokStatus==='error' ? 'rgba(200,60,60,0.08)' : 'transparent',
-              color:       tokStatus==='ok' ? C.pos        : tokStatus==='error' ? C.neg               : C.textDim,
-              border:     `1px solid ${tokStatus==='ok' ? `${C.pos}30` : tokStatus==='error' ? 'rgba(200,60,60,0.3)' : C.border}`,
-              opacity: !token.trim() || savingTok ? 0.5 : 1,
-              transition: 'all 0.15s',
-            }}
-          >
-            {tokStatus==='ok' ? '✓ Guardado' : tokStatus==='error' ? 'Error' : savingTok ? '...' : 'Guardar token'}
-          </button>
-        </div>
+        {canWrite && (
+          <div style={{ display:'flex', gap:8, alignItems:'center', marginTop:12 }}>
+            <input
+              type="password"
+              placeholder={maskedTok ?? 'secret_xxxxxxxxxxxxxxxxxxxxxxxx'}
+              value={token}
+              onChange={e => setToken(e.target.value)}
+              onKeyDown={e => { if (e.key==='Enter') handleSaveToken(); }}
+              style={{
+                flex:1, padding:'7px 10px', borderRadius:8,
+                border:`1px solid ${C.border}`, background:C.cardHi,
+                fontFamily:'var(--font-ui)', fontSize:12, color:C.text, outline:'none',
+              }}
+            />
+            <button
+              onClick={handleSaveToken}
+              disabled={!token.trim() || savingTok}
+              style={{
+                display:'flex', alignItems:'center', gap:5,
+                padding:'7px 12px', borderRadius:8, flexShrink:0, cursor:'pointer',
+                fontFamily:'var(--font-ui)', fontSize:12, fontWeight:500,
+                background: tokStatus==='ok' ? `${C.pos}12` : tokStatus==='error' ? 'rgba(200,60,60,0.08)' : 'transparent',
+                color:       tokStatus==='ok' ? C.pos        : tokStatus==='error' ? C.neg               : C.textDim,
+                border:     `1px solid ${tokStatus==='ok' ? `${C.pos}30` : tokStatus==='error' ? 'rgba(200,60,60,0.3)' : C.border}`,
+                opacity: !token.trim() || savingTok ? 0.5 : 1,
+                transition: 'all 0.15s',
+              }}
+            >
+              {tokStatus==='ok' ? '✓ Guardado' : tokStatus==='error' ? 'Error' : savingTok ? '...' : 'Guardar token'}
+            </button>
+          </div>
+        )}
         </div>
       </div>
 

@@ -15,9 +15,10 @@ interface DashboardHomeProps {
   tweaks: Tweaks;
   onNavigate?: (screen: string) => void;
   darkMode?: boolean;
+  canWrite?: boolean;
 }
 
-export function DashboardHome({ tweaks, onNavigate, darkMode }: Readonly<DashboardHomeProps>) {
+export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }: Readonly<DashboardHomeProps>) {
   const bp = useBreakpoint();
   const accent = tweaks.accent;
   const isMobile = bp === 'mobile';
@@ -66,20 +67,20 @@ export function DashboardHome({ tweaks, onNavigate, darkMode }: Readonly<Dashboa
     <div style={dashboardStyle}>
       <div style={contentGridStyle}>
         <HeroBalance bp={bp} darkMode={darkMode} onNavigate={onNavigate} />
-        <KpiRail showCharts={tweaks.microCharts} bp={bp} darkMode={darkMode} />
+        <KpiRail showCharts={tweaks.microCharts} bp={bp} darkMode={darkMode} onNavigate={onNavigate} canWrite={canWrite} />
         <ChartCard accent={accent} bp={bp} darkMode={darkMode} />
         <div style={{ gridColumn: isDesktop ? '3' : 'span 12', display: 'flex', flexDirection: 'column', alignSelf: isDesktop ? 'stretch' : undefined }}>
-          <CategoriesDonut darkMode={darkMode} />
+          <CategoriesDonut darkMode={darkMode} canWrite={canWrite} />
         </div>
       </div>
 
       <div style={railStyle}>
-        <TarjetasCard darkMode={darkMode} />
+        <TarjetasCard darkMode={darkMode} canWrite={canWrite} />
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <Debts bp={bp} darkMode={darkMode} />
+          <Debts bp={bp} darkMode={darkMode} canWrite={canWrite} />
         </div>
         <div style={{ flexShrink: 0 }}>
-          <NotionSync />
+          <NotionSync darkMode={darkMode} canWrite={canWrite} />
         </div>
       </div>
     </div>
