@@ -5,6 +5,14 @@ import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
 import { ScreenId } from './Sidebar';
 import { useBreakpoint } from '@/lib/breakpoints';
+import type { AuthUser } from '@/shared/services/auth.service';
+import { notionPaymentsService, NOTION_SYNC_ENDPOINTS } from '@/shared/services/notion-payments.service';
+import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
+import { getActiveWorkspace } from '@/shared/services/workspace.service';
+
+const lsSyncKey = () => `notion_last_sync_${getActiveWorkspace() ?? 'default'}`;
+import { WorkspaceSelector } from './WorkspaceSelector';
+import { NotificationBell } from './NotificationBell';
 
 const GearIcon     = Icon.gear;
 const MoonIcon     = Icon.moon;
@@ -264,8 +272,9 @@ interface TopBarProps {
   setActive?: (id: ScreenId) => void;
   darkMode?: boolean;
   onToggleDark?: () => void;
-  user?: { name: string; email: string; role: string } | null;
+  user?: AuthUser | null;
   onLogout?: () => void;
+  canWrite?: boolean;
 }
 
 /* ─── NavTab estilo Vectra ────────────────────────────────────────────────── */
@@ -288,7 +297,7 @@ function NavTab({
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '9px 18px',
           borderRadius: 24,
-          background: dark ? '#f0f0ee' : '#111111',
+          background: dark ? '#f0f0ee' : '#111827',
           border: 'none',
           color: dark ? '#0d1f0d' : '#ffffff',
           cursor: 'pointer',
@@ -422,13 +431,59 @@ function getInitials(user: TopBarProps['user']) {
   return (parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : source.slice(0, 2)).toUpperCase();
 }
 
-export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleDark, user = null, onLogout }: Readonly<TopBarProps>) {
+export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleDark, user = null, onLogout, canWrite = true }: Readonly<TopBarProps>) {
   const bp = useBreakpoint();
   const isMobile  = bp === 'mobile';
   const isTablet  = bp === 'tablet';
 
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [scrolled, setScrolled]       = React.useState(false);
+  const [syncLabel,   setSyncLabel]   = React.useState<string | null>(null);
+  const [syncing,     setSyncing]     = React.useState(false);
+  const [syncHovered, setSyncHovered] = React.useState(false);
+  const [syncDone,    setSyncDone]    = React.useState(0);
+  const [hasConfig,   setHasConfig]   = React.useState(false);
+
+  React.useEffect(() => {
+    notionPaymentsService.getConfig()
+      .then((d: { notionTokenMasked?: string | null; isConfigured?: boolean } | null) => {
+        setHasConfig(Boolean(d?.isConfigured));
+      })
+      .catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
+    function update() {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem(lsSyncKey()) : null;
+      if (!raw) { setSyncLabel(null); return; }
+      const mins = Math.floor((Date.now() - new Date(raw).getTime()) / 60000);
+      if (mins < 1)        setSyncLabel('Sync · ahora');
+      else if (mins < 60)  setSyncLabel(`Sync · ${mins}m`);
+      else                 setSyncLabel(`Sync · ${Math.floor(mins / 60)}h`);
+    }
+    update();
+    const id = setInterval(update, 60000);
+    window.addEventListener('storage', update);
+    return () => { clearInterval(id); window.removeEventListener('storage', update); };
+  }, []);
+
+  async function handleHeaderSync() {
+    if (syncing || !hasConfig || !canWrite) return;
+    setSyncing(true); setSyncDone(0);
+    let ok = 0;
+    await Promise.allSettled(
+      NOTION_SYNC_ENDPOINTS.map(ep =>
+        notionPaymentsService.sync(ep).then(() => { ok++; setSyncDone(ok); }).catch(() => {})
+      )
+    );
+    if (ok > 0) {
+      const now = new Date().toISOString();
+      localStorage.setItem(lsSyncKey(), now);
+      setSyncLabel('Sync · ahora');
+      dispatchDataSynced();
+    }
+    setSyncing(false);
+  }
   const [period, setPeriod]         = React.useState<Period>('6months');
   const [periodExpanded, setPeriodExpanded] = React.useState(false);
   const periodRef = React.useRef<HTMLDivElement | null>(null);
@@ -456,9 +511,11 @@ export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleD
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const glassBg     = darkMode ? 'rgba(16,18,14,0.72)'      : 'rgba(229,229,231,0.70)';
-  const glassBorder = darkMode ? 'rgba(255,255,255,0.08)'   : 'rgba(63,86,28,0.10)';
-  const glassShadow = darkMode ? '0 4px 24px rgba(0,0,0,0.34)' : '0 4px 22px rgba(40,59,19,0.07)';
+  const glassBg     = darkMode ? 'rgba(18,20,26,0.82)'      : 'rgba(245,245,247,0.75)';
+  const glassBorder = darkMode ? 'rgba(255,255,255,0.08)'   : 'rgba(17,24,39,0.08)';
+  const glassShadow = darkMode ? '0 4px 24px rgba(0,0,0,0.40)' : '0 4px 22px rgba(17,24,39,0.06)';
+  // En dark mode el header siempre tiene fondo (no transparente) para que sea visible sobre el fondo oscuro
+  const headerBgBase = darkMode ? 'rgba(18,20,26,0.95)' : 'transparent';
 
   React.useEffect(() => {
     if (!profileOpen) return;
@@ -504,7 +561,7 @@ export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleD
   return (
     <header style={{
       height: isMobile ? 56 : 68,
-      background: scrolled ? glassBg : 'transparent',
+      background: scrolled ? glassBg : headerBgBase,
       backdropFilter: scrolled ? 'blur(14px) saturate(180%)' : 'none',
       WebkitBackdropFilter: scrolled ? 'blur(14px) saturate(180%)' : 'none',
       borderBottom: `1px solid ${scrolled ? glassBorder : 'transparent'}`,
@@ -536,10 +593,11 @@ export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleD
           </div>
         )}
 
-        {/* ── Logo izquierdo ── */}
+        {/* ── Logo izquierdo + selector de workspace ── */}
         {!isMobile && (
-          <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+          <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 12 }}>
             <MomotechLogo dark={darkMode} />
+            <WorkspaceSelector darkMode={darkMode} />
           </div>
         )}
 
@@ -593,7 +651,7 @@ export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleD
                   style={{
                     padding: '7px 14px', borderRadius: 18,
                     border: '1px solid transparent', boxSizing: 'border-box',
-                    background: darkMode ? '#f0f0ee' : '#111',
+                    background: darkMode ? '#f0f0ee' : '#111827',
                     color: darkMode ? '#0d1f0d' : '#fff',
                     fontSize: 13, fontWeight: 650,
                     cursor: 'pointer', fontFamily: 'var(--font-ui), system-ui, sans-serif',
@@ -687,6 +745,45 @@ export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleD
             </div>
           )}
 
+
+          {/* Sync status */}
+          {!isMobile && canWrite && (syncLabel || syncing) && (
+            <button
+              onClick={handleHeaderSync}
+              onMouseEnter={() => setSyncHovered(true)}
+              onMouseLeave={() => setSyncHovered(false)}
+              disabled={syncing || !canWrite}
+              title="Sincronizar Notion"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                height: 34, padding: '0 12px', borderRadius: 10, flexShrink: 0,
+                background: syncHovered && !syncing
+                  ? (darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(17,24,39,0.09)')
+                  : (darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(17,24,39,0.05)'),
+                border: `1px solid ${darkMode ? 'rgba(255,255,255,0.10)' : 'rgba(17,24,39,0.08)'}`,
+                cursor: syncing ? 'default' : 'pointer',
+                transform: syncHovered && !syncing ? 'translateY(-1px)' : 'translateY(0)',
+                boxShadow: syncHovered && !syncing
+                  ? (darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(17,24,39,0.08)')
+                  : 'none',
+                transition: 'background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease',
+              }}
+            >
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                background: syncing ? '#F59E0B' : '#8FA88F',
+                animation: syncing ? 'skeletonPulse 1s ease-in-out infinite' : 'none',
+              }} />
+              <span style={{
+                fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap',
+                color: darkMode ? 'rgba(255,255,255,0.50)' : 'rgba(17,24,39,0.50)',
+                fontFamily: 'var(--font-ui)',
+              }}>
+                {syncing ? `${syncDone}/${NOTION_SYNC_ENDPOINTS.length}` : syncLabel}
+              </span>
+            </button>
+          )}
+
           {/* Ajustes */}
           <IconBtn
             onClick={() => setActive?.('notion')}
@@ -696,6 +793,9 @@ export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleD
           >
             <GearIcon size={15} strokeWidth={1.8} />
           </IconBtn>
+
+          {/* Notificaciones (invitaciones a workspaces) */}
+          {!isMobile && <NotificationBell dark={darkMode} />}
 
           {/* Dark mode */}
           <IconBtn onClick={onToggleDark} label={darkMode ? 'Modo claro' : 'Modo oscuro'} dark={darkMode}>
@@ -736,14 +836,14 @@ export function TopBar({ screen = 'home', setActive, darkMode = false, onToggleD
                 style={{
                   position: 'absolute', right: 0, top: 44,
                   width: 220, zIndex: 100,
-                  background: darkMode ? '#1a1f1a' : C.card,
-                  border: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : C.border}`,
+                  background: darkMode ? '#1A1D21' : '#FFFFFF',
+                  border: `1px solid ${darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(17,24,39,0.12)'}`,
                   borderRadius: 12,
-                  boxShadow: '0 18px 55px rgba(20,24,18,0.18)',
+                  boxShadow: darkMode ? '0 18px 55px rgba(0,0,0,0.50)' : '0 18px 55px rgba(17,24,39,0.14)',
                   overflow: 'hidden',
                 }}
               >
-                <div style={{ padding: '12px 14px', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,0.08)' : C.border}` }}>
+                <div style={{ padding: '12px 14px', borderBottom: `1px solid ${darkMode ? 'rgba(255,255,255,0.10)' : 'rgba(17,24,39,0.10)'}` }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? '#f0f0ee' : C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {user?.name || 'Usuario'}
                   </div>
