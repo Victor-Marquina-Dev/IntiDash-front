@@ -5,6 +5,7 @@ import { Icon } from '@/components/icons';
 import { C } from '@/lib/colors';
 import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
 import { NOTION_SYNC_ENDPOINTS, notionPaymentsService } from '@/shared/services/notion-payments.service';
+import type { SyncRun } from '@/shared/types/finance.types';
 import { getActiveWorkspace } from '@/shared/services/workspace.service';
 import {
   SettingsActionRow,
@@ -96,6 +97,8 @@ export function NotionSyncSettings({ theme, canWrite = true }: Readonly<{ theme:
   const [savingTok,    setSavingTok]    = React.useState(false);
   const [tokStatus,    setTokStatus]    = React.useState<TokStatus>('idle');
   const [nowMs,        setNowMs]        = React.useState(0);
+  const [runs,         setRuns]         = React.useState<SyncRun[]>([]);
+  const [runsLoaded,   setRunsLoaded]   = React.useState(false);
 
   React.useEffect(() => {
     notionPaymentsService.getConfig()
@@ -105,6 +108,12 @@ export function NotionSyncSettings({ theme, canWrite = true }: Readonly<{ theme:
         setConfigLoaded(true);
       })
       .catch(() => { setConfigLoaded(true); });
+  }, []);
+
+  React.useEffect(() => {
+    notionPaymentsService.getSyncRuns()
+      .then(data => { setRuns(data); setRunsLoaded(true); })
+      .catch(() => setRunsLoaded(true));
   }, []);
 
   React.useEffect(() => {
@@ -139,22 +148,24 @@ export function NotionSyncSettings({ theme, canWrite = true }: Readonly<{ theme:
     setSyncing(true);
     setDone(0);
     setFailCnt(0);
-    let ok = 0;
-    let err = 0;
-    await Promise.allSettled(
-      NOTION_SYNC_ENDPOINTS.map(ep =>
-        notionPaymentsService.sync(ep)
-          .then(() => { ok += 1; setDone(ok); })
-          .catch(() => { err += 1; setFailCnt(err); }),
-      ),
-    );
-    if (ok > 0) {
-      const now = new Date().toISOString();
-      globalThis.window.localStorage.setItem(lsKey(), now);
-      setLastSync(now);
-      dispatchDataSynced();
+    try {
+      const run = await notionPaymentsService.syncAll();
+      setRuns(prev => [run, ...prev.slice(0, 19)]);
+      const okCount  = run.tableResults.filter(r => r.status === 'ok').length;
+      const errCount = run.tableResults.filter(r => r.status === 'error').length;
+      setDone(okCount);
+      setFailCnt(errCount);
+      if (okCount > 0) {
+        const now = new Date().toISOString();
+        globalThis.window.localStorage.setItem(lsKey(), now);
+        setLastSync(now);
+        dispatchDataSynced();
+      }
+    } catch {
+      setFailCnt(1);
+    } finally {
+      setSyncing(false);
     }
-    setSyncing(false);
   }
 
   const statusLabel = !canWrite && configLoaded && maskedTok === null
@@ -241,6 +252,66 @@ export function NotionSyncSettings({ theme, canWrite = true }: Readonly<{ theme:
       />
       ) : (
         <SettingsInfoRow label="Sincronizacion" value={readOnlySyncDetail} theme={theme} />
+      )}
+
+      {runsLoaded && runs.length > 0 && (
+        <div style={{ padding: '10px 0 4px' }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' as const,
+            color: theme.muted, marginBottom: 6, paddingLeft: 2,
+          }}>
+            Historial
+          </div>
+          <div style={{
+            border: `1px solid ${theme.border}`, borderRadius: 10, overflow: 'hidden',
+            fontFamily: 'var(--font-ui), system-ui, sans-serif',
+          }}>
+            {runs.slice(0, 10).map((run, i) => {
+              const allOk  = run.tableResults.every(r => r.status === 'ok');
+              const hasErr = run.tableResults.some(r => r.status === 'error');
+              const okCnt  = run.tableResults.filter(r => r.status === 'ok').length;
+              const errCnt = run.tableResults.filter(r => r.status === 'error').length;
+              const dot    = allOk ? C.pos : hasErr ? C.neg : C.textMute;
+              const when   = new Date(run.startedAt ?? Date.now()).toLocaleString('es-ES', {
+                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+              });
+              const summary = allOk
+                ? `${okCnt} tablas ok`
+                : `${okCnt} ok · ${errCnt} error${errCnt !== 1 ? 'es' : ''}`;
+              return (
+                <div key={run.id} style={{
+                  display: 'grid', gridTemplateColumns: '8px 1fr auto auto', alignItems: 'center',
+                  gap: 10, padding: '7px 12px',
+                  borderTop: i === 0 ? 'none' : `1px solid ${theme.border}`,
+                  background: i % 2 === 0 ? 'transparent' : `${theme.border}22`,
+                }}>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: '50%', background: dot, display: 'block',
+                  }} />
+                  <span style={{ fontSize: 12, color: theme.text }}>{summary}</span>
+                  <span style={{ fontSize: 11, color: theme.muted, whiteSpace: 'nowrap' as const }}>
+                    {when}
+                  </span>
+                  {canWrite && hasErr && (
+                    <button
+                      type="button"
+                      onClick={handleSync}
+                      disabled={syncing}
+                      title="Reintentar sync"
+                      style={{
+                        height: 24, padding: '0 8px', borderRadius: 6, border: `1px solid ${theme.border}`,
+                        background: 'transparent', color: C.primary, cursor: syncing ? 'default' : 'pointer',
+                        fontSize: 11, fontWeight: 700,
+                      }}
+                    >
+                      Reintentar
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </>
   );

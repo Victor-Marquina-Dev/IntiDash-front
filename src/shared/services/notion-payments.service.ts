@@ -15,6 +15,7 @@ import type {
   MonthlyDebtData,
   NotionConfig,
   PrestamoRow,
+  SyncRun,
   TransferenciaRow,
 } from '@/shared/types/finance.types';
 
@@ -88,5 +89,7 @@ export const notionPaymentsService = {
   createCategoriaIngreso: (body: Partial<CategoriaRow>) => apiClient.post<CategoriaRow>(`${base}/create-categoria-ingreso`, body),
 
   sync: (endpoint: string) => apiClient.post<unknown>(endpoint),
+  syncAll: () => apiClient.post<SyncRun>(`${base}/sync-all`),
+  getSyncRuns: () => apiClient.get<SyncRun[]>(`${base}/sync-runs`),
   deleteSyncedData: () => apiClient.delete<unknown>(`${base}/data`),
 };

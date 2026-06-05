@@ -1,3 +1,19 @@
+export interface SyncTableResult {
+  table:      string;
+  status:     'ok' | 'error' | 'skipped';
+  rowsSynced: number;
+  error?:     string;
+}
+
+export interface SyncRun {
+  id:           string;
+  workspaceId:  string;
+  status:       'running' | 'ok' | 'partial' | 'error';
+  tableResults: SyncTableResult[];
+  startedAt:    string | null;
+  finishedAt:   string | null;
+}
+
 export interface IngresoRow {
   id: string;
   nombre: string;
