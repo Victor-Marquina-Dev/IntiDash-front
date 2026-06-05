@@ -46,7 +46,7 @@ export function Dashboard({ tweaks, user = null, onLogout, TransactionsScreen, A
   const [screen, setScreen] = React.useState<ScreenId>('home');
   const [dir, setDir]       = React.useState<'left' | 'right'>('left');
   const [darkMode, setDarkMode] = React.useState(false);
-  const { canWrite } = useWorkspaces(Boolean(user));
+  const { canWrite, wsVersion } = useWorkspaces(Boolean(user));
   const accent = tweaks.accent;
 
   const toggleDarkMode = React.useCallback(() => {
@@ -81,7 +81,7 @@ export function Dashboard({ tweaks, user = null, onLogout, TransactionsScreen, A
     }}>
       <TopBar screen={screen} setActive={navigateTo} darkMode={darkMode} onToggleDark={toggleDarkMode} user={user} onLogout={onLogout} canWrite={canWrite} />
       <main style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div key={screen} className={dir === 'left' ? 'fz-screen-left' : 'fz-screen-right'} style={{ flex: 1, minHeight: 0 }}>
+        <div key={`${screen}-${wsVersion}`} className={dir === 'left' ? 'fz-screen-left' : 'fz-screen-right'} style={{ flex: 1, minHeight: 0 }}>
           {screen === 'home' ? screens[screen] : (
             <div style={{
               margin: '8px 64px 16px',

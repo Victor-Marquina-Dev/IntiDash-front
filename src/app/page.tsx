@@ -11,6 +11,7 @@ import { DeudaScreen } from '@/components/screens/DeudaScreen';
 import { LoginScreen } from '@/components/screens/LoginScreen';
 import { AdminDashboard } from '@/components/screens/AdminDashboard';
 import { useAuth } from '@/shared/hooks/use-auth';
+import { WorkspaceProvider } from '@/shared/context/WorkspaceContext';
 
 export default function Home() {
   const [tweaks] = useTweaks();
@@ -32,7 +33,7 @@ export default function Home() {
   }
 
   return (
-    <>
+    <WorkspaceProvider>
       <Dashboard
         tweaks={tweaks}
         user={user}
@@ -44,6 +45,6 @@ export default function Home() {
         DeudaScreen={DeudaScreen}
         NotionScreen={NotionScreen}
       />
-    </>
+    </WorkspaceProvider>
   );
 }
