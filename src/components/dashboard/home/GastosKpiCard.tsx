@@ -1,6 +1,7 @@
 'use client';
 
 import { KpiCard, MiniBars } from './KpiCard';
+import { Icon } from '@/components/icons';
 
 const DEFAULT_BARS = [2800, 3000, 3200, 2900, 3400, 3300];
 
@@ -28,7 +29,8 @@ export function GastosKpiCard({ darkMode, amount, monthlyData, monthlyLabels, on
       subtitle={`vs mes anterior - ${month}`}
       onDetail={onDetail}
       onCreate={onCreate}
-      detailTitle="Ver historial"
+      detailTitle="Ir a transacciones"
+      detailIcon={Icon.list}
       createTitle="Nuevo gasto"
       footer={<MiniBars data={bars} labels={monthlyLabels} darkMode={darkMode} theme="red" invertPct />}
     />

@@ -32,25 +32,25 @@ const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
   green: {
     dark: {
       cardBg: 'linear-gradient(145deg,#0a1a0e,#081209)',
-      cardBrdDef: 'rgba(16,185,129,0.18)',
-      cardBrdHov: 'rgba(16,185,129,.35)',
+      cardBrdDef: 'rgba(12,94,63,0.40)',
+      cardBrdHov: 'rgba(12,94,63,.70)',
       cardShDef: '0 4px 20px rgba(0,0,0,.3)',
-      cardShHov: '0 12px 32px rgba(16,185,129,.18)',
-      accent: '#10b981',
+      cardShHov: '0 12px 32px rgba(12,94,63,.30)',
+      accent: '#0C5E3F',
       label: '#4a6b4a',
-      badgeBg: 'rgba(16,185,129,.15)',
-      badgeBrd: 'rgba(16,185,129,.25)',
-      badgeC: '#10b981',
+      badgeBg: 'rgba(12,94,63,.25)',
+      badgeBrd: 'rgba(12,94,63,.40)',
+      badgeC: '#4DB384',
       amtC: '#e8eaed',
       decC: '#4a5060',
       subC: '#5f6373',
-      barHl: 'rgba(16,185,129,.45)',
-      barNorm: '#202e20',
-      btnBg: 'rgba(16,185,129,.12)',
-      btnBrd: 'rgba(16,185,129,.2)',
-      btnC: '#10b981',
-      btnHovBg: 'rgba(16,185,129,.28)',
-      btnHovC: '#10b981',
+      barHl: 'rgba(12,94,63,.60)',
+      barNorm: '#0a1a0e',
+      btnBg: 'rgba(12,94,63,.20)',
+      btnBrd: 'rgba(12,94,63,.35)',
+      btnC: '#4DB384',
+      btnHovBg: '#0C5E3F',
+      btnHovC: '#fff',
     },
     light: {
       cardBg: '#e8f0e8',
@@ -258,7 +258,9 @@ interface KpiCardProps {
   onCreate?: () => void;
   detailTitle?: string;
   createTitle?: string;
+  detailIcon?: (props: { size?: number; strokeWidth?: number }) => React.ReactNode;
   footer?: React.ReactNode;
+  centerAmount?: boolean;
 }
 
 export function KpiCard({
@@ -273,14 +275,35 @@ export function KpiCard({
   onCreate,
   detailTitle = 'Ver historial',
   createTitle = 'Nuevo',
+  detailIcon: DetailIcon = Icon.chart,
   footer,
+  centerAmount = false,
 }: Readonly<KpiCardProps>) {
   const [hovered, setHovered] = React.useState(false);
   const [btnHov, setBtnHov] = React.useState<'detail' | 'create' | null>(null);
 
+  // Animación de conteo al montar o cambiar el monto
+  const [displayed, setDisplayed] = React.useState(0);
+  React.useEffect(() => {
+    if (amount == null) return;
+    const target = Math.abs(amount);
+    let rafId: number;
+    const start = performance.now();
+    const duration = 700;
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayed(target * eased);
+      if (progress < 1) rafId = requestAnimationFrame(tick);
+      else setDisplayed(target);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [amount]);
+
   const t = THEMES[theme][darkMode ? 'dark' : 'light'];
-  const fmtMain = amount != null ? `S/ ${Math.floor(Math.abs(amount)).toLocaleString('es-PE')}` : '-';
-  const fmtDec = amount != null ? `.${(Math.abs(amount) % 1).toFixed(2).slice(2)}` : '';
+  const fmtMain = amount != null ? `S/ ${Math.floor(displayed).toLocaleString('es-PE')}` : '-';
+  const fmtDec  = amount != null ? `.${(displayed % 1).toFixed(2).slice(2)}` : '';
 
   return (
     <div
@@ -345,7 +368,7 @@ export function KpiCard({
                   flexShrink: 0,
                 }}
               >
-                <Icon.chart size={12} strokeWidth={1.7} />
+                <DetailIcon size={12} strokeWidth={1.7} />
               </button>
             )}
             {onCreate && (
@@ -375,11 +398,11 @@ export function KpiCard({
           </div>
         </div>
 
-        <div style={{ fontSize: 28, fontWeight: 800, color: t.amtC, letterSpacing: -1.2, lineHeight: 1, marginBottom: 3, fontVariantNumeric: 'tabular-nums' }}>
+        <div style={{ fontSize: 28, fontWeight: 800, color: t.amtC, letterSpacing: -1.2, lineHeight: 1, marginBottom: 3, fontVariantNumeric: 'tabular-nums', textAlign: centerAmount ? 'center' : 'left' }}>
           {fmtMain}<span style={{ fontSize: 17, color: t.decC, fontWeight: 600 }}>{fmtDec}</span>
         </div>
 
-        <div style={{ fontSize: 11, color: t.subC, fontWeight: 500 }}>
+        <div style={{ fontSize: 11, color: t.subC, fontWeight: 500, textAlign: centerAmount ? 'center' : 'left' }}>
           {subtitle}
         </div>
       </div>

@@ -4,6 +4,7 @@ import React from 'react';
 import { C } from '@/lib/colors';
 import { formatNotionDate } from '@/lib/format';
 import { Icon } from '@/components/icons';
+import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { DeudaRow } from '@/shared/types/finance.types';
 
@@ -31,7 +32,7 @@ export function DeudasModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const headers       = ['#', 'Nombre', 'Estado', 'Fecha Inicio', 'Cantidad', 'Ciclo', 'Hay cuotas?', 'Monto Pagado', 'Cuotas Pend.'];
 
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(20,24,18,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
+    <ModalShell onClose={onClose} maxWidth={1040}>
       <div style={{ background: '#fafbf8', borderRadius: 20, boxShadow: '0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)', width: '100%', maxWidth: 1040, maxHeight: '85vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-ui), system-ui, sans-serif', overflow: 'hidden' }}>
 
         {/* Header */}
@@ -116,7 +117,7 @@ export function DeudasModal({ onClose }: Readonly<{ onClose: () => void }>) {
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

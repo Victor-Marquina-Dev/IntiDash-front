@@ -7,7 +7,7 @@ import { AreaLineChart, DebtLineChart } from './ChartVisuals';
 import { CardHeaderSection } from './CardHeaderSection';
 
 const CARD_BG = {
-  dark: { bg: 'linear-gradient(145deg,#111318,#0d0f12)', brd: 'rgba(255,255,255,0.08)', sh: '0 4px 24px rgba(0,0,0,.5)' },
+  dark: { bg: 'linear-gradient(145deg,#1A1D21,#16181C)', brd: 'rgba(255,255,255,0.08)', sh: '0 4px 24px rgba(0,0,0,.5)' },
   light: { bg: '#FFFFFF', brd: 'rgba(17,24,39,0.08)', sh: '0 1px 2px rgba(17,24,39,.04)' },
 };
 
@@ -15,6 +15,7 @@ type ChartSection = 'comparativa' | 'deuda';
 
 export function ChartCard({ bp, darkMode }: Readonly<{ accent?: string; bp: BP; darkMode?: boolean }>) {
   const [section, setSection] = React.useState<ChartSection>('comparativa');
+  const [hovered, setHovered] = React.useState(false);
   const chart = useDashboardChart();
   const isDark = darkMode ?? false;
   const card = isDark ? CARD_BG.dark : CARD_BG.light;
@@ -27,19 +28,24 @@ export function ChartCard({ bp, darkMode }: Readonly<{ accent?: string; bp: BP; 
   ];
 
   return (
-    <div style={{
-      gridColumn: span,
-      borderRadius: 22,
-      overflow: 'hidden',
-      background: card.bg,
-      border: `1px solid ${card.brd}`,
-      boxShadow: card.sh,
-      fontFamily: 'var(--font-ui),system-ui,sans-serif',
-      height: bp === 'desktop' ? '100%' : undefined,
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        gridColumn: span,
+        borderRadius: 22,
+        overflow: 'hidden',
+        background: card.bg,
+        border: `1px solid ${hovered ? (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : card.brd}`,
+        boxShadow: hovered ? (isDark ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : card.sh,
+        fontFamily: 'var(--font-ui),system-ui,sans-serif',
+        height: bp === 'desktop' ? '100%' : undefined,
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'transform .25s, box-shadow .25s, border-color .25s',
+      }}>
       <CardHeaderSection
         icon="📈"
         label="Analisis"

@@ -4,6 +4,7 @@ import React from 'react';
 import { C } from '@/lib/colors';
 import { formatNotionDate } from '@/lib/format';
 import { Icon } from '@/components/icons';
+import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { GastoDeudaRow, GastoUnicoRow } from '@/shared/types/finance.types';
 
@@ -35,10 +36,7 @@ export function GastosModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const total = totalUnicos + totalDeudas;
 
   return (
-    <div
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(20,24,18,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}
-    >
+    <ModalShell onClose={onClose} maxWidth={900}>
       <div style={{ background: '#fafbf8', borderRadius: 20, boxShadow: '0 32px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06)', width: '100%', maxWidth: 900, maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'var(--font-ui), system-ui, sans-serif' }}>
 
         {/* Header */}
@@ -169,7 +167,7 @@ export function GastosModal({ onClose }: Readonly<{ onClose: () => void }>) {
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

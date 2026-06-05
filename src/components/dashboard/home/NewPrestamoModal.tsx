@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
-import { Button } from '@/components/ui';
+import { Button, ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 
 export function NewPrestamoModal({ onClose, onSuccess }: Readonly<{ onClose: () => void; onSuccess: () => void }>) {
@@ -38,11 +38,7 @@ export function NewPrestamoModal({ onClose, onSuccess }: Readonly<{ onClose: () 
   const inp: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 9, border: `1px solid ${C.border}`, background: C.bg, fontSize: 13, color: C.text, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' };
 
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{
-      position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(20,24,18,0.5)',
-      backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box',
-    }}>
+    <ModalShell onClose={onClose} maxWidth={440}>
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, width: '100%', maxWidth: 440, padding: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Nuevo préstamo</div>
@@ -79,7 +75,7 @@ export function NewPrestamoModal({ onClose, onSuccess }: Readonly<{ onClose: () 
           </div>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

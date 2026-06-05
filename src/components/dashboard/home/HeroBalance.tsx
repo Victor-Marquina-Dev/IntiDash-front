@@ -14,20 +14,39 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
   const prefSize = bp === 'desktop' ? 22 : isMobile ? 16 : 18;
   const decSize  = bp === 'desktop' ? 28 : isMobile ? 18 : 20;
   const balance = useDashboardBalance();
+  const [hovered, setHovered] = React.useState(false);
+
+  // Animación de conteo para el balance total
+  const [displayed, setDisplayed] = React.useState(0);
+  React.useEffect(() => {
+    if (balance.total == null) return;
+    const target = balance.total;
+    let rafId: number;
+    const start = performance.now();
+    const duration = 900;
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayed(target * eased);
+      if (progress < 1) rafId = requestAnimationFrame(tick);
+      else setDisplayed(target);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [balance.total]);
 
   // Color tokens (dark mode matching TarjetasCard / CategoriesDonut)
-  const cardBg      = D ? 'linear-gradient(145deg,#111318,#0d0f12)' : '#FFFFFF';
+  const cardBg      = D ? 'linear-gradient(145deg,#1A1D21,#16181C)' : '#FFFFFF';
   const cardBrd     = D ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.08)';
   const labelC      = D ? 'rgba(255,255,255,0.38)' : '#6B7280';
   const amountC     = D ? 'rgba(255,255,255,0.90)' : C.text;
   const currencyC   = D ? 'rgba(255,255,255,0.50)' : C.textDim;
   const decC        = D ? 'rgba(255,255,255,.12)'  : 'rgba(17,24,39,0.18)';
-  const subC        = D ? 'rgba(255,255,255,0.35)' : '#6B7280';
   const metricLblC  = D ? 'rgba(255,255,255,0.38)' : '#6B7280';
   const metricSubC  = D ? 'rgba(255,255,255,0.30)' : '#9CA3AF';
   const sepC        = D ? 'rgba(255,255,255,.06)'  : 'rgba(17,24,39,0.08)';
-  const barInactive = D ? 'rgba(255,255,255,.10)'  : 'rgba(17,24,39,0.07)';
-  const barActive   = D ? 'rgba(255,255,255,.35)'  : 'rgba(17,24,39,0.45)';
+  const barInactive = D ? 'rgba(143,168,143,0.25)' : 'rgba(204,220,204,0.50)';
+  const barActive   = D ? 'rgba(143,168,143,0.70)' : '#8FA88F';
   const barShadow   = D ? 'none'                   : 'none';
   const barLblC     = D ? 'rgba(255,255,255,0.30)' : '#9CA3AF';
   const barActLblC  = D ? 'rgba(255,255,255,0.85)' : '#111827';
@@ -38,9 +57,23 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
   const barLbl = balance.bars.labels;
 
   return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        ...(isDesktop ? { gridColumn: '1', alignSelf: 'stretch' } : { gridColumn: 'span 12' }),
+        borderRadius: 16,
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'transform .25s, box-shadow .25s, border-color .25s',
+      }}
+    >
     <Card pad={0} style={{
-      ...(isDesktop ? { gridColumn: '1', alignSelf: 'stretch' } : { gridColumn: 'span 12' }),
-      background: cardBg, border: `1px solid ${cardBrd}`, overflow: 'hidden',
+      background: cardBg,
+      border: `1px solid ${hovered ? (D ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : cardBrd}`,
+      boxShadow: hovered ? (D ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : undefined,
+      overflow: 'hidden',
+      transition: 'box-shadow .25s, border-color .25s',
+      height: '100%',
     }}>
 
       {/* TODO EL CONTENIDO centrado vertical y horizontalmente */}
@@ -68,14 +101,13 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, flexWrap: 'wrap' }}>
             <span style={{ fontSize: prefSize, fontWeight: 800, color: currencyC, letterSpacing: -0.5 }}>S/</span>
             <span style={{ fontSize: numSize, fontWeight: 900, color: amountC, letterSpacing: -3, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-              {fmtBalanceInt(balance.total)}
+              {fmtBalanceInt(displayed)}
             </span>
             <span style={{ fontSize: decSize, fontWeight: 700, color: decC, letterSpacing: -1, marginLeft: 2 }}>
-              {fmtBalanceDec(balance.total)}
+              {fmtBalanceDec(displayed)}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, color: subC, fontWeight: 600 }}>{balance.subLabel}</span>
             {balance.summary && (
               <Tag dot={balance.isPositiveChange ? C.pos : C.neg} color={balance.isPositiveChange ? C.pos : C.neg} bg={balance.isPositiveChange ? `${C.pos}18` : `${C.neg}18`} style={{ fontSize: 11, fontWeight: 600, padding: '3px 9px' }}>
                 {`${balance.isPositiveChange ? '↑' : '↓'} ${balance.pctAbs}% este mes`}
@@ -131,7 +163,6 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
         <div style={{ position: 'relative', paddingRight: isMobile ? 0 : 16, paddingBottom: isMobile ? 12 : 0, borderBottom: isMobile ? `1px solid ${sepC}` : 'none' }}>
           {!isMobile && <div style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 1, background: sepC }} />}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-            <span style={{ fontSize: 12 }}>📈</span>
             <span style={{ fontSize: 9, fontWeight: 800, color: metricLblC, letterSpacing: 1.4, textTransform: 'uppercase' }}>Cambio mensual</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: balance.isPositiveChange ? C.pos : C.neg, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
@@ -144,7 +175,6 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
         <div style={{ position: 'relative', padding: isMobile ? '0 0 12px' : '0 16px', borderBottom: isMobile ? `1px solid ${sepC}` : 'none' }}>
           {!isMobile && <div style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 1, background: sepC }} />}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-            <span style={{ fontSize: 12 }}>💵</span>
             <span style={{ fontSize: 9, fontWeight: 800, color: metricLblC, letterSpacing: 1.4, textTransform: 'uppercase' }}>Flujo neto</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: balance.flujoPos ? C.pos : C.neg, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
@@ -156,7 +186,6 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
         {/* Patrimonio neto */}
         <div style={{ paddingLeft: isMobile ? 0 : 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-            <span style={{ fontSize: 12 }}>🏦</span>
             <span style={{ fontSize: 9, fontWeight: 800, color: metricLblC, letterSpacing: 1.4, textTransform: 'uppercase' }}>Patrimonio neto</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: D ? '#c8d0c8' : C.text, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
@@ -169,6 +198,6 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
       </div>{/* fin grupo body+métricas */}
 
     </Card>
+    </div>
   );
 }
-

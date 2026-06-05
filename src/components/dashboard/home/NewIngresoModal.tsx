@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
+import { ModalShell } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { useCreateIngreso } from '@/shared/hooks/use-create-ingreso';
 import { useCreateOptions } from '@/shared/hooks/use-create-options';
@@ -38,7 +39,7 @@ export function NewIngresoModal({ onClose, onSuccess }: Readonly<{ onClose: () =
   const inp: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 9, border: `1px solid ${C.border}`, background: '#fff', fontFamily: 'var(--font-ui)', fontSize: 13, color: C.text, outline: 'none', boxSizing: 'border-box' };
 
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(20,24,18,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
+    <ModalShell onClose={onClose}>
       <div style={{ background: '#fafbf8', borderRadius: 20, boxShadow: '0 32px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06)', width: '100%', maxWidth: 480, fontFamily: 'var(--font-ui), system-ui, sans-serif' }}>
         <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: `${C.pos}18`, color: C.pos, display: 'grid', placeItems: 'center' }}><Icon.arrowUp size={17} strokeWidth={2} /></div>
@@ -72,7 +73,7 @@ export function NewIngresoModal({ onClose, onSuccess }: Readonly<{ onClose: () =
           </div>
         </form>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

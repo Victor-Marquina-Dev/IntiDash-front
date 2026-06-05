@@ -4,6 +4,7 @@ import React from 'react';
 import { C } from '@/lib/colors';
 import { formatNotionDate } from '@/lib/format';
 import { Icon } from '@/components/icons';
+import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { IngresoRow } from '@/shared/types/finance.types';
 
@@ -29,16 +30,7 @@ export function IngresosModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const total = rows.reduce((s, r) => s + (r.ingreso ?? 0), 0);
 
   return (
-    <div
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(20,24,18,0.5)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24, boxSizing: 'border-box',
-      }}
-    >
+    <ModalShell onClose={onClose} maxWidth={820}>
       <div style={{
         background: '#fafbf8',
         borderRadius: 20,
@@ -169,7 +161,7 @@ export function IngresosModal({ onClose }: Readonly<{ onClose: () => void }>) {
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 

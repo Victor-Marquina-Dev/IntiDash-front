@@ -6,9 +6,7 @@ import { useDashboardKpis } from '@/shared/hooks/use-dashboard-kpis';
 import {
   AhorroKpiCard,
   GastosKpiCard,
-  GastosModal,
   IngresosKpiCard,
-  IngresosModal,
   NewGastoModal,
   NewIngresoModal,
   NewSuscripcionModal,
@@ -18,9 +16,7 @@ import {
 
 export { DeudasModal, NewDeudaModal } from './KpiRailParts';
 
-export function KpiRail({ showCharts: _showCharts, bp, darkMode }: Readonly<{ showCharts: boolean; bp: BP; darkMode?: boolean }>) {
-  const [showIngModal, setShowIngModal] = React.useState(false);
-  const [showGasModal, setShowGasModal] = React.useState(false);
+export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, canWrite = true }: Readonly<{ showCharts: boolean; bp: BP; darkMode?: boolean; onNavigate?: (screen: string) => void; canWrite?: boolean }>) {
   const [showSuscModal, setShowSuscModal] = React.useState(false);
   const [showNewIngModal, setShowNewIngModal] = React.useState(false);
   const [showNewGasModal, setShowNewGasModal] = React.useState(false);
@@ -47,16 +43,16 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode }: Readonly<{ sh
         amount={kpis.ingresos.total}
         monthlyData={kpis.ingresos.monthly}
         monthlyLabels={kpis.ingresos.monthlyLabels}
-        onDetail={() => setShowIngModal(true)}
-        onCreate={() => setShowNewIngModal(true)}
+        onDetail={() => onNavigate?.('tx')}
+        onCreate={canWrite ? () => setShowNewIngModal(true) : undefined}
       />
       <GastosKpiCard
         darkMode={isDark}
         amount={kpis.gastos.total}
         monthlyData={kpis.gastos.monthly}
         monthlyLabels={kpis.gastos.monthlyLabels}
-        onDetail={() => setShowGasModal(true)}
-        onCreate={() => setShowNewGasModal(true)}
+        onDetail={() => onNavigate?.('tx')}
+        onCreate={canWrite ? () => setShowNewGasModal(true) : undefined}
       />
       <AhorroKpiCard
         darkMode={isDark}
@@ -69,19 +65,17 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode }: Readonly<{ sh
         amount={kpis.suscripciones.total}
         count={kpis.suscripciones.count}
         onDetail={() => setShowSuscModal(true)}
-        onCreate={() => setShowNewSuscModal(true)}
+        onCreate={canWrite ? () => setShowNewSuscModal(true) : undefined}
       />
     </div>
   );
 
   const modals = (
     <>
-      {showIngModal && <IngresosModal onClose={() => setShowIngModal(false)} />}
-      {showGasModal && <GastosModal onClose={() => setShowGasModal(false)} />}
       {showSuscModal && <SuscripcionesModal onClose={() => setShowSuscModal(false)} />}
-      {showNewIngModal && <NewIngresoModal onClose={() => setShowNewIngModal(false)} onSuccess={kpis.refresh} />}
-      {showNewGasModal && <NewGastoModal onClose={() => setShowNewGasModal(false)} onSuccess={kpis.refresh} />}
-      {showNewSuscModal && <NewSuscripcionModal onClose={() => setShowNewSuscModal(false)} onSuccess={kpis.refresh} />}
+      {canWrite && showNewIngModal && <NewIngresoModal onClose={() => setShowNewIngModal(false)} onSuccess={kpis.refresh} />}
+      {canWrite && showNewGasModal && <NewGastoModal onClose={() => setShowNewGasModal(false)} onSuccess={kpis.refresh} />}
+      {canWrite && showNewSuscModal && <NewSuscripcionModal onClose={() => setShowNewSuscModal(false)} onSuccess={kpis.refresh} />}
     </>
   );
 

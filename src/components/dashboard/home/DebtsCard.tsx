@@ -11,7 +11,7 @@ import { NewPrestamoModal, PrestamosModal } from './PrestamosModals';
 import { CardHeaderSection } from './CardHeaderSection';
 
 const DARK = {
-  cardBg:     'linear-gradient(145deg,#111318,#0d0f12)',
+  cardBg:     'linear-gradient(145deg,#1A1D21,#16181C)',
   cardBrd:    'rgba(255,255,255,0.08)',
   boxShadow:  '0 4px 24px rgba(0,0,0,.5)',
   loadC:      'rgba(255,255,255,0.35)',
@@ -60,7 +60,7 @@ const LIGHT = {
   gradFade:   'rgba(255,255,255,0.96)',
 };
 
-export function Debts({ bp, darkMode }: Readonly<{ bp: BP; darkMode?: boolean }>) {
+export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; darkMode?: boolean; canWrite?: boolean }>) {
   const isDark = darkMode ?? false;
   const tk = isDark ? DARK : LIGHT;
   const isDesktop = bp === 'desktop';
@@ -92,17 +92,26 @@ export function Debts({ bp, darkMode }: Readonly<{ bp: BP; darkMode?: boolean }>
   const presPct    = totals.presPct;
   const subsInt    = Math.floor(totals.subs).toLocaleString('es-PE');
   const subsDec    = (totals.subs % 1).toFixed(2).slice(1);
+  const emptyMessage = canWrite ? 'Sin datos. Sincroniza desde Ajustes.' : 'Sin datos para mostrar.';
 
+  const [hovered, setHovered] = React.useState(false);
   const WalletIcon = Icon.wallet;
 
   return (
-    <div style={{
-      borderRadius: 22, overflow: 'hidden',
-      background: tk.cardBg, border: `1px solid ${tk.cardBrd}`, boxShadow: tk.boxShadow,
-      fontFamily: 'var(--font-ui),system-ui,sans-serif',
-      display: 'flex', flexDirection: 'column',
-      ...(isDesktop && { flex: 1 }),
-    }}>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        borderRadius: 22, overflow: 'hidden',
+        background: tk.cardBg,
+        border: `1px solid ${hovered ? (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : tk.cardBrd}`,
+        boxShadow: hovered ? (isDark ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : tk.boxShadow,
+        fontFamily: 'var(--font-ui),system-ui,sans-serif',
+        display: 'flex', flexDirection: 'column',
+        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+        transition: 'transform .25s, box-shadow .25s, border-color .25s',
+        ...(isDesktop && { flex: 1 }),
+      }}>
 
       <CardHeaderSection
         icon="🗂️"
@@ -115,18 +124,27 @@ export function Debts({ bp, darkMode }: Readonly<{ bp: BP; darkMode?: boolean }>
         activeTab={tab}
         onTabChange={id => setTab(id as 'subs' | 'debts' | 'prestamos')}
         onDetail={() => setShowTable(true)}
-        onCreate={() => setShowNew(true)}
+        onCreate={canWrite ? () => setShowNew(true) : undefined}
         detailTitle="Ver tabla"
         createTitle="Nuevo"
         darkMode={isDark}
       />
 
       {/* ── Contenido ── */}
-      <div style={{ flex: 1, padding: '0 16px 10px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div key={tab} className="fz-tab-content" style={{ flex: 1, padding: '0 16px 10px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       {loading && (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: tk.loadC, fontSize: 12, minHeight: 80 }}>
-          Cargando datos...
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+          {[1,2,3].map(i => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 13px', borderRadius: 14, background: tk.subItemBg }}>
+              <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: `${55 + i * 12}%`, borderRadius: 6 }} />
+                <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 10, width: '35%', borderRadius: 6 }} />
+              </div>
+              <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: 52, borderRadius: 6 }} />
+            </div>
+          ))}
         </div>
       )}
 
@@ -154,7 +172,7 @@ export function Debts({ bp, darkMode }: Readonly<{ bp: BP; darkMode?: boolean }>
           {/* ── Lista préstamos ── */}
           {isPrestamos && (
             prestamosRows.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: C.textMute }}>Sin datos. Sincroniza desde Ajustes.</div>
+              <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: C.textMute }}>{emptyMessage}</div>
             ) : (
               <div style={isDesktop ? { position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' } : {}}>
                 <div style={isDesktop
@@ -197,7 +215,7 @@ export function Debts({ bp, darkMode }: Readonly<{ bp: BP; darkMode?: boolean }>
           {/* ── Lista deudas/suscripciones ── */}
           {!isPrestamos && list.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: C.textMute }}>
-              Sin datos. Sincroniza desde Ajustes.
+              {emptyMessage}
             </div>
           ) : !isPrestamos && (
             <div style={isDesktop ? { position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' } : {}}>
@@ -269,10 +287,9 @@ export function Debts({ bp, darkMode }: Readonly<{ bp: BP; darkMode?: boolean }>
                   </div>
                 )}
 
-                {tab === 'subs' && [...subs].sort((a, b) => (b.cantidad ?? 0) - (a.cantidad ?? 0)).map((s, i) => {
-                  const BADGE_COLORS = ['#006341','#003DA5','#7b2d8b','#009640','#d42b1b','#004481','#c47a00'];
-                  const bc      = BADGE_COLORS[i % BADGE_COLORS.length];
-                  const initials = (s.nombre ?? '').split(/[\s\-–]+/).slice(0,2).map(w => w[0] ?? '').join('').toUpperCase() || '?';
+                {tab === 'subs' && [...subs].sort((a, b) => (b.cantidad ?? 0) - (a.cantidad ?? 0)).map((s) => {
+                  const bc      = isDark ? '#0C5E3F' : '#8FA88F';
+                  const initials = ((s.nombre ?? '')[0] ?? '?').toUpperCase();
                   const total   = s.cantidad ?? 0;
                   const intPart = Math.floor(total).toLocaleString('es-PE');
                   const decPart = (total % 1).toFixed(2).slice(1);
@@ -305,12 +322,12 @@ export function Debts({ bp, darkMode }: Readonly<{ bp: BP; darkMode?: boolean }>
       )}
 
       {showTable && !isPrestamos && <DeudasModal onClose={() => setShowTable(false)} />}
-      {showTable && isPrestamos  && <PrestamosModal onClose={() => setShowTable(false)} />}
-      {showNew   && !isPrestamos && <NewDeudaModal onClose={() => setShowNew(false)} onSuccess={() => {
+      {showTable && isPrestamos  && <PrestamosModal onClose={() => setShowTable(false)} canWrite={canWrite} />}
+      {canWrite && showNew   && !isPrestamos && <NewDeudaModal onClose={() => setShowNew(false)} onSuccess={() => {
         setShowNew(false);
         fetchDeudas();
       }} />}
-      {showNew   && isPrestamos  && <NewPrestamoModal onClose={() => setShowNew(false)} onSuccess={() => {
+      {canWrite && showNew   && isPrestamos  && <NewPrestamoModal onClose={() => setShowNew(false)} onSuccess={() => {
         setShowNew(false);
         fetchPrestamos();
       }} />}

@@ -1,343 +1,258 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
-import { Card, Button, Eyebrow, Delta } from '@/components/ui';
-import type { Transaction } from '@/lib/mock-data';
-import type { IconComponent } from '@/components/icons';
+import { Card, Eyebrow } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
-import type { DbTransaction } from '@/shared/types/finance.types';
+import type { IngresoRow, GastoUnicoRow } from '@/shared/types/finance.types';
 
-const PRUEBA  = process.env.NEXT_PUBLIC_DATA_MODE === 'prueba';
-
-function catIcon(cat: string, tipo: string): { I: IconComponent; c: string } {
-  if (tipo === 'ingreso') return { I: Icon.arrowDown, c: C.pos };
-  const map: Record<string, { I: IconComponent; c: string }> = {
-    'Comida':          { I: Icon.utensils, c: C.neg },
-    'Transporte':      { I: Icon.car,      c: C.warn },
-    'Compras':         { I: Icon.bag,      c: C.primary },
-    'Suscripciones':   { I: Icon.music,    c: '#8B5CF6' },
-    'Deudas':          { I: Icon.cards,    c: '#EC4899' },
-    'Entretenimiento': { I: Icon.film,     c: C.primary },
-    'Hogar':           { I: Icon.house,    c: C.warn },
-    'Salud':           { I: Icon.heart,    c: C.pos },
-    'Educación':       { I: Icon.book,     c: '#06B6D4' },
-  };
-  return map[cat] ?? { I: Icon.trendUp, c: C.primary };
+function fmt(v: number) {
+  return 'S/ ' + v.toLocaleString('es-PE', { minimumFractionDigits: 2 });
 }
 
-function fmtTxDate(fecha: string | null): { date: string; d: string } {
-  if (!fecha) return { date: '—', d: '1970-01-01' };
+function fmtDate(fecha: string | null) {
+  if (!fecha) return '—';
   const dt = new Date(fecha);
   const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const day = dt.getDate();
-  const mon = meses[dt.getMonth()];
-  const h = String(dt.getHours()).padStart(2, '0');
-  const m = String(dt.getMinutes()).padStart(2, '0');
-  const d = dt.toISOString().slice(0, 10);
-  const dateStr = (h === '00' && m === '00') ? `${day} ${mon}` : `${day} ${mon} · ${h}:${m}`;
-  return { date: dateStr, d };
+  return `${dt.getDate()} ${meses[dt.getMonth()]}`;
 }
 
-function dbToUiTx(t: DbTransaction): Transaction {
-  const { I, c } = catIcon(t.categoria, t.tipo);
-  const { date, d } = fmtTxDate(t.fecha);
-  const amt = t.monto != null
-    ? Math.abs(t.monto).toLocaleString('es-PE', { minimumFractionDigits: 2 })
-    : '0.00';
-  return {
-    I, c,
-    desc: t.descripcion || '(sin descripción)',
-    cat:  t.categoria   || 'Otros',
-    date,
-    d,
-    sign: t.tipo === 'ingreso' ? '+' : '−',
-    amt,
-    acc:  t.cuenta || 'Sin cuenta',
+// ── Tabla genérica ────────────────────────────────────────────────────────
+interface Col { key: string; label: string; align?: 'left' | 'right'; width?: number }
+
+function DataTable({ cols, rows, emptyMsg, accent }: Readonly<{
+  cols: Col[];
+  rows: Record<string, React.ReactNode>[];
+  emptyMsg: string;
+  accent: string;
+}>) {
+  const thStyle: React.CSSProperties = {
+    padding: '10px 14px', fontSize: 11, fontWeight: 700, color: C.textMute,
+    textTransform: 'uppercase', letterSpacing: 0.8, whiteSpace: 'nowrap',
+    borderBottom: `1px solid ${C.border}`, fontFamily: 'var(--font-ui)',
   };
-}
+  const tdStyle = (align: 'left'|'right' = 'left'): React.CSSProperties => ({
+    padding: '11px 14px', fontSize: 13, color: C.text, fontFamily: 'var(--font-ui)',
+    borderBottom: `1px solid ${C.border}`, textAlign: align,
+    fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+  });
 
-function AccountChip({ acc }: Readonly<{ acc: string }>) {
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6,
-      padding: '3px 8px 3px 6px', borderRadius: 6,
-      background: 'rgba(63,86,28,0.05)', border: `1px solid ${C.border}`,
-      fontSize: 11, color: C.textDim, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
-    }}>
-      <span style={{ width: 14, height: 10, borderRadius: 2, background: acc.startsWith('Visa') ? '#1A3A6E' : C.primary, display: 'inline-block' }} />
-      {acc}
-    </span>
-  );
-}
-
-function groupByDate(rows: Transaction[]) {
-  const map = new Map<string, Transaction[]>();
-  for (const r of rows) {
-    if (!map.has(r.d)) map.set(r.d, []);
-    map.get(r.d)!.push(r);
-  }
-  return [...map.entries()].map(([d, items]) => ({ d, items })).sort((a, b) => b.d.localeCompare(a.d));
-}
-
-function formatDay(iso: string) {
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const yest = new Date(now); yest.setDate(yest.getDate() - 1);
-  const yestStr = yest.toISOString().slice(0, 10);
-  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const dias  = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-  if (iso === todayStr) return `Hoy · ${dias[now.getDay()]}`;
-  if (iso === yestStr)  return `Ayer · ${dias[yest.getDay()]}`;
-  const [y, mo, d] = iso.split('-').map(Number);
-  const dt = new Date(y, mo - 1, d);
-  return `${dias[dt.getDay()]} ${d} ${meses[mo - 1]}`;
-}
-
-function netForDay(items: Transaction[]) {
-  const n = items.reduce((s, r) => s + (r.sign === '+' ? 1 : -1) * parseFloat(r.amt.replace(/,/g, '')), 0);
-  return (n >= 0 ? '+' : '−') + 'S/ ' + Math.abs(n).toLocaleString('es-PE', { minimumFractionDigits: 2 });
-}
-
-function SummaryStat({ label, value, sub, delta, kind, I }: Readonly<{
-  label: string; value: string; sub?: string; delta?: string;
-  kind: 'pos' | 'neg' | 'primary'; I: (typeof Icon)[keyof typeof Icon];
-}>) {
-  const color = kind === 'pos' ? C.pos : kind === 'neg' ? C.neg : C.primary;
-  return (
-    <Card pad={18}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ width: 24, height: 24, borderRadius: 7, background: color + '1F', color, display: 'grid', placeItems: 'center' }}>
-          <I size={12} />
-        </div>
-        <Eyebrow>{label}</Eyebrow>
-        <div style={{ flex: 1 }} />
-        {delta && <Delta value={delta} kind={kind === 'primary' ? 'auto' : kind} />}
-      </div>
-      <div style={{ fontSize: 26, fontWeight: 600, marginTop: 10, color: C.text, letterSpacing: -0.7, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub && <div style={{ fontSize: 11.5, color: C.textMute, marginTop: 4 }}>{sub}</div>}
-    </Card>
-  );
-}
-
-function FilterPills({ label, options, value, onChange }: Readonly<{
-  label: string; options: string[]; value: string; onChange: (v: string) => void;
-}>) {
-  return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 8px 6px 10px', borderRadius: 10, border: `1px solid ${C.border}`, background: '#fff', fontSize: 12.5, color: C.text }}>
-      <span style={{ color: C.textMute }}>{label}:</span>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        style={{ border: 'none', outline: 'none', background: 'transparent', fontFamily: 'var(--font-ui)', fontSize: 12.5, color: C.text, cursor: 'pointer' }}>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ background: `${accent}06` }}>
+            {cols.map(c => (
+              <th key={c.key} style={{ ...thStyle, textAlign: c.align ?? 'left', width: c.width }}>
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={cols.length} style={{ padding: '40px 14px', textAlign: 'center', color: C.textMute, fontSize: 13 }}>
+                {emptyMsg}
+              </td>
+            </tr>
+          ) : rows.map((row, i) => (
+            <tr key={i} className="fz-row" style={{ cursor: 'default' }}>
+              {cols.map(c => (
+                <td key={c.key} style={tdStyle(c.align)}>{row[c.key]}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-
-function TxDetail({ tx, onClose, accent: _accent }: Readonly<{ tx: Transaction; onClose: () => void; accent: string }>) {
+// ── Stats top ─────────────────────────────────────────────────────────────
+function Stat({ label, value, color, I }: Readonly<{
+  label: string; value: string; color: string; I: (typeof Icon)[keyof typeof Icon];
+}>) {
   return (
-    <Card>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: tx.c + '1A', color: tx.c, display: 'grid', placeItems: 'center' }}>
-          <tx.I size={18} />
+    <Card pad={16}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div style={{ width: 24, height: 24, borderRadius: 7, background: color + '1F', color, display: 'grid', placeItems: 'center' }}>
+          <I size={12} />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: C.text }}>{tx.desc}</div>
-          <div style={{ fontSize: 12, color: C.textMute }}>{tx.cat}</div>
-        </div>
-        <button onClick={onClose} aria-label="Cerrar detalle de transaccion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMute, fontSize: 18 }}>×</button>
+        <Eyebrow>{label}</Eyebrow>
       </div>
-      <div style={{ fontSize: 36, fontWeight: 600, color: tx.sign === '+' ? C.pos : C.text, fontVariantNumeric: 'tabular-nums', letterSpacing: -1.2, marginBottom: 16 }}>
-        {tx.sign}S/ {tx.amt}
-      </div>
-      {[
-        ['Fecha',     tx.date],
-        ['Cuenta',    tx.acc],
-        ['Categoría', tx.cat],
-      ].map(([label, value]) => (
-        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0', borderBottom: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 11.5, color: C.textMute, width: 100, flexShrink: 0 }}>{label}</div>
-          <div style={{ fontSize: 12.5, color: C.text, fontWeight: 500 }}>{value}</div>
-        </div>
-      ))}
-      <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-        <Button style={{ flex: 1 }} icon={<Icon.gear size={12} />}>Editar</Button>
-        <Button ghost style={{ flex: 1 }} icon={<Icon.bag size={12} />}>Dividir</Button>
+      <div style={{ fontSize: 24, fontWeight: 700, color: C.text, letterSpacing: -0.8, fontVariantNumeric: 'tabular-nums' }}>
+        {value}
       </div>
     </Card>
   );
 }
 
-function EmptyState({ onGoSettings }: Readonly<{ onGoSettings?: () => void }>) {
-  return (
-    <Card pad={40} style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
-      <div style={{ fontSize: 15, fontWeight: 600, color: C.text, marginBottom: 6 }}>Sin transacciones</div>
-      <div style={{ fontSize: 12.5, color: C.textMute, marginBottom: 20, lineHeight: 1.6 }}>
-        Configura tu base de datos de transacciones en Ajustes<br />y haz clic en «Sincronizar transacciones».
-      </div>
-      {onGoSettings && (
-        <Button primary icon={<Icon.gear size={13} />} onClick={onGoSettings}>Ir a Ajustes</Button>
-      )}
-    </Card>
-  );
-}
-
+// ── Pantalla principal ────────────────────────────────────────────────────
 interface TransactionsScreenProps {
   accent: string;
   density: string;
   onGoSettings?: () => void;
+  canWrite?: boolean;
 }
 
-export function TransactionsScreen({ accent, density, onGoSettings }: TransactionsScreenProps) {
-  const [txList, setTxList] = React.useState<Transaction[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [cat, setCat] = React.useState('Todas');
-  const [acc, setAcc] = React.useState('Todas');
-  const [q, setQ] = React.useState('');
-  const [selected, setSelected] = React.useState<Transaction | null>(null);
+export function TransactionsScreen({ accent: _accent, density, onGoSettings: _onGoSettings }: TransactionsScreenProps) {
+  const [ingresos,  setIngresos]  = React.useState<IngresoRow[]>([]);
+  const [gastos,    setGastos]    = React.useState<GastoUnicoRow[]>([]);
+  const [loading,   setLoading]   = React.useState(true);
+
+  const pad = density === 'compact' ? '18px 24px 32px' : '24px 32px 40px';
 
   React.useEffect(() => {
-    notionPaymentsService.getTransactions(PRUEBA ? 'prueba' : undefined)
-      .then((rows: DbTransaction[]) => {
-        setTxList(rows.map(dbToUiTx));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    let active = true;
+
+    Promise.all([
+      notionPaymentsService.getIngresos(),
+      notionPaymentsService.getGastosUnicos(),
+    ]).then(([ing, gas]) => {
+      if (!active) return;
+      setIngresos(ing);
+      setGastos(gas);
+    }).catch(() => {}).finally(() => {
+      if (!active) return;
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const cats = React.useMemo(() => {
-    const s = new Set(txList.map(t => t.cat));
-    return ['Todas', ...[...s].sort()];
-  }, [txList]);
+  const totalIngresos = ingresos.reduce((s, r) => s + (r.ingreso ?? 0), 0);
+  const totalGastos   = gastos.reduce((s, r) => s + (r.monto ?? 0), 0);
+  const neto          = totalIngresos - totalGastos;
 
-  const accs = React.useMemo(() => {
-    const s = new Set(txList.map(t => t.acc));
-    return ['Todas', ...[...s].sort()];
-  }, [txList]);
+  const colsIngresos: Col[] = [
+    { key: 'nombre',    label: 'Descripción' },
+    { key: 'categoria', label: 'Categoría' },
+    { key: 'cuenta',    label: 'Cuenta' },
+    { key: 'fecha',     label: 'Fecha',   align: 'right', width: 90 },
+    { key: 'monto',     label: 'Monto',   align: 'right', width: 110 },
+  ];
 
-  const filtered = txList.filter(r =>
-    (cat === 'Todas' || r.cat === cat) &&
-    (acc === 'Todas' || r.acc === acc) &&
-    (q === '' || r.desc.toLowerCase().includes(q.toLowerCase()))
-  );
-  const groups = groupByDate(filtered);
+  const rowsIngresos = ingresos.map(r => ({
+    nombre:    r.nombre || '—',
+    categoria: r.categoriaIngreso || '—',
+    cuenta:    r.cuentaBancaria   || '—',
+    fecha:     fmtDate(r.fecha),
+    monto: (
+      <span style={{ color: C.pos, fontWeight: 600 }}>
+        +{fmt(r.ingreso ?? 0)}
+      </span>
+    ),
+  }));
 
-  const income  = filtered.filter(r => r.sign === '+').reduce((s, r) => s + parseFloat(r.amt.replace(/,/g, '')), 0);
-  const expense = filtered.filter(r => r.sign === '−').reduce((s, r) => s + parseFloat(r.amt.replace(/,/g, '')), 0);
-  const net = income - expense;
-  const fmt = (v: number) => 'S/ ' + v.toLocaleString('es-PE', { minimumFractionDigits: 2 });
-  const fmtSigned = (v: number) => (v >= 0 ? '+S/ ' : '−S/ ') + Math.abs(v).toLocaleString('es-PE', { minimumFractionDigits: 2 });
+  const colsGastos: Col[] = [
+    { key: 'nombre',    label: 'Descripción' },
+    { key: 'categoria', label: 'Categoría' },
+    { key: 'cuenta',    label: 'Cuenta' },
+    { key: 'fecha',     label: 'Fecha',  align: 'right', width: 90 },
+    { key: 'monto',     label: 'Monto',  align: 'right', width: 110 },
+  ];
 
-  if (loading) {
-    return (
-      <div style={{ padding: '60px 32px', textAlign: 'center', color: C.textMute, fontSize: 13 }}>
-        Cargando transacciones…
-      </div>
-    );
-  }
+  const rowsGastos = gastos.map(r => ({
+    nombre:    r.nombre || '—',
+    categoria: r.categoriaGasto || '—',
+    cuenta:    r.cuentaBancaria  || '—',
+    fecha:     fmtDate(r.fecha),
+    monto: (
+      <span style={{ color: C.neg, fontWeight: 600 }}>
+        −{fmt(r.monto ?? 0)}
+      </span>
+    ),
+  }));
 
   return (
-    <div style={{
-      padding: density === 'compact' ? '18px 24px 32px' : '24px 32px 40px',
-      display: 'grid', gridTemplateColumns: selected ? '1fr 380px' : '1fr',
-      gap: density === 'compact' ? 14 : 20,
-    }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          <SummaryStat label="Ingresos" value={fmt(income)}    kind="pos"     I={Icon.arrowUp} />
-          <SummaryStat label="Gastos"   value={fmt(expense)}   kind="neg"     I={Icon.arrowDown} />
-          <SummaryStat label="Neto"     value={fmtSigned(net)} sub={`${filtered.length} transacciones`} kind="primary" I={Icon.trendUp} />
+    <div style={{ padding: pad, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+      {/* ── Stats + Sync ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, flex: 1, minWidth: 0 }}>
+          <Stat label="Ingresos" value={fmt(totalIngresos)} color={C.pos}  I={Icon.arrowUp}   />
+          <Stat label="Gastos"   value={fmt(totalGastos)}   color={C.neg}  I={Icon.arrowDown} />
+          <Stat label="Neto"     value={(neto >= 0 ? '+' : '−') + fmt(Math.abs(neto))} color={neto >= 0 ? C.pos : C.neg} I={Icon.trendUp} />
         </div>
+      </div>
 
-        {txList.length === 0
-          ? <EmptyState onGoSettings={onGoSettings} />
-          : (
-          <>
-            <Card pad={14}>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                <div className="fz-search" style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 10,
-                  background: 'rgba(63,86,28,0.04)', border: `1px solid ${C.border}`,
-                  minWidth: 240, flex: 1, color: C.textDim, fontSize: 13,
-                }}>
-                  <Icon.search size={15} />
-                  <input
-                    placeholder="Buscar transacciones…"
-                    value={q}
-                    onChange={e => setQ(e.target.value)}
-                    style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 13, color: C.text }}
-                  />
-                  {q && (
-                    <button onClick={() => setQ('')} aria-label="Limpiar busqueda" style={{ border: 'none', background: 'none', cursor: 'pointer', color: C.textMute, fontSize: 14, padding: 0 }}>×</button>
-                  )}
-                </div>
-                <FilterPills label="Categoría" options={cats} value={cat} onChange={v => { setCat(v); setSelected(null); }} />
-                <FilterPills label="Cuenta"    options={accs} value={acc} onChange={v => { setAcc(v); setSelected(null); }} />
+      {/* ── Tablas en dos columnas ── */}
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          {[0,1].map(i => (
+            <Card key={i} pad={0}>
+              <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
+                <div className="fz-skeleton" style={{ height: 14, width: 100, borderRadius: 6 }} />
               </div>
-            </Card>
-
-            <Card pad={0}>
-              {groups.length === 0 && (
-                <div style={{ padding: 60, textAlign: 'center', color: C.textMute, fontSize: 13 }}>
-                  No hay transacciones que coincidan con los filtros.
-                </div>
-              )}
-              {groups.map((g, gi) => (
-                <div key={g.d}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 10, padding: '14px 20px 10px',
-                    borderTop: gi > 0 ? `1px solid ${C.border}` : 'none',
-                    background: 'rgba(63,86,28,0.02)',
-                  }}>
-                    <Eyebrow>{formatDay(g.d)}</Eyebrow>
-                    <div style={{ flex: 1, height: 1, background: C.border, marginLeft: 4 }} />
-                    <div style={{ fontSize: 11, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>
-                      {g.items.length} mov · {netForDay(g.items)}
-                    </div>
-                  </div>
-                  {g.items.map((r, ri) => (
-                    <div
-                      key={ri}
-                      onClick={() => setSelected(r)}
-                      className="fz-row"
-                      style={{
-                        display: 'grid', gridTemplateColumns: '36px 1fr 140px 100px 120px',
-                        gap: 12, alignItems: 'center', padding: '11px 20px',
-                        cursor: 'pointer',
-                        background: selected === r ? 'rgba(63,86,28,0.06)' : 'transparent',
-                        borderBottom: ri < g.items.length - 1 ? `1px solid ${C.border}` : 'none',
-                      }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: r.c + '1A', color: r.c, display: 'grid', placeItems: 'center' }}>
-                        <r.I size={15} />
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 13.5, color: C.text, fontWeight: 500 }}>{r.desc}</div>
-                        <div style={{ fontSize: 11.5, color: C.textMute, marginTop: 2 }}>{r.cat}</div>
-                      </div>
-                      <AccountChip acc={r.acc} />
-                      <div style={{ fontSize: 11.5, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>{r.date.split('·')[1]?.trim()}</div>
-                      <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'right', color: r.sign === '+' ? C.pos : C.text, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.2 }}>
-                        <span style={{ opacity: 0.6, marginRight: 1 }}>{r.sign}</span>S/<span>{r.amt}</span>
-                      </div>
-                    </div>
-                  ))}
+              {[1,2,3,4,5].map(j => (
+                <div key={j} style={{ display: 'flex', gap: 12, padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
+                  <div className="fz-skeleton" style={{ height: 13, flex: 1, borderRadius: 6 }} />
+                  <div className="fz-skeleton" style={{ height: 13, width: 70, borderRadius: 6 }} />
                 </div>
               ))}
             </Card>
-          </>
-        )}
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
 
-      </div>
+          {/* Ingresos */}
+          <Card pad={0} style={{ overflow: 'hidden' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 16px 12px',
+              borderBottom: `1px solid ${C.border}`,
+              background: `${C.pos}08`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: `${C.pos}20`, color: C.pos, display: 'grid', placeItems: 'center' }}>
+                  <Icon.arrowUp size={11} strokeWidth={2.5} />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: C.pos, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'var(--font-ui)' }}>
+                  Ingresos
+                </span>
+                <span style={{ fontSize: 11, color: C.textMute, fontWeight: 500 }}>
+                  {ingresos.length} registros
+                </span>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, color: C.pos, fontVariantNumeric: 'tabular-nums' }}>
+                +{fmt(totalIngresos)}
+              </span>
+            </div>
+            <DataTable cols={colsIngresos} rows={rowsIngresos} emptyMsg="Sin ingresos. Sincroniza desde Notion." accent={C.pos} />
+          </Card>
 
-      {selected && (
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
-          <TxDetail tx={selected} onClose={() => setSelected(null)} accent={accent} />
-        </aside>
+          {/* Gastos */}
+          <Card pad={0} style={{ overflow: 'hidden' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 16px 12px',
+              borderBottom: `1px solid ${C.border}`,
+              background: `${C.neg}08`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: `${C.neg}20`, color: C.neg, display: 'grid', placeItems: 'center' }}>
+                  <Icon.arrowDown size={11} strokeWidth={2.5} />
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: C.neg, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'var(--font-ui)' }}>
+                  Gastos
+                </span>
+                <span style={{ fontSize: 11, color: C.textMute, fontWeight: 500 }}>
+                  {gastos.length} registros
+                </span>
+              </div>
+              <span style={{ fontSize: 14, fontWeight: 700, color: C.neg, fontVariantNumeric: 'tabular-nums' }}>
+                −{fmt(totalGastos)}
+              </span>
+            </div>
+            <DataTable cols={colsGastos} rows={rowsGastos} emptyMsg="Sin gastos. Sincroniza desde Notion." accent={C.neg} />
+          </Card>
+
+        </div>
       )}
     </div>
   );

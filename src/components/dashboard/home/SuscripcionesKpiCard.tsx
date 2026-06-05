@@ -24,6 +24,7 @@ export function SuscripcionesKpiCard({ darkMode, amount, count, onDetail, onCrea
       onCreate={onCreate}
       detailTitle="Ver suscripciones"
       createTitle="Nueva suscripcion"
+      centerAmount
     />
   );
 }

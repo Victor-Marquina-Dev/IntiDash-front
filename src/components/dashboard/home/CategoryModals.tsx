@@ -3,13 +3,14 @@
 import React from 'react';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
+import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { CategoriaRow } from '@/shared/types/finance.types';
 
 export type CatRow = CategoriaRow;
 
 // ── Categorias Modal (Ver tabla) ──────────────────────────────────────────
-export function CategoriasModal({ onClose }: Readonly<{ onClose: () => void }>) {
+export function CategoriasModal({ onClose, canWrite = true }: Readonly<{ onClose: () => void; canWrite?: boolean }>) {
   const [gastos,   setGastos]   = React.useState<CatRow[]>([]);
   const [ingresos, setIngresos] = React.useState<CatRow[]>([]);
   const [loading,  setLoading]  = React.useState(true);
@@ -26,9 +27,10 @@ export function CategoriasModal({ onClose }: Readonly<{ onClose: () => void }>) 
   const rows     = tab === 'egreso' ? gastos : ingresos;
   const totalEgr = gastos.reduce((s, r) => s + (r.gastosPorDeuda ?? 0) + (r.gastosUnicos ?? 0), 0);
   const totalIng = ingresos.reduce((s, r) => s + (r.ingresosTotales ?? 0), 0);
+  const emptyMessage = canWrite ? 'Sin categorias. Sincroniza desde Ajustes.' : 'Sin categorias para mostrar.';
 
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(20,24,18,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
+    <ModalShell onClose={onClose} maxWidth={780} zIndex={300}>
       <div style={{ background: '#fafbf8', borderRadius: 20, boxShadow: '0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)', width: '100%', maxWidth: 780, maxHeight: '85vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-ui), system-ui, sans-serif', overflow: 'hidden' }}>
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
@@ -58,7 +60,7 @@ export function CategoriasModal({ onClose }: Readonly<{ onClose: () => void }>) 
         {/* Body */}
         <div style={{ overflowY: 'auto', flex: 1, padding: 24 }}>
           {loading && <div style={{ textAlign: 'center', padding: '48px 0', color: C.textMute, fontSize: 13 }}>Cargando datos...</div>}
-          {!loading && rows.length === 0 && <div style={{ textAlign: 'center', padding: '48px 0', color: C.textMute, fontSize: 13 }}>Sin categorías. Sincroniza desde Ajustes.</div>}
+          {!loading && rows.length === 0 && <div style={{ textAlign: 'center', padding: '48px 0', color: C.textMute, fontSize: 13 }}>{emptyMessage}</div>}
           {!loading && rows.length > 0 && (
             <div style={{ borderRadius: 12, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -96,7 +98,7 @@ export function CategoriasModal({ onClose }: Readonly<{ onClose: () => void }>) 
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -128,7 +130,7 @@ export function NewCategoriaModal({ onClose, onSuccess, defaultTab }: Readonly<{
   }
 
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(20,24,18,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
+    <ModalShell onClose={onClose} maxWidth={440}>
       <div style={{ background: '#fafbf8', borderRadius: 20, boxShadow: '0 32px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06)', width: '100%', maxWidth: 440, fontFamily: 'var(--font-ui), system-ui, sans-serif' }}>
         <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: `${C.olive}18`, color: C.olive, display: 'grid', placeItems: 'center' }}><Icon.bag size={17} strokeWidth={2} /></div>
@@ -156,6 +158,6 @@ export function NewCategoriaModal({ onClose, onSuccess, defaultTab }: Readonly<{
           </div>
         </form>
       </div>
-    </div>
+    </ModalShell>
   );
 }

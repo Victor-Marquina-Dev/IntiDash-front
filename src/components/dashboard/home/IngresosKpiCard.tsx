@@ -1,6 +1,7 @@
 'use client';
 
 import { KpiCard, MiniBars } from './KpiCard';
+import { Icon } from '@/components/icons';
 
 const DEFAULT_BARS = [4900, 4600, 5000, 4800, 5100, 5200];
 
@@ -28,7 +29,8 @@ export function IngresosKpiCard({ darkMode, amount, monthlyData, monthlyLabels, 
       subtitle={`vs mes anterior - ${month}`}
       onDetail={onDetail}
       onCreate={onCreate}
-      detailTitle="Ver historial"
+      detailTitle="Ir a transacciones"
+      detailIcon={Icon.list}
       createTitle="Nuevo ingreso"
       footer={<MiniBars data={bars} labels={monthlyLabels} darkMode={darkMode} theme="green" />}
     />

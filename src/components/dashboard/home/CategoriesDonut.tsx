@@ -6,7 +6,7 @@ import { CategoriasModal, NewCategoriaModal } from './CategoryModals';
 import { CardHeaderSection, type CardTab } from './CardHeaderSection';
 
 const DARK_TOKENS = {
-  cardBg: 'linear-gradient(145deg,#111318,#0d0f12)',
+  cardBg: 'linear-gradient(145deg,#1A1D21,#16181C)',
   cardBrd: 'rgba(255,255,255,0.08)',
   itemBrd: 'rgba(255,255,255,.06)',
   barBg: 'rgba(255,255,255,.05)',
@@ -252,31 +252,37 @@ function DonutView({ rows, tokens, tabs: _tabs, activeTab: _activeTab }: Readonl
 
 // ── Componente principal ──────────────────────────────────────────────────
 
-export function CategoriesDonut({ darkMode }: Readonly<{ darkMode?: boolean }>) {
-  const [tab, setTab]             = React.useState<CategoryTab>('egreso');
+export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMode?: boolean; canWrite?: boolean }>) {
+  const [tab, setTab]             = React.useState<CategoryTab>('ingreso');
   const [showTable, setShowTable] = React.useState(false);
   const [showNew, setShowNew]     = React.useState(false);
   const [showDonut, setShowDonut] = React.useState(true);
-  const { loading, refresh, gastos, ingresos, rows } = useDashboardCategories(tab);
-
+  const [hovered, setHovered]     = React.useState(false);
   const isDark  = darkMode ?? false;
   const tokens  = isDark ? DARK_TOKENS : LIGHT_TOKENS;
+  const { loading, refresh, gastos, ingresos, rows } = useDashboardCategories(tab, isDark);
+  const emptyMessage = canWrite ? 'Sin datos. Sincroniza desde Ajustes.' : 'Sin datos para mostrar.';
 
   const tabs: CardTab[] = [
-    { id: 'egreso',  label: 'Egreso',  badge: loading ? '...' : gastos.length },
     { id: 'ingreso', label: 'Ingreso', badge: loading ? '...' : ingresos.length },
+    { id: 'egreso',  label: 'Egreso',  badge: loading ? '...' : gastos.length },
   ];
 
   return (
-    <div style={{
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
       borderRadius: 22, overflow: 'hidden',
       background: tokens.cardBg,
-      border: `1px solid ${tokens.cardBrd}`,
-      boxShadow: tokens.boxShadow,
+      border: `1px solid ${hovered ? (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : tokens.cardBrd}`,
+      boxShadow: hovered ? (isDark ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : tokens.boxShadow,
       fontFamily: 'var(--font-ui),system-ui,sans-serif',
       height: '100%',
       boxSizing: 'border-box',
       display: 'flex',
+      transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+      transition: 'transform .25s, box-shadow .25s, border-color .25s',
       flexDirection: 'column',
     }}>
       <CardHeaderSection
@@ -289,26 +295,35 @@ export function CategoriesDonut({ darkMode }: Readonly<{ darkMode?: boolean }>) 
         onChart={() => setShowDonut(d => !d)}
         chartActive={showDonut}
         chartTitle={showDonut ? 'Ver lista' : 'Ver gráfico'}
-        onCreate={() => setShowNew(true)}
+        onCreate={canWrite ? () => setShowNew(true) : undefined}
         detailTitle="Ver tabla"
         createTitle="Nueva categoría"
         darkMode={isDark}
       />
 
       {showDonut ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px' }}>
-          <DonutView key={tab} rows={rows} tokens={tokens} tabs={tabs} activeTab={tab} />
+        <div key={tab} className="fz-tab-content" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px' }}>
+          <DonutView rows={rows} tokens={tokens} tabs={tabs} activeTab={tab} />
         </div>
       ) : (
-        <div style={{ maxHeight: 374, overflowY: 'auto', padding: '0 16px 8px' }}>
+        <div key={tab} className="fz-tab-content" style={{ maxHeight: 374, overflowY: 'auto', padding: '0 16px 8px' }}>
           {loading && (
-            <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: tokens.pctC }}>
-              Cargando...
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0' }}>
+              {[1,2,3,4].map(i => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0' }}>
+                  <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ width: 24, height: 24, borderRadius: 8, flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 12, width: `${50 + i * 10}%`, borderRadius: 6 }} />
+                    <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 4, width: '100%', borderRadius: 4 }} />
+                  </div>
+                  <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: 48, borderRadius: 6 }} />
+                </div>
+              ))}
             </div>
           )}
           {!loading && rows.length === 0 && (
             <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 12, color: tokens.pctC }}>
-              Sin datos. Sincroniza desde Ajustes.
+              {emptyMessage}
             </div>
           )}
           {!loading && rows.map((row, index) => {
@@ -347,8 +362,8 @@ export function CategoriesDonut({ darkMode }: Readonly<{ darkMode?: boolean }>) 
         </div>
       )}
 
-      {showTable && <CategoriasModal onClose={() => setShowTable(false)} />}
-      {showNew && <NewCategoriaModal defaultTab={tab} onClose={() => setShowNew(false)} onSuccess={() => { setShowNew(false); refresh(); }} />}
+      {showTable && <CategoriasModal onClose={() => setShowTable(false)} canWrite={canWrite} />}
+      {canWrite && showNew && <NewCategoriaModal defaultTab={tab} onClose={() => setShowNew(false)} onSuccess={() => { setShowNew(false); refresh(); }} />}
     </div>
   );
 }

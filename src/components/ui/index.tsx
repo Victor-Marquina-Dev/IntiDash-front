@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
 
@@ -222,5 +223,52 @@ export function SubKpi({ label, value, pos, muted }: SubKpiProps) {
         fontVariantNumeric: 'tabular-nums', letterSpacing: -0.4,
       }}>{value}</div>
     </div>
+  );
+}
+
+// ── ModalShell ───────────────────────────────────────────────────────────
+// Wrapper animado reutilizable para todos los modales.
+// Fade + scale al entrar; al cerrar usa onClose directamente.
+interface ModalShellProps {
+  onClose: () => void;
+  children: React.ReactNode;
+  maxWidth?: number;
+  zIndex?: number;
+}
+
+export function ModalShell({ onClose, children, maxWidth = 480, zIndex = 300 }: Readonly<ModalShellProps>) {
+  const [visible, setVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: 'fixed', inset: 0, zIndex,
+        background: visible ? 'rgba(17,24,39,0.40)' : 'rgba(17,24,39,0)',
+        backdropFilter: visible ? 'blur(8px)' : 'none',
+        WebkitBackdropFilter: visible ? 'blur(8px)' : 'none',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24, boxSizing: 'border-box',
+        transition: 'background 0.25s ease, backdrop-filter 0.25s ease',
+      }}
+    >
+      <div style={{
+        width: '100%',
+        maxWidth,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.97)',
+        transition: 'opacity 0.25s cubic-bezier(.2,.8,.2,1), transform 0.25s cubic-bezier(.2,.8,.2,1)',
+      }}>
+        {children}
+      </div>
+    </div>,
+    document.body,
   );
 }

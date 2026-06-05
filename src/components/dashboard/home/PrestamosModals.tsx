@@ -4,7 +4,7 @@ import React from 'react';
 import { C } from '@/lib/colors';
 import { formatNotionDate } from '@/lib/format';
 import { Icon } from '@/components/icons';
-import { Button } from '@/components/ui';
+import { Button, ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { PrestamoRow } from '@/shared/types/finance.types';
 
@@ -48,11 +48,7 @@ function EditPrestamoModal({ row, cuentas, onClose, onSuccess }: Readonly<{
   const inp: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 9, border: `1px solid ${C.border}`, background: C.bg, fontSize: 13, color: C.text, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' };
 
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{
-      position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(20,24,18,0.45)',
-      backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box',
-    }}>
+    <ModalShell onClose={onClose} maxWidth={420} zIndex={400}>
       <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, width: '100%', maxWidth: 420, padding: 24 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Editar préstamo</div>
@@ -89,11 +85,11 @@ function EditPrestamoModal({ row, cuentas, onClose, onSuccess }: Readonly<{
           </div>
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
-export function PrestamosModal({ onClose }: Readonly<{ onClose: () => void }>) {
+export function PrestamosModal({ onClose, canWrite = true }: Readonly<{ onClose: () => void; canWrite?: boolean }>) {
   const [rows, setRows]             = React.useState<PrestamoWidgetRow[]>([]);
   const [loading, setLoading]       = React.useState(true);
   const [hasError, setHasError]     = React.useState(false);
@@ -122,15 +118,11 @@ export function PrestamosModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const totalPrestamo = rows.reduce((s, r) => s + (r.montoPrestamo ?? 0), 0);
   const totalPagado   = rows.reduce((s, r) => s + (r.montoPagado ?? 0), 0);
   const totalFaltante = rows.reduce((s, r) => s + (r.cantidadFaltante ?? ((r.montoPrestamo ?? 0) - (r.montoPagado ?? 0))), 0);
+  const emptyMessage = canWrite ? 'Sin prestamos. Sincroniza desde Ajustes.' : 'Sin prestamos para mostrar.';
 
   return (
     <>
-      <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{
-        position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(20,24,18,0.5)',
-        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24, boxSizing: 'border-box',
-      }}>
+      <ModalShell onClose={onClose} maxWidth={820}>
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, width: '100%', maxWidth: 820, maxHeight: '82vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
           {/* Header */}
@@ -150,7 +142,7 @@ export function PrestamosModal({ onClose }: Readonly<{ onClose: () => void }>) {
             {loading && <div style={{ padding: 40, textAlign: 'center', color: C.textMute, fontSize: 13 }}>Cargando...</div>}
             {hasError && <div style={{ padding: 40, textAlign: 'center', color: C.neg, fontSize: 13 }}>Error al cargar datos.</div>}
             {!loading && !hasError && rows.length === 0 && (
-              <div style={{ padding: 40, textAlign: 'center', color: C.textMute, fontSize: 13 }}>Sin préstamos. Sincroniza desde Ajustes.</div>
+              <div style={{ padding: 40, textAlign: 'center', color: C.textMute, fontSize: 13 }}>{emptyMessage}</div>
             )}
             {!loading && !hasError && rows.length > 0 && (
               <div style={{ borderRadius: 0, overflow: 'hidden' }}>
@@ -158,7 +150,7 @@ export function PrestamosModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: 'rgba(63,86,28,0.04)' }}>
-                        {['#', 'Nombre', 'Cuenta Bancaria', 'Fecha', 'Monto Prestado', 'Monto Pagado', 'Por Cobrar', ''].map((h, hi) => (
+                        {['#', 'Nombre', 'Cuenta Bancaria', 'Fecha', 'Monto Prestado', 'Monto Pagado', 'Por Cobrar', ...(canWrite ? [''] : [])].map((h, hi) => (
                           <th key={hi} style={{ padding: hi === 0 ? '10px 12px' : '10px 16px', textAlign: hi === 0 ? 'center' : 'left', fontSize: 10.5, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: 0.8, borderBottom: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
@@ -201,18 +193,20 @@ export function PrestamosModal({ onClose }: Readonly<{ onClose: () => void }>) {
                                 S/ {faltante.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                               </span>
                             </td>
-                            <td style={{ padding: '12px 10px', borderBottom: bb }}>
-                              <button
-                                onClick={() => setEditRow(r)}
-                                aria-label="Editar prestamo"
-                                title="Editar"
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMute, padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color .15s' }}
-                                onMouseEnter={e => (e.currentTarget.style.color = C.olive)}
-                                onMouseLeave={e => (e.currentTarget.style.color = C.textMute)}
-                              >
-                                <Icon.edit size={15} />
-                              </button>
-                            </td>
+                            {canWrite && (
+                              <td style={{ padding: '12px 10px', borderBottom: bb }}>
+                                <button
+                                  onClick={() => setEditRow(r)}
+                                  aria-label="Editar prestamo"
+                                  title="Editar"
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMute, padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color .15s' }}
+                                  onMouseEnter={e => (e.currentTarget.style.color = C.olive)}
+                                  onMouseLeave={e => (e.currentTarget.style.color = C.textMute)}
+                                >
+                                  <Icon.edit size={15} />
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}
@@ -222,7 +216,7 @@ export function PrestamosModal({ onClose }: Readonly<{ onClose: () => void }>) {
                         <td colSpan={4} style={{ padding: '10px 16px', fontWeight: 700, color: C.text, fontSize: 12 }}>Total</td>
                         <td style={{ padding: '10px 16px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>S/ {totalPrestamo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
                         <td style={{ padding: '10px 16px', fontWeight: 700, color: C.pos, fontVariantNumeric: 'tabular-nums' }}>S/ {totalPagado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                        <td colSpan={2} style={{ padding: '10px 16px', fontWeight: 700, color: C.neg, fontVariantNumeric: 'tabular-nums' }}>S/ {totalFaltante.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
+                        <td colSpan={canWrite ? 2 : 1} style={{ padding: '10px 16px', fontWeight: 700, color: C.neg, fontVariantNumeric: 'tabular-nums' }}>S/ {totalFaltante.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -231,9 +225,9 @@ export function PrestamosModal({ onClose }: Readonly<{ onClose: () => void }>) {
             )}
           </div>
         </div>
-      </div>
+      </ModalShell>
 
-      {editRow && (
+      {canWrite && editRow && (
         <EditPrestamoModal
           row={editRow}
           cuentas={cuentas}

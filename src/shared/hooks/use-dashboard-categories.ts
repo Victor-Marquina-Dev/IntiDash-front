@@ -3,11 +3,14 @@ import { useDataSyncedRefresh } from '@/shared/hooks/use-data-synced-refresh';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { CategoriaRow } from '@/shared/types/finance.types';
 
-// Escala por tipo: egresos en tonos de rojo, ingresos en tonos de verde
-// (del más intenso = mayor monto, al más claro). Da patrón coherente con la
-// regla "gastos = rojo, ingresos = verde" sin volverse un arcoíris.
-const EGRESO_SCALE  = ['#DC2626', '#EF4444', '#F87171', '#FCA5A5', '#FECACA', '#FEE2E2'] as const;
-const INGRESO_SCALE = ['#16A34A', '#22C55E', '#4ADE80', '#86EFAC', '#BBF7D0', '#DCFCE7'] as const;
+// ── Escalas de color por tipo ────────────────────────────────────────────
+// Modo claro: empiezan en el token semántico (#DC2626 / #16A34A)
+// Modo oscuro: empiezan un paso más suave (#EF4444 / #22C55E) porque los
+// fondos oscuros amplifican la saturación y los tonos muy vívidos se ven duros.
+const EGRESO_LIGHT  = ['#F5EAEA', '#EDD5D5', '#E0BFBF', '#CFAAAA', '#BC9090', '#A87878'] as const;
+const EGRESO_DARK   = ['#872F2F', '#9E3D3D', '#B55252', '#CC7070', '#E09090', '#F0B8B8'] as const;
+const INGRESO_LIGHT = ['#CCDCCC', '#BBD0BB', '#A8C0A8', '#8FA88F', '#7A9A7A', '#6B8B6B'] as const;
+const INGRESO_DARK  = ['#0C5E3F', '#1A7A52', '#2D9668', '#4DB384', '#78C9A4', '#A8DECA'] as const;
 
 export type CategoryTab = 'egreso' | 'ingreso';
 
@@ -19,7 +22,7 @@ export interface CategoryMetricRow {
   barPct: number;
 }
 
-export function useDashboardCategories(tab: CategoryTab) {
+export function useDashboardCategories(tab: CategoryTab, darkMode = false) {
   const [gastos, setGastos] = React.useState<CategoriaRow[]>([]);
   const [ingresos, setIngresos] = React.useState<CategoriaRow[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -44,7 +47,9 @@ export function useDashboardCategories(tab: CategoryTab) {
   const total = sortedRows.reduce((sum, row) => sum + row.value, 0);
   const maxValue = Math.max(...sortedRows.map(row => row.value), 0);
 
-  const scale = tab === 'egreso' ? EGRESO_SCALE : INGRESO_SCALE;
+  const egresoScale  = darkMode ? EGRESO_DARK  : EGRESO_LIGHT;
+  const ingresoScale = darkMode ? INGRESO_DARK : INGRESO_LIGHT;
+  const scale = tab === 'egreso' ? egresoScale : ingresoScale;
   const rows = sortedRows.map((row, index) => ({
     ...row,
     color: scale[Math.min(index, scale.length - 1)],

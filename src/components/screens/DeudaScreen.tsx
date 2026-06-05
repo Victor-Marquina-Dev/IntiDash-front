@@ -4,7 +4,6 @@ import React from 'react';
 import { C } from '@/lib/colors';
 import { API_BASE_URL } from '@/lib/api';
 import { formatNotionDate } from '@/lib/format';
-import { Icon } from '@/components/icons';
 import { Card, Button } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { DeudaRow } from '@/shared/types/finance.types';
@@ -13,7 +12,7 @@ type Status = 'idle' | 'loading' | 'ok' | 'error';
 type Tab    = 'suscripciones' | 'deudas';
 type View   = 'cards' | 'tabla';
 
-interface DeudaScreenProps { accent: string }
+interface DeudaScreenProps { accent: string; canWrite?: boolean }
 
 function isSuscripcion(row: DeudaRow): boolean {
   const tp = (row.tipoPago ?? '').toLowerCase();
@@ -71,8 +70,6 @@ const KPI: React.CSSProperties = {
 export function DeudaScreen({ accent: _accent }: Readonly<DeudaScreenProps>) {
   const [rows, setRows]               = React.useState<DeudaRow[]>([]);
   const [fetchStatus, setFetchStatus] = React.useState<Status>('loading');
-  const [syncStatus, setSyncStatus]   = React.useState<Status>('idle');
-  const [syncMsg, setSyncMsg]         = React.useState<string | null>(null);
   const [tab, setTab]                 = React.useState<Tab>('suscripciones');
   const [viewSusc,   setViewSusc]   = React.useState<View>('cards');
   const [viewDeudas, setViewDeudas] = React.useState<View>('cards');
@@ -87,20 +84,6 @@ export function DeudaScreen({ accent: _accent }: Readonly<DeudaScreenProps>) {
       .catch(() => setFetchStatus('error'));
 
   React.useEffect(() => { refreshDeudas(); }, []);
-
-  const handleSync = async () => {
-    setSyncStatus('loading');
-    setSyncMsg(null);
-    try {
-      const body = await notionPaymentsService.sync('/notion-payments/sync-deudas') as { synced?: number; message?: string };
-      setSyncStatus('ok');
-      setSyncMsg(`OK ${body.synced} registros sincronizados`);
-      refreshDeudas();
-    } catch {
-      setSyncStatus('error');
-      setSyncMsg('No se pudo conectar con el backend');
-    }
-  };
 
   const suscs      = rows.filter(isSuscripcion);
   const deudas     = rows.filter(r => !isSuscripcion(r));
@@ -147,15 +130,8 @@ export function DeudaScreen({ accent: _accent }: Readonly<DeudaScreenProps>) {
           </div>
 
           <div style={{ padding: '10px 16px', display: 'flex', gap: 8, alignItems: 'center' }}>
-            {syncMsg && (
-              <span style={{ fontSize: 12, color: syncStatus === 'ok' ? C.pos : C.neg }}>{syncMsg}</span>
-            )}
-            <Button create icon={<Icon.plus size={11} />} onClick={() => {}}>Nuevo</Button>
             <Button link onClick={toggleView}>
               {activeView === 'cards' ? 'Ver tabla' : 'Ver tarjetas'}
-            </Button>
-            <Button primary icon={<Icon.refresh size={14} />} onClick={handleSync} disabled={syncStatus === 'loading'}>
-              {syncStatus === 'loading' ? 'Sincronizando...' : 'Sincronizar'}
             </Button>
           </div>
         </div>

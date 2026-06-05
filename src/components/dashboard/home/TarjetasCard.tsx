@@ -4,14 +4,14 @@ import React from 'react';
 import { Icon } from '@/components/icons';
 import { useDashboardAccounts } from '@/shared/hooks/use-dashboard-accounts';
 
-const BANK_BADGES: Record<string, { initials: string; bg: string; color: string }> = {
-  'interbank':  { initials: 'IB',  bg: '#006341', color: '#fff' },
-  'bcp':        { initials: 'BCP', bg: '#003DA5', color: '#fff' },
-  'bbva':       { initials: 'BB',  bg: '#004481', color: '#fff' },
-  'scotiabank': { initials: 'SB',  bg: '#d42b1b', color: '#fff' },
-  'yape':       { initials: 'YP',  bg: '#7b2d8b', color: '#fff' },
-  'plin':       { initials: 'PL',  bg: '#00b4d8', color: '#fff' },
-  'falabella':  { initials: 'FA',  bg: '#009640', color: '#fff' },
+const BANK_BADGES: Record<string, { initials: string }> = {
+  'interbank':  { initials: 'I' },
+  'bcp':        { initials: 'B' },
+  'bbva':       { initials: 'B' },
+  'scotiabank': { initials: 'S' },
+  'yape':       { initials: 'Y' },
+  'plin':       { initials: 'P' },
+  'falabella':  { initials: 'F' },
 };
 
 function getBankBadge(banco: string) {
@@ -19,10 +19,11 @@ function getBankBadge(banco: string) {
   for (const [key, badge] of Object.entries(BANK_BADGES)) {
     if (b.includes(key)) return badge;
   }
-  return null;
+  const first = (banco ?? '?')[0]?.toUpperCase() ?? '?';
+  return { initials: first };
 }
 
-export function TarjetasCard({ darkMode = false }: Readonly<{ darkMode?: boolean }>) {
+export function TarjetasCard({ darkMode = false, canWrite = true }: Readonly<{ darkMode?: boolean; canWrite?: boolean }>) {
   const { rows, loading, tipos, activeTab, visibles, isCredito, selectTab } = useDashboardAccounts();
   const tabsRef   = React.useRef<HTMLDivElement>(null);
   const dragState = React.useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
@@ -62,10 +63,11 @@ export function TarjetasCard({ darkMode = false }: Readonly<{ darkMode?: boolean
     btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
 
-  const [btnHov, setBtnHov] = React.useState<'detail' | 'create' | null>(null);
+  const [btnHov, setBtnHov]   = React.useState<'detail' | 'create' | null>(null);
+  const [hovered, setHovered] = React.useState(false);
 
   const D          = darkMode;
-  const cardBg     = D ? 'linear-gradient(145deg,#111318,#0d0f12)' : '#FFFFFF';
+  const cardBg     = D ? 'linear-gradient(145deg,#1A1D21,#16181C)' : '#FFFFFF';
   const cardBorder = D ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.08)';
   const labelC     = D ? 'rgba(255,255,255,0.38)' : '#6B7280';
   const nameC      = D ? 'rgba(255,255,255,0.85)' : '#111827';
@@ -86,12 +88,17 @@ export function TarjetasCard({ darkMode = false }: Readonly<{ darkMode?: boolean
   const itemBorder = D ? 'rgba(255,255,255,.08)'  : 'rgba(17,24,39,0.06)';
 
   return (
-    <div style={{
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
       background: cardBg, borderRadius: 22, overflow: 'hidden',
-      border: `1px solid ${cardBorder}`,
-      boxShadow: D
-        ? '0 4px 24px rgba(0,0,0,.5), 0 12px 40px rgba(0,0,0,.3)'
-        : '0 1px 2px rgba(17,24,39,.04), 0 12px 32px rgba(17,24,39,.06)',
+      border: `1px solid ${hovered ? (D ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : cardBorder}`,
+      boxShadow: hovered
+        ? (D ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)')
+        : (D ? '0 4px 24px rgba(0,0,0,.5), 0 12px 40px rgba(0,0,0,.3)' : '0 1px 2px rgba(17,24,39,.04), 0 12px 32px rgba(17,24,39,.06)'),
+      transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+      transition: 'transform .25s, box-shadow .25s, border-color .25s',
     }}>
 
       {/* Header */}
@@ -109,14 +116,16 @@ export function TarjetasCard({ darkMode = false }: Readonly<{ darkMode?: boolean
           >
             <Icon.cards size={12} strokeWidth={1.7} />
           </button>
-          <button
-            onMouseEnter={() => setBtnHov('create')} onMouseLeave={() => setBtnHov(null)}
-            aria-label="Nueva cuenta"
-            title="Nueva cuenta"
-            style={{ width: 28, height: 28, borderRadius: 8, background: btnHov === 'create' ? btnHovBg : btnBg, border: `1px solid ${btnBrd}`, display: 'grid', placeItems: 'center', cursor: 'pointer', color: btnHov === 'create' ? btnHovC : btnC, transition: 'all .2s', flexShrink: 0 }}
-          >
-            <Icon.plus size={12} strokeWidth={2} />
-          </button>
+          {canWrite && (
+            <button
+              onMouseEnter={() => setBtnHov('create')} onMouseLeave={() => setBtnHov(null)}
+              aria-label="Nueva cuenta"
+              title="Nueva cuenta"
+              style={{ width: 28, height: 28, borderRadius: 8, background: btnHov === 'create' ? btnHovBg : btnBg, border: `1px solid ${btnBrd}`, display: 'grid', placeItems: 'center', cursor: 'pointer', color: btnHov === 'create' ? btnHovC : btnC, transition: 'all .2s', flexShrink: 0 }}
+            >
+              <Icon.plus size={12} strokeWidth={2} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -162,10 +171,21 @@ export function TarjetasCard({ darkMode = false }: Readonly<{ darkMode?: boolean
       )}
 
       {/* Body */}
-      <div style={{ padding: '10px 16px 16px' }}>
+      <div key={activeTab} className="fz-tab-content" style={{ padding: '10px 16px 16px' }}>
 
         {loading && (
-          <div style={{ textAlign: 'center', padding: '24px 0', color: bankC, fontSize: 13 }}>Cargando...</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[1,2,3].map(i => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 15px', borderRadius: 14, background: itemBg }}>
+                <div className={D ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div className={D ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: `${60 + i * 10}%`, borderRadius: 6 }} />
+                  <div className={D ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 10, width: '40%', borderRadius: 6 }} />
+                </div>
+                <div className={D ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: 60, borderRadius: 6 }} />
+              </div>
+            ))}
+          </div>
         )}
         {!loading && rows.length === 0 && (
           <div style={{ textAlign: 'center', padding: '24px 0', color: bankC, fontSize: 12 }}>
@@ -199,7 +219,7 @@ export function TarjetasCard({ darkMode = false }: Readonly<{ darkMode?: boolean
                       return (
                         <div style={{
                           width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                          background: badge.bg, color: badge.color,
+                          background: D ? '#0C5E3F' : '#8FA88F', color: '#fff',
                           display: 'grid', placeItems: 'center',
                           fontSize: 10, fontWeight: 900, letterSpacing: 0.3,
                         }}>

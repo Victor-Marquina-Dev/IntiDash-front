@@ -8,24 +8,24 @@ function fmtK(v: number): string {
 }
 
 const M3_LIGHT = {
-  incLine:   '#16A34A',                 // success
-  incFill:   'rgba(22,163,74,.12)',
-  expLine:   '#DC2626',                 // danger
-  expFill:   'rgba(220,38,38,.10)',
-  grid:      'rgba(17,24,39,.07)',      // neutro
-  axisLine:  'rgba(17,24,39,.14)',      // neutro
-  axisText:  '#9CA3AF',                 // textMute
+  incLine:   '#8FA88F',                 // verde sage suave — tono de la card Ingresos
+  incFill:   'rgba(204,220,204,0.85)', // = #CCDCCC
+  expLine:   '#CF9C9C',
+  expFill:   'rgba(245,234,234,0.85)',  // = #F5EAEA con ligera transparencia (card Gastos bg)
+  grid:      'rgba(17,24,39,.07)',
+  axisLine:  'rgba(17,24,39,.14)',
+  axisText:  '#9CA3AF',
   dotStroke: 'rgba(255,255,255,.92)',
 };
 const M3_DARK = {
-  incLine:   '#10b981',
-  incFill:   'rgba(16,185,129,.14)',
-  expLine:   '#f87171',
-  expFill:   'rgba(248,113,113,.11)',
+  incLine:   '#0C5E3F',
+  incFill:   'rgba(12,94,63,.20)',
+  expLine:   '#872F2F',
+  expFill:   'rgba(135,47,47,.20)',
   grid:      'rgba(255,255,255,.07)',
-  axisLine:  'rgba(16,185,129,.22)',
-  axisText:  '#3a6b3a',
-  dotStroke: '#0f1a0f',
+  axisLine:  'rgba(255,255,255,.12)',
+  axisText:  'rgba(255,255,255,0.30)',
+  dotStroke: 'rgba(13,15,18,.95)',
 };
 
 const FONT = 'var(--font-ui),system-ui,sans-serif';

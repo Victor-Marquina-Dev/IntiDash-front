@@ -1,7 +1,5 @@
-﻿export {
+export {
   DeudasModal,
-  GastosModal,
-  IngresosModal,
   SuscripcionesModal,
 } from './KpiTableModals';
 

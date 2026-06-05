@@ -3,6 +3,7 @@
 import React from 'react';
 import { C } from '@/lib/colors';
 import { formatNotionDate } from '@/lib/format';
+import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { DeudaRow } from '@/shared/types/finance.types';
 
@@ -24,7 +25,7 @@ export function SuscripcionesModal({ onClose }: Readonly<{ onClose: () => void }
   const total = rows.reduce((s, r) => s + (r.cantidad ?? 0), 0);
 
   return (
-    <div onClick={e => { if (e.target === e.currentTarget) onClose(); }} style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(20,24,18,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box' }}>
+    <ModalShell onClose={onClose} maxWidth={820}>
       <div style={{ background: '#fafbf8', borderRadius: 20, boxShadow: '0 32px 80px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.06)', width: '100%', maxWidth: 820, maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'var(--font-ui), system-ui, sans-serif' }}>
         <div style={{ padding: '20px 24px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
           <div style={{ width: 42, height: 42, borderRadius: 12, flexShrink: 0, background: `${C.neg}18`, color: C.neg, display: 'grid', placeItems: 'center', fontSize: 20 }}>🔔</div>
@@ -82,7 +83,7 @@ export function SuscripcionesModal({ onClose }: Readonly<{ onClose: () => void }
           )}
         </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
