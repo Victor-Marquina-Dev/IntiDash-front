@@ -6,8 +6,8 @@ import { Card, CardHeader } from '@/components/ui';
 import { useWorkspaces } from '@/shared/hooks/use-workspaces';
 import {
   workspaceService,
-  setActiveWorkspace,
   type WorkspaceMember,
+  type WorkspaceInvite,
   type WorkspaceRole,
   type VisibilityMode,
   VISIBILITY_LABELS,
@@ -63,6 +63,8 @@ export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Read
   const [membersRowId,   setMembersRowId]   = React.useState<string | null>(null);
   const [membersCache,   setMembersCache]   = React.useState<Record<string, WorkspaceMember[]>>({});
   const [membersLoading, setMembersLoading] = React.useState<Record<string, boolean>>({});
+  const [invitesCache,   setInvitesCache]   = React.useState<Record<string, WorkspaceInvite[]>>({});
+  const [invitesLoading, setInvitesLoading] = React.useState<Record<string, boolean>>({});
 
   // ── Invite inline por fila ────────────────────────────────────────────────
   const [inviteRowId, setInviteRowId] = React.useState<string | null>(null);
@@ -137,16 +139,29 @@ export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Read
     }
   }
 
-  async function toggleMembersRow(wsId: string) {
+  async function toggleMembersRow(wsId: string, wsRole: WorkspaceRole) {
     if (membersRowId === wsId) { setMembersRowId(null); return; }
     setMembersRowId(wsId);
-    if (membersCache[wsId]) return;
-    setMembersLoading(prev => ({ ...prev, [wsId]: true }));
-    try {
-      const rows = await workspaceService.members(wsId);
-      setMembersCache(prev => ({ ...prev, [wsId]: rows }));
-    } catch { /* silencioso */ }
-    finally { setMembersLoading(prev => ({ ...prev, [wsId]: false })); }
+    const fetches: Promise<void>[] = [];
+    if (!membersCache[wsId]) {
+      setMembersLoading(prev => ({ ...prev, [wsId]: true }));
+      fetches.push(
+        workspaceService.members(wsId)
+          .then(rows => setMembersCache(prev => ({ ...prev, [wsId]: rows })))
+          .catch(() => {})
+          .finally(() => setMembersLoading(prev => ({ ...prev, [wsId]: false }))),
+      );
+    }
+    if (!invitesCache[wsId] && (wsRole === 'owner' || wsRole === 'editor')) {
+      setInvitesLoading(prev => ({ ...prev, [wsId]: true }));
+      fetches.push(
+        workspaceService.workspaceInvites(wsId)
+          .then(rows => setInvitesCache(prev => ({ ...prev, [wsId]: rows })))
+          .catch(() => {})
+          .finally(() => setInvitesLoading(prev => ({ ...prev, [wsId]: false }))),
+      );
+    }
+    await Promise.all(fetches);
   }
 
   async function removeMemberFromWs(wsId: string, member: WorkspaceMember) {
@@ -157,6 +172,47 @@ export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Read
       await refresh();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'No se pudo quitar al miembro.');
+    }
+  }
+
+  async function handleChangeRole(wsId: string, member: WorkspaceMember, newRole: WorkspaceRole) {
+    try {
+      await workspaceService.changeRole(wsId, member.userId, newRole);
+      setMembersCache(prev => ({
+        ...prev,
+        [wsId]: (prev[wsId] ?? []).map(m => m.userId === member.userId ? { ...m, role: newRole } : m),
+      }));
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'No se pudo cambiar el rol.');
+    }
+  }
+
+  async function handleRevokeInvite(wsId: string, invite: WorkspaceInvite) {
+    if (!confirm(`¿Revocar la invitación para ${invite.email}?`)) return;
+    try {
+      await workspaceService.revokeInvite(wsId, invite.id);
+      setInvitesCache(prev => ({ ...prev, [wsId]: (prev[wsId] ?? []).filter(i => i.id !== invite.id) }));
+      await refresh();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'No se pudo revocar la invitación.');
+    }
+  }
+
+  async function handleTransferOwnership(wsId: string, member: WorkspaceMember) {
+    if (!confirm(`¿Transferir la propiedad del espacio a ${member.name || member.email}? Tú pasarás a ser editor.`)) return;
+    try {
+      await workspaceService.transferOwnership(wsId, member.userId);
+      setMembersCache(prev => ({
+        ...prev,
+        [wsId]: (prev[wsId] ?? []).map(m => {
+          if (m.userId === member.userId) return { ...m, role: 'owner' };
+          if (m.role === 'owner') return { ...m, role: 'editor' };
+          return m;
+        }),
+      }));
+      await refresh();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'No se pudo transferir la propiedad.');
     }
   }
 
@@ -175,9 +231,9 @@ export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Read
       // Si el espacio eliminado/abandonado era el activo, seleccionar otro antes de recargar
       if (ws.id === activeId) {
         const remaining = list.filter(w => w.id !== ws.id);
-        if (remaining.length > 0) setActiveWorkspace(remaining[0].id);
+        if (remaining.length > 0) switchTo(remaining[0].id);
       }
-      window.location.reload();
+      await refresh();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'No se pudo completar la acción.');
     }
@@ -196,6 +252,8 @@ export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Read
       await workspaceService.invite(inviteRowId, email.trim(), 'editor', visibility);
       setInvMsg('Invitación enviada.');
       setEmail(''); setVisibility('mutual'); setInvStatus('ok');
+      // Invalidar cache de invitaciones para que se recargue al reabrir el panel
+      setInvitesCache(prev => { const next = { ...prev }; delete next[inviteRowId]; return next; });
       await refresh();
     } catch (err: unknown) {
       setInvMsg(err instanceof Error ? err.message : 'No se pudo crear la invitación.');
@@ -588,8 +646,8 @@ export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Read
                       role="button"
                       tabIndex={0}
                       className="ws-name-cell"
-                      onClick={() => toggleMembersRow(ws.id)}
-                      onKeyDown={e => e.key === 'Enter' && toggleMembersRow(ws.id)}
+                      onClick={() => toggleMembersRow(ws.id, ws.role)}
+                      onKeyDown={e => e.key === 'Enter' && toggleMembersRow(ws.id, ws.role)}
                       style={{
                         minWidth: 0, cursor: 'pointer',
                         display: 'flex', alignItems: 'center', gap: 8,
@@ -745,14 +803,33 @@ export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Read
                                 {member.email}
                               </div>
                             </div>
-                            <span style={{
-                              padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 900,
-                              justifySelf: 'center',
-                              background: member.role === 'owner' ? C.infoSoft : member.role === 'editor' ? C.successSoft : C.soft,
-                              color:      member.role === 'owner' ? C.info     : member.role === 'editor' ? C.success     : C.textDim,
-                            }}>
-                              {ROLE_LABEL[member.role]}
-                            </span>
+                            {/* Rol: select para owner sobre no-owner, badge para el resto */}
+                            {ws.role === 'owner' && member.role !== 'owner' ? (
+                              <select
+                                value={member.role}
+                                onChange={e => handleChangeRole(ws.id, member, e.target.value as WorkspaceRole)}
+                                style={{
+                                  justifySelf: 'center', height: 26, padding: '0 6px',
+                                  borderRadius: 999, fontSize: 11, fontWeight: 900,
+                                  border: `1px solid ${C.border}`, background: member.role === 'editor' ? C.successSoft : C.soft,
+                                  color: member.role === 'editor' ? C.success : C.textDim,
+                                  cursor: 'pointer', outline: 'none',
+                                  fontFamily: 'var(--font-ui), system-ui, sans-serif',
+                                }}
+                              >
+                                <option value="editor">Editor</option>
+                                <option value="viewer">Lectura</option>
+                              </select>
+                            ) : (
+                              <span style={{
+                                padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 900,
+                                justifySelf: 'center',
+                                background: member.role === 'owner' ? C.infoSoft : member.role === 'editor' ? C.successSoft : C.soft,
+                                color:      member.role === 'owner' ? C.info     : member.role === 'editor' ? C.success     : C.textDim,
+                              }}>
+                                {ROLE_LABEL[member.role]}
+                              </span>
+                            )}
                             <span style={{
                               padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 800,
                               justifySelf: 'center',
@@ -762,26 +839,103 @@ export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Read
                               {VISIBILITY_SHORT[vm]}
                             </span>
                             {ws.role === 'owner' && member.role !== 'owner' ? (
-                              <button
-                                type="button"
-                                onClick={() => removeMemberFromWs(ws.id, member)}
-                                title="Quitar miembro"
-                                style={{
-                                  width: 24, height: 24, borderRadius: 6,
-                                  border: `1px solid rgba(220,38,38,0.25)`, background: 'transparent',
-                                  color: 'rgba(220,38,38,0.55)', cursor: 'pointer',
-                                  fontSize: 16, fontWeight: 400,
-                                  display: 'grid', placeItems: 'center', lineHeight: 1,
-                                }}
-                              >
-                                ×
-                              </button>
+                              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleTransferOwnership(ws.id, member)}
+                                  title="Transferir propiedad"
+                                  style={{
+                                    width: 24, height: 24, borderRadius: 6,
+                                    border: `1px solid ${C.border}`, background: 'transparent',
+                                    color: C.textMute, cursor: 'pointer',
+                                    fontSize: 12, fontWeight: 700,
+                                    display: 'grid', placeItems: 'center', lineHeight: 1,
+                                  }}
+                                >
+                                  ⇑
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeMemberFromWs(ws.id, member)}
+                                  title="Quitar miembro"
+                                  style={{
+                                    width: 24, height: 24, borderRadius: 6,
+                                    border: `1px solid rgba(220,38,38,0.25)`, background: 'transparent',
+                                    color: 'rgba(220,38,38,0.55)', cursor: 'pointer',
+                                    fontSize: 16, fontWeight: 400,
+                                    display: 'grid', placeItems: 'center', lineHeight: 1,
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </div>
                             ) : <span />}
                           </div>
                         );
                       })}
                     </div>
                   )}
+
+                  {/* Invitaciones pendientes (owner/editor) */}
+                  {membersRowId === ws.id && (ws.role === 'owner' || ws.role === 'editor') && (() => {
+                    const pending = invitesCache[ws.id] ?? [];
+                    if (invitesLoading[ws.id]) {
+                      return (
+                        <div style={{ padding: '10px 20px', borderTop: `1px solid ${C.border}`, color: C.textMute, fontSize: 12 }}>
+                          Cargando invitaciones…
+                        </div>
+                      );
+                    }
+                    if (pending.length === 0) return null;
+                    return (
+                      <div style={{ borderTop: `1px solid ${C.border}`, background: 'rgba(217,119,6,0.03)' }}>
+                        <div style={{
+                          padding: '7px 16px 5px 34px',
+                          fontSize: 10, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase' as const,
+                          color: '#d97706',
+                        }}>
+                          Invitaciones pendientes ({pending.length})
+                        </div>
+                        {pending.map(inv => (
+                          <div
+                            key={inv.id}
+                            style={{
+                              display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 60px auto',
+                              gap: 8, alignItems: 'center',
+                              padding: '7px 16px 7px 34px',
+                              borderTop: `1px solid ${C.border}20`,
+                            }}
+                          >
+                            <span style={{ fontSize: 12, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>
+                              {inv.email}
+                            </span>
+                            <span style={{
+                              padding: '2px 7px', borderRadius: 999, fontSize: 10, fontWeight: 800,
+                              justifySelf: 'center' as const,
+                              background: inv.role === 'editor' ? C.successSoft : C.soft,
+                              color: inv.role === 'editor' ? C.success : C.textDim,
+                            }}>
+                              {ROLE_LABEL[inv.role]}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRevokeInvite(ws.id, inv)}
+                              title="Revocar invitación"
+                              style={{
+                                width: 22, height: 22, borderRadius: 6,
+                                border: `1px solid rgba(220,38,38,0.25)`, background: 'transparent',
+                                color: 'rgba(220,38,38,0.55)', cursor: 'pointer',
+                                fontSize: 14, fontWeight: 400,
+                                display: 'grid', placeItems: 'center', lineHeight: 1,
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {/* Mini-formulario de invitación inline */}
                   {rowOpen && (

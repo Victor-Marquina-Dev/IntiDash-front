@@ -28,6 +28,16 @@ export interface WorkspaceMember {
   joinedAt: string | null;
 }
 
+export interface WorkspaceInvite {
+  id: string;
+  email: string;
+  role: WorkspaceRole;
+  visibilityMode: VisibilityMode;
+  token: string;
+  createdAt: string | null;
+  expiresAt: string | null;
+}
+
 export interface PendingInvite {
   token: string;
   role: WorkspaceRole;
@@ -54,6 +64,12 @@ export const workspaceService = {
   removeMember:    (wsId: string, userId: string) => apiClient.delete<{ removed: boolean }>(`/workspaces/${wsId}/members/${userId}`),
   leaveWorkspace:  (wsId: string) => apiClient.post<{ left: boolean }>(`/workspaces/${wsId}/leave`, {}),
   deleteWorkspace: (wsId: string) => apiClient.delete<{ deleted: boolean }>(`/workspaces/${wsId}`),
+  workspaceInvites: (wsId: string) => apiClient.get<WorkspaceInvite[]>(`/workspaces/${wsId}/invites`),
+  revokeInvite:    (wsId: string, inviteId: string) => apiClient.delete<{ revoked: boolean }>(`/workspaces/${wsId}/invites/${inviteId}`),
+  changeRole:      (wsId: string, userId: string, role: WorkspaceRole) =>
+                     apiClient.patch<{ userId: string; role: WorkspaceRole }>(`/workspaces/${wsId}/members/${userId}/role`, { role }),
+  transferOwnership: (wsId: string, userId: string) =>
+                     apiClient.patch<{ transferred: boolean; newOwnerId: string }>(`/workspaces/${wsId}/owner`, { userId }),
 };
 
 /**
