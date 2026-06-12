@@ -11,10 +11,10 @@ import { notionPaymentsService, NOTION_SYNC_ENDPOINTS } from '@/shared/services/
 import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
 import { getActiveWorkspace } from '@/shared/services/workspace.service';
 import { DASHBOARD_NAV_ITEMS, getDashboardNavItem, type DashboardNavItem, type ScreenId } from './navigation';
-
-const lsSyncKey = () => `notion_last_sync_${getActiveWorkspace() ?? 'default'}`;
 import { WorkspaceSelector } from './WorkspaceSelector';
 import { NotificationBell } from './NotificationBell';
+
+const lsSyncKey = () => `notion_last_sync_${getActiveWorkspace() ?? 'default'}`;
 
 const GearIcon     = Icon.gear;
 const MoonIcon     = Icon.moon;
@@ -37,7 +37,7 @@ interface TopBarProps {
   canWrite?: boolean;
 }
 
-/* â”€â”€â”€ NavTab estilo Vectra â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Nav tab estilo Vectra */
 function NavTab({
   tab, isActive, onClick, dark,
 }: Readonly<{
@@ -101,7 +101,7 @@ function NavTab({
   );
 }
 
-/* â”€â”€â”€ Botón ícono derecha â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Boton icono derecha */
 function IconBtn({
   onClick, label, children, dark, active = false,
 }: Readonly<{
@@ -139,7 +139,7 @@ function IconBtn({
   );
 }
 
-/* â”€â”€â”€ Opción del selector de período â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Opcion del selector de periodo */
 function getInitials(user: TopBarProps['user']) {
   const source = user?.name || user?.email || 'VM';
   const parts = source.split(/[\s@._-]+/).filter(Boolean);
@@ -282,7 +282,7 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
         boxSizing: 'border-box',
       }}>
 
-        {/* â”€â”€ Mobile: icono + label activo â”€â”€ */}
+        {/* Mobile: icono y label activo */}
         {isMobile && (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
             {ActiveIcon && (
@@ -296,15 +296,22 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
           </div>
         )}
 
-        {/* â”€â”€ Logo izquierdo + selector de workspace â”€â”€ */}
+        {/* Logo izquierdo y selector de workspace */}
         {!isMobile && (
           <div style={{ flex: '1 1 0', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 24 }}>
-            <MomotechLogo dark={darkMode} />
+            <button
+              type="button"
+              onClick={() => setActive?.('home')}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              aria-label="Ir al dashboard"
+            >
+              <MomotechLogo dark={darkMode} />
+            </button>
             <WorkspaceSelector darkMode={darkMode} user={user} />
           </div>
         )}
 
-        {/* â”€â”€ Nav tabs centrados con caja (centrado absoluto respecto al header) â”€â”€ */}
+        {/* Nav tabs centrados */}
         {!isMobile && (
           <nav style={{
             position: 'absolute', left: '50%', top: headerPadTop, bottom: 0,
@@ -334,7 +341,7 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
           </nav>
         )}
 
-        {/* â”€â”€ Zona derecha â”€â”€ */}
+        {/* Zona derecha */}
         <div style={{
           flex: isMobile ? '0 0 auto' : '1 1 0',
           minWidth: 0,
@@ -526,4 +533,5 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
     </header>
   );
 }
+
 

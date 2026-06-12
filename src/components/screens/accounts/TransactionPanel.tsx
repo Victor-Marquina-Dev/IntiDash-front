@@ -28,8 +28,6 @@ function TransactionPanel({ cuentaNombre, ingresos, gastos, transferencias, show
   const brd = D ? 'rgba(255,255,255,0.08)' : C.border;
   const [tab,     setTab]     = React.useState<TxTab>('todas');
   const [search,  setSearch]  = React.useState('');
-  const [sortKey, setSortKey] = React.useState('fecha');
-  const [sortDir, setSortDir] = React.useState<'asc'|'desc'>('desc');
   const [showNewIngModal, setShowNewIngModal] = React.useState(false);
   const [showNewGasModal, setShowNewGasModal] = React.useState(false);
   const [editIngRow, setEditIngRow] = React.useState<IngresoRow | null>(null);
@@ -44,22 +42,20 @@ function TransactionPanel({ cuentaNombre, ingresos, gastos, transferencias, show
     setSearch('');
   }, []);
 
-  function handleSort(field: string) {
-    if (sortKey === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    else { setSortKey(field); setSortDir('desc'); }
-  }
-
-  function sortData<T>(data: T[], field: string, dir: 'asc'|'desc'): T[] {
+  // Hoy y pasado primero (más reciente arriba); fechas futuras al final.
+  // Mismo día → lo último registrado arriba.
+  function byFechaDesc<T extends { fecha?: string | null; syncedAt?: string | null }>(data: T[]): T[] {
+    const now = new Date();
+    const hoy = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     return [...data].sort((a, b) => {
-      const av = (a as Record<string, unknown>)[field];
-      const bv = (b as Record<string, unknown>)[field];
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1;
-      if (bv == null) return -1;
-      const cmp = typeof av === 'number' && typeof bv === 'number'
-        ? av - bv
-        : String(av).localeCompare(String(bv), 'es');
-      return dir === 'asc' ? cmp : -cmp;
+      const af = (a.fecha ?? '').split('T')[0];
+      const bf = (b.fecha ?? '').split('T')[0];
+      const aFuturo = af > hoy;
+      const bFuturo = bf > hoy;
+      if (aFuturo !== bFuturo) return aFuturo ? 1 : -1;
+      const cmp = bf.localeCompare(af);
+      if (cmp !== 0) return aFuturo ? -cmp : cmp;
+      return (b.syncedAt ?? '').localeCompare(a.syncedAt ?? '');
     });
   }
 
@@ -70,20 +66,19 @@ function TransactionPanel({ cuentaNombre, ingresos, gastos, transferencias, show
   const totalTransferencias = transferencias.reduce((s, r) => s + (r.monto ?? 0), 0);
   const neto                = totalIngresos - totalGastos;
 
-  const visibleIng   = sortData(q ? ingresos.filter(r => r.nombre?.toLowerCase().includes(q))       : ingresos,       sortKey, sortDir);
-  const visibleGas   = sortData(q ? gastos.filter(r => r.nombre?.toLowerCase().includes(q))         : gastos,         sortKey, sortDir);
-  const visibleTrans = sortData(q ? transferencias.filter(r => r.nombre?.toLowerCase().includes(q)) : transferencias, sortKey, sortDir);
+  const visibleIng   = byFechaDesc(q ? ingresos.filter(r => r.nombre?.toLowerCase().includes(q))       : ingresos);
+  const visibleGas   = byFechaDesc(q ? gastos.filter(r => r.nombre?.toLowerCase().includes(q))         : gastos);
+  const visibleTrans = byFechaDesc(q ? transferencias.filter(r => r.nombre?.toLowerCase().includes(q)) : transferencias);
 
-  // Todas: unificadas por fecha desc
-  type UnifiedTx = { _tipo: 'ingreso' | 'gasto' | 'transferencia'; nombre: string | null; fecha: string | null; monto: number; categoria: string | null; cuenta: string | null; id: string };
+  // Todas: combinadas y ordenadas por fecha desc
+  type UnifiedTx = { _tipo: 'ingreso' | 'gasto' | 'transferencia'; nombre: string | null; fecha: string | null; monto: number; categoria: string | null; cuenta: string | null; id: string; syncedAt?: string | null };
   const allTxRaw: UnifiedTx[] = [
-    ...ingresos.map(r => ({ _tipo: 'ingreso' as const, nombre: r.nombre ?? null, fecha: r.fecha ?? null, monto: r.ingreso ?? 0, categoria: r.categoriaIngreso ?? null, cuenta: r.cuentaBancaria ?? null, id: r.id })),
-    ...gastos.map(r => ({ _tipo: 'gasto' as const, nombre: r.nombre ?? null, fecha: r.fecha ?? null, monto: r.monto ?? 0, categoria: r.categoriaGasto ?? null, cuenta: r.cuentaBancaria ?? null, id: r.id })),
-    ...transferencias.map(r => ({ _tipo: 'transferencia' as const, nombre: r.nombre ?? null, fecha: r.fecha ?? null, monto: r.monto ?? 0, categoria: null, cuenta: r.cuentaOrigen ?? null, id: r.id })),
+    ...ingresos.map(r => ({ _tipo: 'ingreso' as const, nombre: r.nombre ?? null, fecha: r.fecha ?? null, monto: r.ingreso ?? 0, categoria: r.categoriaIngreso ?? null, cuenta: r.cuentaBancaria ?? null, id: r.id, syncedAt: r.syncedAt })),
+    ...gastos.map(r => ({ _tipo: 'gasto' as const, nombre: r.nombre ?? null, fecha: r.fecha ?? null, monto: r.monto ?? 0, categoria: r.categoriaGasto ?? null, cuenta: r.cuentaBancaria ?? null, id: r.id, syncedAt: r.syncedAt })),
+    ...transferencias.map(r => ({ _tipo: 'transferencia' as const, nombre: r.nombre ?? null, fecha: r.fecha ?? null, monto: r.monto ?? 0, categoria: null, cuenta: r.cuentaOrigen ?? null, id: r.id, syncedAt: r.syncedAt })),
   ];
-  const visibleAll = sortData(
+  const visibleAll = byFechaDesc(
     q ? allTxRaw.filter(r => r.nombre?.toLowerCase().includes(q)) : allTxRaw,
-    sortKey, sortDir,
   );
 
   function handleEditIngreso(i: number) { setEditIngRow(visibleIng[i] ?? null); }
@@ -126,12 +121,18 @@ function TransactionPanel({ cuentaNombre, ingresos, gastos, transferencias, show
   const tipoColors: Record<string, string> = { ingreso: C.pos, gasto: C.neg, transferencia: C.goal };
   const tipoLabels: Record<string, string> = { ingreso: 'Ingreso', gasto: 'Gasto', transferencia: 'Transferencia' };
 
+  const chip = (text: string, color: string): React.ReactNode => text === '—' ? <span style={{ color: C.textMute }}>—</span> : (
+    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: `${color}10`, color, border: `1px solid ${color}22`, whiteSpace: 'nowrap' }}>
+      {text}
+    </span>
+  );
+
   const colsTodas: Col[] = [
-    { key: 'tipo',      label: 'Tipo',        width: 130,                                    sortField: '_tipo'  },
-    { key: 'nombre',    label: 'Descripción', width: 220, separator: true,                   sortField: 'nombre' },
-    { key: 'categoria', label: 'Categoría',   width: 160,                                    sortField: 'categoria' },
-    { key: 'fecha',     label: 'Fecha',       width: 80,  align: 'right' as const,           sortField: 'fecha'  },
-    { key: 'monto',     label: 'Monto',       width: 120, align: 'right' as const,           sortField: 'monto'  },
+    { key: 'tipo',      label: 'Tipo',        width: 130,                          sortField: '_tipo'     },
+    { key: 'nombre',    label: 'Descripción', width: 220, separator: true,         sortField: 'nombre'    },
+    { key: 'categoria', label: 'Categoría',   width: 160,                          sortField: 'categoria' },
+    { key: 'fecha',     label: 'Fecha',       width: 80,  align: 'right' as const, sortField: 'fecha'     },
+    { key: 'monto',     label: 'Monto',       width: 120, align: 'right' as const, sortField: 'monto'     },
   ];
   const rowsTodas = visibleAll.map(r => {
     const color = tipoColors[r._tipo] ?? C.primary;
@@ -144,12 +145,6 @@ function TransactionPanel({ cuentaNombre, ingresos, gastos, transferencias, show
       monto:     <span style={{ color, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{signo}{fmt(r.monto)}</span>,
     };
   });
-
-  const chip = (text: string, color: string): React.ReactNode => text === '—' ? <span style={{ color: C.textMute }}>—</span> : (
-    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 9px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: `${color}10`, color, border: `1px solid ${color}22`, whiteSpace: 'nowrap' }}>
-      {text}
-    </span>
-  );
 
   const colsIng: Col[] = [
     { key: 'nombre',    label: 'Descripción', separator: !showCuenta, sortField: 'nombre',           width: 220 },
@@ -337,18 +332,14 @@ function TransactionPanel({ cuentaNombre, ingresos, gastos, transferencias, show
 
       {/* Tabla scrollable — key dispara fz-tab-content al cambiar tab */}
       <div key={tab} className="fz-tab-content" style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px' }}>
-        {tab === 'todas'          && <DataTable cols={colsTodas} rows={rowsTodas} emptyMsg={q ? `Sin resultados para "${search.trim()}".` : 'Sin transacciones este mes.'}   accent={D ? C.warn : activeTab.color} darkMode={D}
-          sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />}
+        {tab === 'todas'          && <DataTable cols={colsTodas} rows={rowsTodas} emptyMsg={q ? `Sin resultados para "${search.trim()}".` : 'Sin transacciones este mes.'}   accent={D ? C.warn : activeTab.color} darkMode={D} />}
         {tab === 'ingresos'       && <DataTable cols={colsIng}   rows={rowsIng}   emptyMsg={q ? `Sin resultados para "${search.trim()}".` : 'Sin ingresos este mes.'}       accent={D ? C.warn : activeTab.color} darkMode={D}
-          sortKey={sortKey} sortDir={sortDir} onSort={handleSort}
           onEdit={canWrite ? handleEditIngreso : undefined}
           onDelete={canWrite ? handleDeleteIngreso : undefined} />}
         {tab === 'gastos'         && <DataTable cols={colsGas}   rows={rowsGas}   emptyMsg={q ? `Sin resultados para "${search.trim()}".` : 'Sin gastos este mes.'}         accent={D ? C.warn : activeTab.color} darkMode={D}
-          sortKey={sortKey} sortDir={sortDir} onSort={handleSort}
           onEdit={canWrite ? handleEditGasto : undefined}
           onDelete={canWrite ? handleDeleteGasto : undefined} />}
-        {tab === 'transferencias' && <DataTable cols={colsTrans} rows={rowsTrans} emptyMsg={q ? `Sin resultados para "${search.trim()}".` : 'Sin transferencias este mes.'} accent={D ? C.warn : activeTab.color} darkMode={D}
-          sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />}
+        {tab === 'transferencias' && <DataTable cols={colsTrans} rows={rowsTrans} emptyMsg={q ? `Sin resultados para "${search.trim()}".` : 'Sin transferencias este mes.'} accent={D ? C.warn : activeTab.color} darkMode={D} />}
       </div>
 
       {showNewIngModal && (

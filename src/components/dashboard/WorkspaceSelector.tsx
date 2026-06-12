@@ -27,8 +27,6 @@ export function WorkspaceSelector({ darkMode, user }: Readonly<{ darkMode: boole
   }, [open]);
 
   if (ws.loading || ws.list.length === 0) return null;
-
-  const active = ws.active;
   const fg     = darkMode ? 'rgba(255,255,255,0.85)' : '#111827';
   const subC   = darkMode ? 'rgba(255,255,255,0.45)' : '#6B7280';
   const panelBg = darkMode ? '#1A1D21' : '#FFFFFF';

@@ -80,6 +80,7 @@ export interface TransferenciaRow {
   cuentaDestino: string;
   fecha: string | null;
   notas?: string;
+  syncedAt?: string | null;
 }
 
 export interface CategoriaRow {

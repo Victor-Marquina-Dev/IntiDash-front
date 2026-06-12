@@ -35,7 +35,11 @@ export function Navbar() {
     <>
       <nav className={`${navBase} ${scrolled ? navScrolled : 'bg-transparent'}`}>
         <div className="max-w-[1200px] mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" aria-label="IntiDash - inicio">
+          <Link
+            href="/"
+            aria-label="IntiDash - inicio"
+            onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+          >
             <LogoMark variant="dark" size="md" />
           </Link>
 

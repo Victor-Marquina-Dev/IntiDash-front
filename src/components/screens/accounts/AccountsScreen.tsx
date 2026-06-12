@@ -45,6 +45,17 @@ export function AccountsScreen({ accent: _accent, canWrite = true, darkMode = fa
     setActiveGroupKey(current => (current === group ? null : current));
   }, []);
 
+  // Recargar cuando otro componente crea/edita datos (con debounce: el evento puede emitirse dos veces)
+  React.useEffect(() => {
+    let t: number | undefined;
+    const handler = () => {
+      window.clearTimeout(t);
+      t = window.setTimeout(() => setLoadKey(k => k + 1), 250);
+    };
+    window.addEventListener('data-synced', handler);
+    return () => { window.clearTimeout(t); window.removeEventListener('data-synced', handler); };
+  }, []);
+
   React.useEffect(() => {
     let active = true;
 
@@ -61,7 +72,7 @@ export function AccountsScreen({ accent: _accent, canWrite = true, darkMode = fa
       setGastos(g);
       setGastosDeudas(gd);
       setTransferencias(t);
-      // NavegaciÃ³n pendiente desde otra pantalla
+      // Section
       try {
         const pendingGroup = localStorage.getItem('florin:pending-group');
         if (pendingGroup) {
@@ -100,7 +111,8 @@ export function AccountsScreen({ accent: _accent, canWrite = true, darkMode = fa
   const norm = (s?: string | null) => (s ?? '').trim().toLowerCase();
   const cuentaNorm = norm(activeCuenta?.nombre);
 
-  const totalSaldo = cuentas.reduce((s, c) => s + Math.abs(c.balance ?? c.balanceInicial ?? 0), 0);
+  // Suma con signo (igual que el dashboard): las cuentas de crédito con balance negativo restan
+  const totalSaldo = cuentas.reduce((s, c) => s + (c.balance ?? c.balanceInicial ?? 0), 0);
 
   const TIPO_LABELS: Record<string, string> = {
     CORRIENTE: 'Corriente', AHORRO: 'Ahorro', INVERSION: 'Inversión',
@@ -147,6 +159,7 @@ export function AccountsScreen({ accent: _accent, canWrite = true, darkMode = fa
       monto: row.monto,
       fecha: row.fecha,
       origen: 'unico' as const,
+      syncedAt: row.syncedAt,
     })),
     ...gastosDeudas.map(row => ({
       id: row.id,
@@ -157,6 +170,7 @@ export function AccountsScreen({ accent: _accent, canWrite = true, darkMode = fa
       fecha: row.fecha,
       origen: 'deuda' as const,
       cualDeuda: row.cualDeuda,
+      syncedAt: row.syncedAt,
     })),
   ], [gastos, gastosDeudas]);
 
@@ -331,7 +345,7 @@ export function AccountsScreen({ accent: _accent, canWrite = true, darkMode = fa
 
         {!loading && accountGroups.map(([key, accounts]) => {
           const isOpen = !!expandedGroups[key];
-          const groupTotal = accounts.reduce((s, c) => s + Math.abs(c.balance ?? c.balanceInicial ?? 0), 0);
+          const groupTotal = accounts.reduce((s, c) => s + (c.balance ?? c.balanceInicial ?? 0), 0);
           return (
             <AccountListGroup
               key={key}
@@ -351,7 +365,7 @@ export function AccountsScreen({ accent: _accent, canWrite = true, darkMode = fa
 
       </div>
 
-      {/* â”€â”€ Panel derecho: transacciones (key dispara fz-tab-content al cambiar cuenta) â”€â”€ */}
+      {/* Panel derecho: transacciones */}
       {loading ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: darkMode ? 'rgba(255,255,255,0.38)' : C.textMute, fontSize: 14 }}>
           Cargando...

@@ -9,4 +9,5 @@ export interface AccountExpenseRow {
   fecha: string | null;
   origen?: 'unico' | 'deuda';
   cualDeuda?: string;
+  syncedAt?: string | null;
 }

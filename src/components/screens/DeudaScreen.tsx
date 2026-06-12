@@ -20,7 +20,7 @@ const DarkCtx = React.createContext(false);
 
 interface DeudaScreenProps { accent: string; canWrite?: boolean; darkMode?: boolean }
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Helpers
 
 const fmt = (n: number) =>
   `S/ ${n.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -43,13 +43,13 @@ function gastoDelMes(
     if (!r.fecha || !r.monto) continue;
     const d = new Date(r.fecha);
     if (d.getUTCFullYear() === year && d.getUTCMonth() === month)
-      add(r.categoriaGasto || 'Sin categorÃ­a', r.monto);
+      add(r.categoriaGasto || 'Sin categoría', r.monto);
   }
   for (const r of gastosD) {
     if (!r.fecha || !r.montoGastado) continue;
     const d = new Date(r.fecha);
     if (d.getUTCFullYear() === year && d.getUTCMonth() === month)
-      add(r.categoriaGasto || 'Sin categorÃ­a', r.montoGastado);
+      add(r.categoriaGasto || 'Sin categoría', r.montoGastado);
   }
   return map;
 }
@@ -68,8 +68,8 @@ function getSugerencias(
     const m = monthly.get(cat)!;
     m.set(key, (m.get(key) ?? 0) + amt);
   };
-  for (const r of gastosU) addEntry(r.categoriaGasto || 'Sin categorÃ­a', r.fecha, r.monto ?? 0);
-  for (const r of gastosD) addEntry(r.categoriaGasto || 'Sin categorÃ­a', r.fecha, r.montoGastado ?? 0);
+  for (const r of gastosU) addEntry(r.categoriaGasto || 'Sin categoría', r.fecha, r.monto ?? 0);
+  for (const r of gastosD) addEntry(r.categoriaGasto || 'Sin categoría', r.fecha, r.montoGastado ?? 0);
   return [...monthly.entries()]
     .map(([categoria, byMonth]) => {
       const mesesConGasto = byMonth.size;
@@ -82,7 +82,7 @@ function getSugerencias(
     .slice(0, 5);
 }
 
-// â”€â”€ Sub-componentes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Sub-componentes
 
 function Pill({ active, onClick, children, current = false, dot = false, dimmed = false }: {
   active: boolean; onClick: () => void; children: React.ReactNode;
@@ -136,7 +136,7 @@ function KpiCard({ label, value, color, sub, icon }: KpiCardProps) {
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
         <span style={{ fontSize: 13.5, fontWeight: 700, color: D ? `${effectiveColor}cc` : `${effectiveColor}99`, fontFamily: FONT }}>S/</span>
         <span style={{ fontSize: 28, fontWeight: 900, color: effectiveColor, letterSpacing: -1.2, fontVariantNumeric: 'tabular-nums', fontFamily: FONT, lineHeight: 1 }}>
-          {neg && 'âˆ’'}{int}
+          {neg && '-'}{int}
         </span>
         <span style={{ fontSize: 14, fontWeight: 600, color: D ? 'rgba(255,255,255,0.20)' : `${effectiveColor}55`, fontFamily: FONT }}>{dec}</span>
       </div>
@@ -152,7 +152,7 @@ function KpiCard({ label, value, color, sub, icon }: KpiCardProps) {
 interface Transaccion { id: string; nombre: string; fecha: string | null; monto: number; }
 
 const fmtDate = (fecha: string | null): string => {
-  if (!fecha) return 'â€”';
+  if (!fecha) return '—';
   const d = new Date(fecha);
   return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', timeZone: 'UTC' });
 };
@@ -197,7 +197,7 @@ function BudgetRow({ limite, gastado, transacciones, onEdit, onDelete }: BudgetR
         transition: 'border-color 0.15s',
       }}
     >
-      {/* â”€â”€ Fila principal â”€â”€ */}
+      {/* Fila principal */}
       <div
         onClick={() => canExpand && setExpanded(e => !e)}
         style={{
@@ -315,7 +315,7 @@ function BudgetRow({ limite, gastado, transacciones, onEdit, onDelete }: BudgetR
         </div>
       </div>
 
-      {/* â”€â”€ Tabla de transacciones â”€â”€ */}
+      {/* Tabla de transacciones */}
       {expanded && (
         <div style={{ borderTop: `1px solid ${limite.color}25`, background: D ? 'rgba(255,255,255,0.03)' : `${limite.color}05` }}>
           <div style={{
@@ -323,7 +323,7 @@ function BudgetRow({ limite, gastado, transacciones, onEdit, onDelete }: BudgetR
             padding: '7px 18px 7px 72px', gap: 12,
             borderBottom: `1px solid ${D ? 'rgba(255,255,255,0.08)' : C.border}`,
           }}>
-            {(['Fecha', 'DescripciÃ³n', 'Monto'] as const).map((h, i) => (
+            {(['Fecha', 'Descripción', 'Monto'] as const).map((h, i) => (
               <span key={h} style={{
                 fontSize: 10.5, fontWeight: 700, color: D ? 'rgba(255,255,255,0.38)' : C.textMute,
                 textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: FONT,
@@ -352,7 +352,7 @@ function BudgetRow({ limite, gastado, transacciones, onEdit, onDelete }: BudgetR
           }}>
             <span />
             <span style={{ fontSize: 11, color: D ? 'rgba(255,255,255,0.38)' : C.textMute, fontFamily: FONT }}>
-              {transacciones.length} {transacciones.length === 1 ? 'transacciÃ³n' : 'transacciones'}
+              {transacciones.length} {transacciones.length === 1 ? 'transacción' : 'transacciones'}
             </span>
             <span style={{ fontSize: 13, fontWeight: 900, color, fontVariantNumeric: 'tabular-nums', fontFamily: FONT, textAlign: 'right' }}>{fmt(gastado)}</span>
           </div>
@@ -414,7 +414,7 @@ function UnbudgetedRow({ categoria, gastado, onAssign }: { categoria: string; ga
             cursor: 'pointer', transition: 'all .15s',
           }}
         >
-          + Asignar lÃ­mite
+          + Asignar límite
         </button>
       ) : (
         <span style={{
@@ -422,7 +422,7 @@ function UnbudgetedRow({ categoria, gastado, onAssign }: { categoria: string; ga
           padding: '3px 8px', borderRadius: 6, background: D ? 'rgba(255,255,255,0.06)' : 'rgba(17,24,39,0.05)',
           border: `1px solid ${D ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.06)'}`,
         }}>
-          sin lÃ­mite
+          sin límite
         </span>
       )}
     </div>
@@ -462,13 +462,13 @@ function SuggestionRow({ categoria, promedioMensual, mesesConGasto, sugerido, co
           {categoria}
         </div>
         <div style={{ fontSize: 11, color: D ? 'rgba(255,255,255,0.38)' : C.textMute, fontFamily: FONT, marginTop: 2 }}>
-          Promedio mensual: <strong style={{ color: D ? 'rgba(255,255,255,0.65)' : C.textDim }}>{fmt(promedioMensual)}</strong> Â· {mesesConGasto} {mesesConGasto === 1 ? 'mes' : 'meses'} de historial
+          Promedio mensual: <strong style={{ color: D ? 'rgba(255,255,255,0.65)' : C.textDim }}>{fmt(promedioMensual)}</strong> · {mesesConGasto} {mesesConGasto === 1 ? 'mes' : 'meses'} de historial
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 10, color: D ? 'rgba(255,255,255,0.38)' : C.textMute, fontFamily: FONT, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>
-            LÃ­mite sugerido
+            Límite sugerido
           </div>
           <div style={{ fontSize: 13, fontWeight: 700, color, fontFamily: FONT, fontVariantNumeric: 'tabular-nums' }}>
             {fmt(sugerido)}
@@ -513,9 +513,9 @@ function LimiteForm({ initial, quickPreset, categoriasDisponibles, onSaved, onCa
   const isEdit = !!initial;
 
   const save = async () => {
-    if (!categoria.trim()) { setError('Escribe una categorÃ­a.'); return; }
+    if (!categoria.trim()) { setError('Escribe una categoría.'); return; }
     const lim = parseFloat(limite);
-    if (isNaN(lim) || lim < 0) { setError('Ingresa un monto vÃ¡lido.'); return; }
+    if (isNaN(lim) || lim < 0) { setError('Ingresa un monto válido.'); return; }
     setSaving(true);
     setError('');
     try {
@@ -548,19 +548,19 @@ function LimiteForm({ initial, quickPreset, categoriasDisponibles, onSaved, onCa
       background: `${color}06`, padding: 18, marginBottom: 12,
     }}>
       <div style={{ fontSize: 11.5, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 14, fontFamily: FONT }}>
-        {isEdit ? 'Editar categorÃ­a' : 'Nueva categorÃ­a de presupuesto'}
+        {isEdit ? 'Editar categoría' : 'Nueva categoría de presupuesto'}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: 12, marginBottom: 14 }}>
         <div>
-          <label style={lbl}>CategorÃ­a</label>
+          <label style={lbl}>Categoría</label>
           {categoriasDisponibles.length > 0 ? (
             <select
               value={categoria}
               onChange={e => setCategoria(e.target.value)}
               style={inp}
             >
-              <option value="">â€” Selecciona o escribe â€”</option>
+              <option value="">— Selecciona o escribe —</option>
               {categoriasDisponibles.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           ) : (
@@ -574,7 +574,7 @@ function LimiteForm({ initial, quickPreset, categoriasDisponibles, onSaved, onCa
           )}
         </div>
         <div>
-          <label style={lbl}>LÃ­mite mensual (S/)</label>
+          <label style={lbl}>Límite mensual (S/)</label>
           <input
             type="number" min="0" step="1"
             value={limite}
@@ -627,14 +627,14 @@ function LimiteForm({ initial, quickPreset, categoriasDisponibles, onSaved, onCa
             transition: 'opacity 0.15s, box-shadow 0.15s',
           }}
         >
-          {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear categorÃ­a'}
+          {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear categoría'}
         </button>
       </div>
     </div>
   );
 }
 
-// â”€â”€ Pantalla principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Pantalla principal
 
 export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<DeudaScreenProps>) {
   const now         = new Date();
@@ -723,7 +723,7 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
 
   const gastoMes = gastoDelMes(gastosU, gastosD, year, month);
 
-  // CategorÃ­as con lÃ­mite definido
+  // Categorías con límite definido
   const budgeted = limites.map(l => {
     const gastado = gastoMes.get(l.categoria) ?? 0;
     const transacciones: Transaccion[] = [
@@ -731,19 +731,19 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
         .filter(r => r.fecha && r.monto != null
           && new Date(r.fecha).getUTCFullYear() === year
           && new Date(r.fecha).getUTCMonth() === month
-          && (r.categoriaGasto || 'Sin categorÃ­a') === l.categoria)
+          && (r.categoriaGasto || 'Sin categoría') === l.categoria)
         .map(r => ({ id: r.id, nombre: r.nombre, fecha: r.fecha, monto: r.monto! })),
       ...gastosD
         .filter(r => r.fecha && r.montoGastado != null
           && new Date(r.fecha).getUTCFullYear() === year
           && new Date(r.fecha).getUTCMonth() === month
-          && (r.categoriaGasto || 'Sin categorÃ­a') === l.categoria)
+          && (r.categoriaGasto || 'Sin categoría') === l.categoria)
         .map(r => ({ id: r.id, nombre: r.nombre, fecha: r.fecha, monto: r.montoGastado! })),
     ].sort((a, b) => (b.fecha ?? '') > (a.fecha ?? '') ? 1 : -1);
     return { limite: l, gastado, transacciones };
   }).sort((a, b) => b.gastado - a.gastado);
 
-  // CategorÃ­as con gasto pero sin lÃ­mite
+  // Categorías con gasto pero sin límite
   const budgetedCats = new Set(limites.map(l => l.categoria));
   const unbudgeted = [...gastoMes.entries()]
     .filter(([cat]) => !budgetedCats.has(cat))
@@ -754,7 +754,7 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
   const totalGastado = budgeted.reduce((s, b) => s + b.gastado, 0) + unbudgetedTotal;
   const disponible   = totalLimite - totalGastado;
 
-  // CategorÃ­as disponibles para el selector (excluye las ya con lÃ­mite si no es ediciÃ³n)
+  // Categorías disponibles para el selector (excluye las ya con límite si no es edición)
   const catsForForm = editing
     ? catNames
     : catNames.filter(c => !budgetedCats.has(c));
@@ -846,18 +846,18 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
         }
       `}</style>
 
-      {/* â”€â”€ Header con filtros â”€â”€ */}
+      {/* Header con filtros */}
       <div style={{
         padding: '20px 32px 16px', borderBottom: `1px solid ${D ? 'rgba(255,255,255,0.08)' : C.border}`,
         display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, flexWrap: 'wrap',
       }}>
-        {/* TÃ­tulo */}
+        {/* Título */}
         <div style={{ flex: 1, minWidth: 120 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: D ? 'rgba(255,255,255,0.90)' : C.text, letterSpacing: -0.4 }}>Presupuesto</div>
-          <div style={{ fontSize: 12, color: D ? 'rgba(255,255,255,0.38)' : C.textMute, marginTop: 2 }}>{year} Â· {MONTHS_FULL[month]}</div>
+          <div style={{ fontSize: 12, color: D ? 'rgba(255,255,255,0.38)' : C.textMute, marginTop: 2 }}>{year} · {MONTHS_FULL[month]}</div>
         </div>
 
-        {/* BotÃ³n "Hoy" */}
+        {/* Botón "Hoy" */}
         {!isToday && (
           <button
             onClick={goToday}
@@ -875,7 +875,7 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
         {/* Selector de fechas (responsive) */}
         <div ref={pillsRef} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           {compact ? (
-            /* â”€â”€ Modo compacto: < mes aÃ±o > â”€â”€ */
+            /* Modo compacto: mes y año */
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button
                 onClick={goPrev}
@@ -906,9 +906,9 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
               </button>
             </div>
           ) : (
-            /* â”€â”€ Modo completo: pills de aÃ±o + mes â”€â”€ */
+            /* Modo completo: pills de año y mes */
             <>
-              {/* â”€â”€ Year picker â”€â”€ */}
+              {/* Year picker */}
               <div ref={yearBtnRef} style={{ position: 'relative', flexShrink: 0 }}>
                 <button
                   onClick={() => setYearPickerOpen(o => !o)}
@@ -974,7 +974,7 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
           )}
         </div>
 
-        {/* BotÃ³n agregar */}
+        {/* Botón agregar */}
         <button
           onClick={() => { setCreating(true); setEditing(null); }}
           onMouseEnter={() => setHovAdd(true)}
@@ -997,7 +997,7 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
 
       <div style={{ padding: '20px 32px 48px', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* â”€â”€ KPIs â”€â”€ */}
+      {/* KPIs */}
       {!loading && (
         <div className="budget-kpi-grid">
           <KpiCard
@@ -1020,16 +1020,16 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
             icon={<Icon.chart size={14} strokeWidth={2} />}
           />
           <KpiCard
-            label="Sin lÃ­mite"
+            label="Sin límite"
             value={unbudgetedTotal}
             color={unbudgetedTotal > 0 ? C.warn : C.pos}
-            sub={unbudgeted.length > 0 ? `${unbudgeted.length} categorÃ­a${unbudgeted.length === 1 ? '' : 's'} pendiente${unbudgeted.length === 1 ? '' : 's'}` : 'Todo asignado'}
+            sub={unbudgeted.length > 0 ? `${unbudgeted.length} categoría${unbudgeted.length === 1 ? '' : 's'} pendiente${unbudgeted.length === 1 ? '' : 's'}` : 'Todo asignado'}
             icon={<Icon.target size={14} strokeWidth={2} />}
           />
         </div>
       )}
 
-      {/* â”€â”€ Formulario crear / editar â”€â”€ */}
+      {/* Formulario crear / editar */}
       {(creating || editing) && (
         <LimiteForm
           initial={editing ?? undefined}
@@ -1049,7 +1049,7 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
         />
       )}
 
-      {/* â”€â”€ Loading â”€â”€ */}
+      {/* Loading */}
       {loading && (
         <div style={{ padding: '48px 0', textAlign: 'center', color: C.textMute, fontSize: 13 }}>
           Cargando...
@@ -1058,9 +1058,19 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
 
       {!loading && (
         <div className="budget-main-grid">
-      {/* â”€â”€ Lista con lÃ­mites â”€â”€ */}
+      {/* Lista con limites */}
       {budgeted.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="budget-panel">
+          <div className="budget-panel-header">
+            <div className="budget-panel-title">
+              <span className="budget-panel-rail" style={{ background: C.pos }} />
+              <span className="budget-panel-title-text">Límites activos</span>
+            </div>
+            <span className="budget-chip" style={{ background: `${C.pos}12`, color: C.pos }}>
+              {budgeted.length} categoría{budgeted.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="budget-stack">
           {budgeted.map(({ limite, gastado, transacciones }) => (
             <BudgetRow
               key={limite.id}
@@ -1071,10 +1081,11 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
               onDelete={(id) => setLimites(ls => ls.filter(l => l.id !== id))}
             />
           ))}
+          </div>
         </div>
       )}
 
-      {/* â”€â”€ Sin categorÃ­as configuradas â”€â”€ */}
+      {/* Sin categorias configuradas */}
       {budgeted.length === 0 && !creating && (
         <div style={{
           padding: '48px 24px', textAlign: 'center', borderRadius: 18,
@@ -1087,30 +1098,28 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
           </div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: D ? 'rgba(255,255,255,0.80)' : C.text, marginBottom: 5, fontFamily: FONT }}>
-              Sin categorÃ­as de presupuesto
+              Sin categorías de presupuesto
             </div>
             <div style={{ fontSize: 13, color: D ? 'rgba(255,255,255,0.38)' : C.textMute, fontFamily: FONT }}>
-              Agrega una categorÃ­a para empezar a controlar tus gastos.
+              Agrega una categoría para empezar a controlar tus gastos.
             </div>
           </div>
         </div>
       )}
 
-      {/* â”€â”€ Gastos sin presupuesto â”€â”€ */}
+      {/* Gastos sin presupuesto */}
       {unbudgeted.length > 0 && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <div style={{ width: 3, height: 16, borderRadius: 3, background: C.warn, flexShrink: 0 }} />
-            <div>
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: D ? 'rgba(255,255,255,0.55)' : C.textDim, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: FONT }}>
-                Gastos sin lÃ­mite asignado
-              </span>
-              <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 600, color: C.warn, fontFamily: FONT }}>
-                {fmt(unbudgeted.reduce((s, [, v]) => s + v, 0))}
-              </span>
+        <div className="budget-panel">
+          <div className="budget-panel-header">
+            <div className="budget-panel-title">
+              <span className="budget-panel-rail" style={{ background: C.warn }} />
+              <span className="budget-panel-title-text">Gastos sin límite</span>
             </div>
+            <span className="budget-chip" style={{ background: `${C.warn}14`, color: C.warn }}>
+              {fmt(unbudgetedTotal)}
+            </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div className="budget-stack">
             {unbudgeted.map(([cat, gasto]) => (
               <UnbudgetedRow
                 key={cat}
@@ -1129,21 +1138,22 @@ export function DeudaScreen({ accent: _accent, darkMode = false }: Readonly<Deud
         </div>
       )}
 
-      {/* â”€â”€ Sugerencias basadas en historial â”€â”€ */}
+      {/* Sugerencias basadas en historial */}
       {sugerencias.length > 0 && !creating && !editing && (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <div style={{ width: 3, height: 16, borderRadius: 3, background: C.primary, flexShrink: 0 }} />
-            <div>
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: D ? 'rgba(255,255,255,0.55)' : C.textDim, textTransform: 'uppercase', letterSpacing: 0.8, fontFamily: FONT }}>
-                Sugerencias
-              </span>
+        <div className="budget-panel">
+          <div className="budget-panel-header">
+            <div className="budget-panel-title">
+              <span className="budget-panel-rail" style={{ background: C.primary }} />
+              <span className="budget-panel-title-text">Sugerencias</span>
             </div>
+            <span className="budget-chip" style={{ background: `${C.primary}12`, color: C.primary }}>
+              {sugerencias.length}
+            </span>
           </div>
-          <div style={{ fontSize: 12, color: D ? 'rgba(255,255,255,0.38)' : C.textMute, marginBottom: 10, fontFamily: FONT, paddingLeft: 13 }}>
-            CategorÃ­as con gasto recurrente aÃºn sin lÃ­mite asignado.
+          <div className="budget-panel-subtitle">
+            Categorías con gasto recurrente aún sin límite asignado.
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="budget-stack">
             {sugerencias.map((s, i) => (
               <SuggestionRow
                 key={s.categoria}

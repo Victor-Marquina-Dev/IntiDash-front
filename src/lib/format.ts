@@ -47,20 +47,30 @@ export function formatCurrencyParts(value: number): { integer: string; decimal: 
   };
 }
 
+// Las fechas se guardan como medianoche UTC del día elegido; usar la parte
+// YYYY-MM-DD del string evita que en zonas UTC-negativas se corran un día atrás.
+function parseDateParts(fecha: string): { y: number; m: number; d: number } | null {
+  const [datePart] = fecha.split('T');
+  const [y, m, d] = datePart.split('-').map(Number);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+  return { y, m, d };
+}
+
 export function formatShortDate(fecha: string | null, empty = '-'): string {
   if (!fecha) return empty;
-  const dt = new Date(fecha);
   const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${dt.getDate()} ${meses[dt.getMonth()]}`;
+  const p = parseDateParts(fecha);
+  if (!p) return empty;
+  return `${p.d} ${meses[p.m - 1]}`;
 }
 
 export function formatRelativeDate(fecha: string | null, empty = '-'): string {
   if (!fecha) return empty;
-  const dt = new Date(fecha);
+  const p = parseDateParts(fecha);
+  if (!p) return empty;
+  const d = new Date(p.y, p.m - 1, p.d);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const d = new Date(dt);
-  d.setHours(0, 0, 0, 0);
   const diff = Math.round((today.getTime() - d.getTime()) / 86400000);
   if (diff === 0) return 'hoy';
   if (diff === 1) return 'ayer';

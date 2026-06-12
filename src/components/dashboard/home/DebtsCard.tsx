@@ -258,7 +258,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
   const isDesktop = bp === 'desktop';
 
   const [tab,         setTab]         = React.useState<'debts' | 'prestamos'>('debts');
-  const [debtFilter,  setDebtFilter]  = React.useState<'cuotas' | 'un_pago'>('cuotas');
+  const [debtFilter,  setDebtFilter]  = React.useState<'cuotas' | 'un_pago'>('un_pago');
   const [showTable,   setShowTable]   = React.useState(false);
   const [showNew,     setShowNew]     = React.useState(false);
   const [hovered,     setHovered]     = React.useState(false);
@@ -333,7 +333,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
       {/* ── Sub-filtro deudas ── */}
       {!loading && isDebts && (
         <div style={{ display: 'flex', gap: 6, padding: '0 16px 8px', flexShrink: 0 }}>
-          {(['cuotas', 'un_pago'] as const).map(f => {
+          {(['un_pago', 'cuotas'] as const).map(f => {
             const active = debtFilter === f;
             const count  = f === 'cuotas' ? debtsCuotas.length : debtsUnPago.length;
             return (
@@ -368,7 +368,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
 
         {/* Skeleton */}
         {loading && (
-          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
             {[1,2,3,4].map(i => <SkeletonItem key={i} isDark={isDark} />)}
           </div>
         )}
@@ -378,7 +378,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
 
         {/* Grid de ítems — Deudas */}
         {!loading && isDebts && !anyEmpty && (
-          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
             {deudaItems.map((d: DeudaRow) => {
               const color = d.tipoPago === 'cuotas' ? DEBT_CUOTA : DEBT_PAGO;
               const pct   = widgetPct(d);
@@ -401,7 +401,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
 
         {/* Grid de ítems — Préstamos */}
         {!loading && isPrestamos && !anyEmpty && (
-          <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
             {prestamoItems.map((p: PrestamoRow, i) => {
               const color    = PREST_COLORS[i % 2];
               const faltante = p.cantidadFaltante ?? Math.max(0, (p.montoPrestamo ?? 0) - (p.montoPagado ?? 0));

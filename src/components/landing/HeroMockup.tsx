@@ -170,7 +170,7 @@ export function HeroMockup() {
                 { label: 'Sueldo', color: landingColors.income, pct: '26%' },
                 { label: 'Préstamos', color: landingColors.debt, pct: '22%' },
                 { label: 'Gastos', color: landingColors.expense, pct: '21%' },
-                { label: 'Sueldo', color: '#A7C4B5', pct: '18%' },
+                { label: 'Ahorro', color: '#A7C4B5', pct: '18%' },
                 { label: 'Otros', color: '#ECFDF5', pct: '13%' },
               ].map(c => (
                 <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
