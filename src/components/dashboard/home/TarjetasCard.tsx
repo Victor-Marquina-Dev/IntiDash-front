@@ -1,29 +1,33 @@
 ﻿'use client';
 
+import Image from 'next/image';
 import React from 'react';
 import { Icon } from '@/components/icons';
+import { formatIntegerCurrency } from '@/lib/format';
 import { useDashboardAccounts } from '@/shared/hooks/use-dashboard-accounts';
 
-const BANK_BADGES: Record<string, { initials: string }> = {
-  'interbank':  { initials: 'I' },
-  'bcp':        { initials: 'B' },
-  'bbva':       { initials: 'B' },
-  'scotiabank': { initials: 'S' },
-  'yape':       { initials: 'Y' },
-  'plin':       { initials: 'P' },
-  'falabella':  { initials: 'F' },
+const BANK_LOGOS: Record<string, string> = {
+  yape:       '/Yape.png',
+  falabella:  '/Falabella.png',
+  interbank:  '/Interbank.png',
+  bbva:       '/BBVA.png',
+  bcp:        '/BCP.jpg',
 };
 
-function getBankBadge(banco: string) {
-  const b = (banco ?? '').toLowerCase();
-  for (const [key, badge] of Object.entries(BANK_BADGES)) {
-    if (b.includes(key)) return badge;
+function getBankLogo(banco?: string | null): string | null {
+  if (!banco) return null;
+  const b = banco.trim().toLowerCase();
+  for (const [key, src] of Object.entries(BANK_LOGOS)) {
+    if (b.includes(key)) return src;
   }
-  const first = (banco ?? '?')[0]?.toUpperCase() ?? '?';
-  return { initials: first };
+  return null;
 }
 
-export function TarjetasCard({ darkMode = false, canWrite = true }: Readonly<{ darkMode?: boolean; canWrite?: boolean }>) {
+function getBankInitial(banco?: string | null): string {
+  return (banco ?? '?')[0]?.toUpperCase() ?? '?';
+}
+
+export function TarjetasCard({ darkMode = false, canWrite: _canWrite = true, onNavigate }: Readonly<{ darkMode?: boolean; canWrite?: boolean; onNavigate?: (screen: string) => void }>) {
   const { rows, loading, tipos, activeTab, visibles, isCredito, selectTab } = useDashboardAccounts();
   const tabsRef   = React.useRef<HTMLDivElement>(null);
   const dragState = React.useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
@@ -63,11 +67,12 @@ export function TarjetasCard({ darkMode = false, canWrite = true }: Readonly<{ d
     btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }
 
-  const [btnHov, setBtnHov]   = React.useState<'detail' | 'create' | null>(null);
-  const [hovered, setHovered] = React.useState(false);
+  const [btnHov, setBtnHov]     = React.useState<'detail' | 'create' | null>(null);
+  const [hovered, setHovered]   = React.useState(false);
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
 
   const D          = darkMode;
-  const cardBg     = D ? 'linear-gradient(145deg,#1A1D21,#16181C)' : '#FFFFFF';
+  const cardBg     = D ? 'linear-gradient(145deg,#1A1D21,#16181C)' : 'rgba(204,220,204,0.13)';
   const cardBorder = D ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.08)';
   const labelC     = D ? 'rgba(255,255,255,0.38)' : '#6B7280';
   const nameC      = D ? 'rgba(255,255,255,0.85)' : '#111827';
@@ -104,29 +109,18 @@ export function TarjetasCard({ darkMode = false, canWrite = true }: Readonly<{ d
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 15, lineHeight: 1 }}>💳</span>
+          <Icon.cards size={15} strokeWidth={2.2} />
           <span style={{ fontSize: 12, fontWeight: 800, color: labelC, letterSpacing: 1.5, textTransform: 'uppercase' }}>Cuentas</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <button
-            onMouseEnter={() => setBtnHov('detail')} onMouseLeave={() => setBtnHov(null)}
-            aria-label="Ver cuentas"
-            title="Ver cuentas"
-            style={{ width: 28, height: 28, borderRadius: 8, background: btnHov === 'detail' ? btnHovBg : btnBg, border: `1px solid ${btnBrd}`, display: 'grid', placeItems: 'center', cursor: 'pointer', color: btnHov === 'detail' ? btnHovC : btnC, transition: 'all .2s', flexShrink: 0 }}
-          >
-            <Icon.cards size={12} strokeWidth={1.7} />
-          </button>
-          {canWrite && (
-            <button
-              onMouseEnter={() => setBtnHov('create')} onMouseLeave={() => setBtnHov(null)}
-              aria-label="Nueva cuenta"
-              title="Nueva cuenta"
-              style={{ width: 28, height: 28, borderRadius: 8, background: btnHov === 'create' ? btnHovBg : btnBg, border: `1px solid ${btnBrd}`, display: 'grid', placeItems: 'center', cursor: 'pointer', color: btnHov === 'create' ? btnHovC : btnC, transition: 'all .2s', flexShrink: 0 }}
-            >
-              <Icon.plus size={12} strokeWidth={2} />
-            </button>
-          )}
-        </div>
+        <button
+          onMouseEnter={() => setBtnHov('detail')} onMouseLeave={() => setBtnHov(null)}
+          onClick={() => onNavigate?.('cards')}
+          aria-label="Ir a Cuentas"
+          title="Ir a Cuentas"
+          style={{ width: 28, height: 28, borderRadius: 8, background: btnHov === 'detail' ? btnHovBg : btnBg, border: `1px solid ${btnBrd}`, display: 'grid', placeItems: 'center', cursor: 'pointer', color: btnHov === 'detail' ? btnHovC : btnC, transition: 'all .2s', flexShrink: 0 }}
+        >
+          <Icon.list size={12} strokeWidth={1.7} />
+        </button>
       </div>
 
       {/* Tabs por tipo */}
@@ -193,8 +187,8 @@ export function TarjetasCard({ darkMode = false, canWrite = true }: Readonly<{ d
           </div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', maxHeight: 320, marginRight: -4, paddingRight: 4 }}>
-          {visibles.map((t, i) => {
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', maxHeight: 208, marginRight: -4, paddingRight: 4, scrollbarWidth: 'thin', scrollbarColor: 'rgba(143,168,143,0.5) transparent' }}>
+          {[...visibles].sort((a, b) => (b.balance ?? 0) - (a.balance ?? 0)).map((t, i) => {
             const saldo      = t.balance ?? 0;
             const limite     = t.credito ?? 0;
             const disponible = limite - saldo;
@@ -203,27 +197,46 @@ export function TarjetasCard({ darkMode = false, canWrite = true }: Readonly<{ d
               : utilPct > 50 ? (D ? '#fbbf24' : '#d97706')
               : (D ? '#34d399' : '#16a34a');
             const itemAlert  = isCredito && utilPct >= 100;
+            const isSelected = selectedId === (t.id ?? String(i));
+            const rowBg = itemAlert
+              ? (D ? 'rgba(239,68,68,.04)' : 'rgba(239,68,68,.04)')
+              : isSelected
+                ? (D ? 'rgba(143,168,143,0.22)' : 'rgba(143,168,143,0.28)')
+                : itemBg;
+            const rowBorder = itemAlert
+              ? (D ? 'rgba(239,68,68,.2)' : 'rgba(239,68,68,.25)')
+              : isSelected
+                ? (D ? 'rgba(143,168,143,0.5)' : 'rgba(143,168,143,0.6)')
+                : itemBorder;
             return (
-              <div key={t.id ?? i} style={{
-                padding: '13px 15px', borderRadius: 14,
-                background: itemAlert ? (D ? 'rgba(239,68,68,.04)' : 'rgba(239,68,68,.04)') : itemBg,
-                border: `1px solid ${itemAlert ? (D ? 'rgba(239,68,68,.2)' : 'rgba(239,68,68,.25)') : itemBorder}`,
-                transition: 'background .2s',
-              }}>
+              <div
+                key={t.id ?? i}
+                onClick={() => setSelectedId(prev => prev === (t.id ?? String(i)) ? null : (t.id ?? String(i)))}
+                style={{
+                  padding: '13px 15px', borderRadius: 14,
+                  background: rowBg,
+                  border: `1px solid ${rowBorder}`,
+                  cursor: 'pointer',
+                  transition: 'background .2s, border-color .2s',
+                }}>
                 {/* Nombre + monto */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isCredito && limite > 0 ? 10 : 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
                     {(() => {
-                      const badge = getBankBadge(t.banco ?? '');
-                      if (!badge) return null;
+                      const logoSrc = getBankLogo(t.banco);
                       return (
                         <div style={{
                           width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                          background: D ? '#0C5E3F' : '#8FA88F', color: '#fff',
+                          background: logoSrc ? '#fff' : (D ? '#0A402A' : '#8FA88F'),
+                          color: '#fff',
                           display: 'grid', placeItems: 'center',
                           fontSize: 10, fontWeight: 900, letterSpacing: 0.3,
+                          overflow: 'hidden',
                         }}>
-                          {badge.initials}
+                          {logoSrc
+                            ? <Image src={logoSrc} alt={t.banco ?? ''} width={36} height={36} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                            : getBankInitial(t.banco)
+                          }
                         </div>
                       );
                     })()}
@@ -233,14 +246,14 @@ export function TarjetasCard({ darkMode = false, canWrite = true }: Readonly<{ d
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
-                    <div style={{ fontSize: 13, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: isCredito ? (D ? '#f87171' : '#dc2626') : (D ? '#c8d0c8' : '#111827') }}>
+                    <div style={{ fontSize: 13, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: isCredito ? (D ? '#e07878' : '#dc2626') : (D ? '#c8d0c8' : '#111827') }}>
                       {isCredito
-                        ? (saldo > 0 ? `−S/ ${saldo.toLocaleString('es-PE', { minimumFractionDigits: 0 })}` : 'S/ 0')
-                        : `S/ ${saldo.toLocaleString('es-PE', { minimumFractionDigits: 0 })}`}
+                        ? (saldo > 0 ? `−${formatIntegerCurrency(saldo)}` : formatIntegerCurrency(0))
+                        : formatIntegerCurrency(saldo)}
                     </div>
                     {isCredito && limite > 0 && (
                       <div style={{ fontSize: 10, color: limitC, fontWeight: 600, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
-                        lím. S/ {limite.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
+                        lím. {formatIntegerCurrency(limite)}
                       </div>
                     )}
                   </div>
@@ -255,7 +268,7 @@ export function TarjetasCard({ darkMode = false, canWrite = true }: Readonly<{ d
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: utilColor }}>{utilPct}% usado{utilPct >= 100 ? ' ⚠' : ''}</span>
                       <span style={{ fontSize: 11, color: bankC, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                        disponible S/ {disponible.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
+                        disponible {formatIntegerCurrency(disponible)}
                       </span>
                     </div>
                   </>

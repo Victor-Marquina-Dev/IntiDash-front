@@ -47,7 +47,7 @@ interface WorkspaceMembersCardProps {
 }
 
 export function WorkspaceMembersCard({ accent: _accent, embedded = false }: Readonly<WorkspaceMembersCardProps>) {
-  const { list, activeId, active, activeRole, canWrite, loading, switchTo, refresh } = useWorkspaces(true);
+  const { list, activeId, active, activeRole, canWrite: _canWrite, loading, switchTo, refresh } = useWorkspaces(true);
 
   // ── Crear nuevo espacio ───────────────────────────────────────────────────
   const [newWsOpen,   setNewWsOpen]   = React.useState(false);

@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
+import { formatCompactCurrency } from '@/lib/format';
 
 function fmtK(v: number): string {
-  return v >= 1000 ? `S/${(v/1000).toFixed(1)}k` : `S/${v.toFixed(0)}`;
+  return formatCompactCurrency(v);
 }
 
 const M3_LIGHT = {
@@ -12,16 +13,18 @@ const M3_LIGHT = {
   incFill:   'rgba(204,220,204,0.85)', // = #CCDCCC
   expLine:   '#CF9C9C',
   expFill:   'rgba(245,234,234,0.85)',  // = #F5EAEA con ligera transparencia (card Gastos bg)
+  debtLine:  '#D9A86C',                 // naranja suave — misma tonalidad pastel que inc/exp
   grid:      'rgba(17,24,39,.07)',
   axisLine:  'rgba(17,24,39,.14)',
   axisText:  '#9CA3AF',
   dotStroke: 'rgba(255,255,255,.92)',
 };
 const M3_DARK = {
-  incLine:   '#0C5E3F',
-  incFill:   'rgba(12,94,63,.20)',
-  expLine:   '#872F2F',
-  expFill:   'rgba(135,47,47,.20)',
+  incLine:   '#8FA88F',
+  incFill:   'rgba(143,168,143,.22)',
+  expLine:   '#CF9C9C',
+  expFill:   'rgba(207,156,156,.18)',
+  debtLine:  '#D9A86C',
   grid:      'rgba(255,255,255,.07)',
   axisLine:  'rgba(255,255,255,.12)',
   axisText:  'rgba(255,255,255,0.30)',
@@ -30,8 +33,12 @@ const M3_DARK = {
 
 const FONT = 'var(--font-ui),system-ui,sans-serif';
 
-export function AreaLineChart({ months, income, expense, height, darkMode = false }: Readonly<{
-  months: string[]; income: (number|null)[]; expense: (number|null)[]; height: number; darkMode?: boolean;
+const WE_NAMES: Record<number, string> = { 5: 'Viernes', 6: 'Sábado', 0: 'Domingo' };
+const WE_COLOR = '#d97706';
+
+export function AreaLineChart({ months, income, expense, debt, height, darkMode = false, todayIndex, chartYear, chartMonth }: Readonly<{
+  months: string[]; income: (number|null)[]; expense: (number|null)[]; debt?: (number|null)[]; height: number; darkMode?: boolean; todayIndex?: number;
+  chartYear?: number; chartMonth?: number;
 }>) {
   const tk = darkMode ? M3_DARK : M3_LIGHT;
   const W = 800, H = height;
@@ -40,9 +47,23 @@ export function AreaLineChart({ months, income, expense, height, darkMode = fals
   const base  = H - padB;
 
   const [on, setOn] = React.useState(false);
+  const [hov, setHov] = React.useState<{ type: 'inc' | 'exp' | 'debt'; i: number; cx: number; cy: number; v: number } | null>(null);
+  const [hovWe, setHovWe] = React.useState<number | null>(null);
+  const uid = React.useId().replace(/:/g, '');
   React.useEffect(() => { const id = setTimeout(() => setOn(true), 80); return () => clearTimeout(id); }, []);
 
-  const all = [...income, ...expense].filter((v): v is number => v != null);
+  const weekendMap = React.useMemo<Map<number, string>>(() => {
+    if (chartYear === undefined || chartMonth === undefined || months.length <= 15) return new Map();
+    const map = new Map<number, string>();
+    months.forEach((_, i) => {
+      const dow = new Date(chartYear, chartMonth, i + 1).getDay();
+      if (dow in WE_NAMES) map.set(i, WE_NAMES[dow]);
+    });
+    return map;
+  }, [chartYear, chartMonth, months]);
+
+  const debtArr = debt ?? [];
+  const all = [...income, ...expense, ...debtArr].filter((v): v is number => v != null && v > 0);
   if (!all.length) return null;
   const dataMax  = Math.ceil(Math.max(...all) / 1000) * 1000 || 1;
   const step     = Math.max(1000, Math.round(dataMax / 4 / 1000) * 1000);
@@ -50,22 +71,54 @@ export function AreaLineChart({ months, income, expense, height, darkMode = fals
   const tickVals = [1, 2, 3, 4].map(i => i * step);
   const xs = months.map((_, i) => padL + (i / Math.max(months.length - 1, 1)) * (W - padL - padR));
   const y  = (v: number) => padT + (1 - v / max) * plotH;
-  const ptInc = income.map( (v, i) => v == null ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
-  const ptExp = expense.map((v, i) => v == null ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
+  const cutoff = todayIndex !== undefined ? todayIndex : months.length - 1;
   const seg = (pts: [number,number][]) => pts.length < 2 ? '' : `M ${pts[0][0]} ${pts[0][1]} ` + pts.slice(1).map(p => `L ${p[0]} ${p[1]}`).join(' ');
-  const incPath = seg(ptInc);
-  const expPath = seg(ptExp);
-  const incArea = incPath && ptInc.length > 1 ? `${incPath} L ${ptInc[ptInc.length-1][0]} ${base} L ${ptInc[0][0]} ${base} Z` : '';
-  const expArea = expPath && ptExp.length > 1 ? `${expPath} L ${ptExp[ptExp.length-1][0]} ${base} L ${ptExp[0][0]} ${base} Z` : '';
+  // Línea y área solo hasta el cutoff (hoy); puntos futuros se renderizan sin línea
+  const ptIncLine = income.map( (v, i) => (v == null || i > cutoff) ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
+  const ptExpLine = expense.map((v, i) => (v == null || i > cutoff) ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
+  const ptDebtLine = debtArr.map((v, i) => (v == null || i > cutoff) ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
+  const incPath = seg(ptIncLine);
+  const expPath = seg(ptExpLine);
+  const debtPath = seg(ptDebtLine);
+  const incArea = incPath && ptIncLine.length > 1 ? `${incPath} L ${ptIncLine[ptIncLine.length-1][0]} ${base} L ${ptIncLine[0][0]} ${base} Z` : '';
+  const expArea = expPath && ptExpLine.length > 1 ? `${expPath} L ${ptExpLine[ptExpLine.length-1][0]} ${base} L ${ptExpLine[0][0]} ${base} Z` : '';
+  const debtArea = debtPath && ptDebtLine.length > 1 ? `${debtPath} L ${ptDebtLine[ptDebtLine.length-1][0]} ${base} L ${ptDebtLine[0][0]} ${base} Z` : '';
 
-  return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+  // Leyenda dinámica según series con datos
+  const legendEntries = [
+    income.some(v => v != null)  ? { label: 'Ingresos', color: tk.incLine }  : null,
+    expense.some(v => v != null) ? { label: 'Gastos',   color: tk.expLine }  : null,
+    debtArr.some(v => v != null) ? { label: 'Deudas',   color: tk.debtLine } : null,
+  ].filter((e): e is { label: string; color: string } => e !== null);
 
-      {/* Leyenda superior-izquierda */}
-      <circle cx={padL} cy={18} r="5" fill={tk.incLine} />
-      <text x={padL + 10} y={23} fontSize="11" fontWeight="700" fill={tk.incLine} fontFamily={FONT}>Ingresos</text>
-      <circle cx={padL + 85} cy={18} r="5" fill={tk.expLine} />
-      <text x={padL + 95} y={23} fontSize="11" fontWeight="700" fill={tk.expLine} fontFamily={FONT}>Gastos</text>
+  const svgEl = (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}
+      onMouseLeave={() => setHov(null)}>
+      <defs>
+        <linearGradient id={`ig-${uid}`} x1="0" y1={padT} x2="0" y2={base} gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor={tk.incLine} stopOpacity="0.32" />
+          <stop offset="100%" stopColor={tk.incLine} stopOpacity="0.01" />
+        </linearGradient>
+        <linearGradient id={`eg-${uid}`} x1="0" y1={padT} x2="0" y2={base} gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor={tk.expLine} stopOpacity="0.24" />
+          <stop offset="100%" stopColor={tk.expLine} stopOpacity="0.01" />
+        </linearGradient>
+        <linearGradient id={`dg-${uid}`} x1="0" y1={padT} x2="0" y2={base} gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor={tk.debtLine} stopOpacity="0.24" />
+          <stop offset="100%" stopColor={tk.debtLine} stopOpacity="0.01" />
+        </linearGradient>
+      </defs>
+
+      {/* Leyenda superior-izquierda (solo series con datos) */}
+      {legendEntries.map((e, k) => {
+        const x = padL + legendEntries.slice(0, k).reduce((s, p) => s + p.label.length * 6.5 + 28, 0);
+        return (
+          <g key={e.label}>
+            <circle cx={x} cy={18} r="5" fill={e.color} />
+            <text x={x + 10} y={23} fontSize="11" fontWeight="700" fill={e.color} fontFamily={FONT}>{e.label}</text>
+          </g>
+        );
+      })}
 
       {/* Grid + etiquetas eje Y */}
       {tickVals.map((val, i) => {
@@ -73,8 +126,8 @@ export function AreaLineChart({ months, income, expense, height, darkMode = fals
         return (
           <g key={i}>
             <line x1={padL} x2={W - padR} y1={yy} y2={yy} stroke={tk.grid} strokeWidth="1" strokeDasharray="3 5" />
-            <text x={padL - 6} y={yy + 4} textAnchor="end" fontSize="10" fontWeight="600" fill={tk.axisText} fontFamily={FONT}>
-              {val >= 1000 ? `S/${(val / 1000).toFixed(0)}k` : `S/${val}`}
+            <text x={padL - 6} y={yy + 4} textAnchor="end" fontSize="9" fontWeight="500" fill={tk.axisText} fontFamily={FONT}>
+              {formatCompactCurrency(val, 0)}
             </text>
           </g>
         );
@@ -86,19 +139,36 @@ export function AreaLineChart({ months, income, expense, height, darkMode = fals
       {/* Eje X (línea horizontal) */}
       <line x1={padL} x2={W - padR} y1={base} y2={base} stroke={tk.axisLine} strokeWidth="1.5" />
 
-      {/* Etiquetas eje X (meses) */}
-      {months.map((m, i) => (
-        <text key={m} x={xs[i]} y={H - 10} textAnchor="middle" fontSize="11" fontWeight="700" fill={tk.axisText} fontFamily={FONT}>{m}</text>
-      ))}
+      {/* Etiquetas eje X (meses / días) */}
+      {months.map((m, i) => {
+        if (months.length > 15) {
+          const d    = parseInt(m);
+          const major = d === 1 || d % 5 === 0;
+          return (
+            <text key={`xl${i}`} x={xs[i]} y={H - 10}
+              textAnchor="middle"
+              fontSize={major ? '9' : '7'}
+              fontWeight={major ? '500' : '400'}
+              opacity={major ? 1 : 0.38}
+              fill={tk.axisText} fontFamily={FONT}>
+              {m}
+            </text>
+          );
+        }
+        return (
+          <text key={`xl${i}`} x={xs[i]} y={H - 10} textAnchor="middle" fontSize="9" fontWeight="500" fill={tk.axisText} fontFamily={FONT}>{m}</text>
+        );
+      })}
 
       {/* Tick marks eje X */}
       {xs.map((x, i) => (
         <line key={`tx${i}`} x1={x} x2={x} y1={base} y2={base + 4} stroke={tk.axisLine} strokeWidth="1.5" />
       ))}
 
-      {/* Relleno sólido */}
-      {incArea && <path d={incArea} fill={tk.incFill} style={{ opacity: on ? 1 : 0, transition: 'opacity 0.9s ease 0.35s' }} />}
-      {expArea && <path d={expArea} fill={tk.expFill} style={{ opacity: on ? 1 : 0, transition: 'opacity 0.9s ease 0.5s' }} />}
+      {/* Relleno degradado */}
+      {incArea && <path d={incArea} fill={`url(#ig-${uid})`} style={{ opacity: on ? 1 : 0, transition: 'opacity 0.9s ease 0.35s' }} />}
+      {expArea && <path d={expArea} fill={`url(#eg-${uid})`} style={{ opacity: on ? 1 : 0, transition: 'opacity 0.9s ease 0.5s' }} />}
+      {debtArea && <path d={debtArea} fill={`url(#dg-${uid})`} style={{ opacity: on ? 1 : 0, transition: 'opacity 0.9s ease 0.5s' }} />}
 
       {/* Líneas */}
       {incPath && <path d={incPath} fill="none" stroke={tk.incLine} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"
@@ -107,38 +177,189 @@ export function AreaLineChart({ months, income, expense, height, darkMode = fals
       {expPath && <path d={expPath} fill="none" stroke={tk.expLine} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"
         strokeDasharray={2500} strokeDashoffset={on ? 0 : 2500}
         style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1) 0.15s' }} />}
+      {debtPath && <path d={debtPath} fill="none" stroke={tk.debtLine} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"
+        strokeDasharray={2500} strokeDashoffset={on ? 0 : 2500}
+        style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1) 0.15s' }} />}
 
-      {/* Puntos + valores — ingresos */}
+      {/* Puntos — ingresos */}
       {income.map((v, i) => {
         if (v == null) return null;
-        const cx = xs[i], cy = y(v);
-        const ly = cy - 16 < padT + 5 ? cy + 20 : cy - 16;
-        const delay = `${0.7 + i * 0.1}s`;
+        const cx      = xs[i], cy = y(v);
+        const ly      = cy - 16 < padT + 5 ? cy + 20 : cy - 16;
+        const delay   = `${0.7 + i * 0.1}s`;
+        const isZero  = v === 0;
+        const isFuture = todayIndex !== undefined && i > todayIndex;
+        const isHov   = hov?.type === 'inc' && hov.i === i;
+        const opacity = on ? (isFuture ? 0.42 : isZero ? 0.28 : 1) : 0;
         return (
-          <g key={`i${i}`} style={{ opacity: on ? 1 : 0, transition: `opacity 0.3s ease ${delay}` }}>
-            <circle cx={cx} cy={cy} r="4.5" fill={tk.incLine} stroke={tk.dotStroke} strokeWidth="2"
-              style={{ transform: on ? 'scale(1)' : 'scale(0)', transformBox: 'fill-box', transformOrigin: 'center', transition: `transform 0.35s cubic-bezier(.4,0,.2,1) ${delay}` }} />
-            <text x={cx} y={ly} textAnchor="middle" fontSize="9" fontWeight="700" fill={tk.incLine} fontFamily={FONT}>{fmtK(v)}</text>
+          <g key={`i${i}`}
+            style={{ opacity, transition: `opacity 0.3s ease ${delay}` }}
+            onMouseEnter={() => !isZero && setHov({ type: 'inc', i, cx, cy, v })}
+          >
+            <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '1.8' : '3'}
+              fill={tk.incLine} stroke={tk.dotStroke} strokeWidth="1.5"
+              style={{
+                transform: on ? (isHov ? 'scale(1.65)' : 'scale(1)') : 'scale(0)',
+                transformBox: 'fill-box', transformOrigin: 'center',
+                transition: on ? 'transform 0.18s cubic-bezier(.4,0,.2,1)' : `transform 0.35s cubic-bezier(.4,0,.2,1) ${delay}`,
+                cursor: isZero ? 'default' : 'pointer',
+              }} />
+            {!isZero && !isHov && !isFuture && (
+              <text x={cx} y={ly} textAnchor="middle" fontSize="9" fontWeight="700" fill={tk.incLine} fontFamily={FONT}>{fmtK(v)}</text>
+            )}
           </g>
         );
       })}
 
-      {/* Puntos + valores — gastos */}
+      {/* Puntos — gastos */}
       {expense.map((v, i) => {
         if (v == null) return null;
-        const cx = xs[i], cy = y(v);
-        const ly = cy - 16 < padT + 5 ? cy + 20 : cy - 16;
-        const delay = `${0.75 + i * 0.1}s`;
+        const cx      = xs[i], cy = y(v);
+        const ly      = cy - 16 < padT + 5 ? cy + 20 : cy - 16;
+        const delay   = `${0.75 + i * 0.1}s`;
+        const isZero  = v === 0;
+        const isFuture = todayIndex !== undefined && i > todayIndex;
+        const isHov   = hov?.type === 'exp' && hov.i === i;
+        const opacity = on ? (isFuture ? 0.42 : isZero ? 0.28 : 1) : 0;
         return (
-          <g key={`e${i}`} style={{ opacity: on ? 1 : 0, transition: `opacity 0.3s ease ${delay}` }}>
-            <circle cx={cx} cy={cy} r="4.5" fill={tk.expLine} stroke={tk.dotStroke} strokeWidth="2"
-              style={{ transform: on ? 'scale(1)' : 'scale(0)', transformBox: 'fill-box', transformOrigin: 'center', transition: `transform 0.35s cubic-bezier(.4,0,.2,1) ${delay}` }} />
-            <text x={cx} y={ly} textAnchor="middle" fontSize="9" fontWeight="700" fill={tk.expLine} fontFamily={FONT}>{fmtK(v)}</text>
+          <g key={`e${i}`}
+            style={{ opacity, transition: `opacity 0.3s ease ${delay}` }}
+            onMouseEnter={() => !isZero && setHov({ type: 'exp', i, cx, cy, v })}
+          >
+            <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '1.8' : '3'}
+              fill={tk.expLine} stroke={tk.dotStroke} strokeWidth="1.5"
+              style={{
+                transform: on ? (isHov ? 'scale(1.65)' : 'scale(1)') : 'scale(0)',
+                transformBox: 'fill-box', transformOrigin: 'center',
+                transition: on ? 'transform 0.18s cubic-bezier(.4,0,.2,1)' : `transform 0.35s cubic-bezier(.4,0,.2,1) ${delay}`,
+                cursor: isZero ? 'default' : 'pointer',
+              }} />
+            {!isZero && !isHov && !isFuture && (
+              <text x={cx} y={ly} textAnchor="middle" fontSize="9" fontWeight="700" fill={tk.expLine} fontFamily={FONT}>{fmtK(v)}</text>
+            )}
           </g>
         );
       })}
+
+      {/* Puntos — deudas */}
+      {debtArr.map((v, i) => {
+        if (v == null) return null;
+        const cx      = xs[i], cy = y(v);
+        const ly      = cy - 16 < padT + 5 ? cy + 20 : cy - 16;
+        const delay   = `${0.75 + i * 0.1}s`;
+        const isZero  = v === 0;
+        const isFuture = todayIndex !== undefined && i > todayIndex;
+        const isHov   = hov?.type === 'debt' && hov.i === i;
+        const opacity = on ? (isFuture ? 0.42 : isZero ? 0.28 : 1) : 0;
+        return (
+          <g key={`d${i}`}
+            style={{ opacity, transition: `opacity 0.3s ease ${delay}` }}
+            onMouseEnter={() => !isZero && setHov({ type: 'debt', i, cx, cy, v })}
+          >
+            <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '1.8' : '3'}
+              fill={tk.debtLine} stroke={tk.dotStroke} strokeWidth="1.5"
+              style={{
+                transform: on ? (isHov ? 'scale(1.65)' : 'scale(1)') : 'scale(0)',
+                transformBox: 'fill-box', transformOrigin: 'center',
+                transition: on ? 'transform 0.18s cubic-bezier(.4,0,.2,1)' : `transform 0.35s cubic-bezier(.4,0,.2,1) ${delay}`,
+                cursor: isZero ? 'default' : 'pointer',
+              }} />
+            {!isZero && !isHov && !isFuture && (
+              <text x={cx} y={ly} textAnchor="middle" fontSize="9" fontWeight="700" fill={tk.debtLine} fontFamily={FONT}>{fmtK(v)}</text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Indicadores fin de semana */}
+      {on && Array.from(weekendMap.entries()).map(([i, name]) => {
+        const cx = xs[i];
+        const cy = H - 24;
+        const isHov = hovWe === i;
+        const tw = name.length * 5.6 + 14;
+        const tx = Math.max(padL + tw / 2 + 2, Math.min(W - padR - tw / 2 - 2, cx));
+        return (
+          <g key={`we${i}`}
+            onMouseEnter={() => setHovWe(i)}
+            onMouseLeave={() => setHovWe(null)}
+            style={{ cursor: 'default' }}
+          >
+            <circle cx={cx} cy={cy} r="3.5" fill={WE_COLOR} opacity={0.75}
+              style={{
+                transform: isHov ? 'scale(1.6)' : 'scale(1)',
+                transformBox: 'fill-box', transformOrigin: 'center',
+                transition: 'transform 0.15s cubic-bezier(.4,0,.2,1)',
+              }}
+            />
+            {isHov && (
+              <g style={{ pointerEvents: 'none' }}>
+                <rect x={tx - tw / 2} y={H - 44} width={tw} height={15} rx="5" fill={WE_COLOR} />
+                <text x={tx} y={H - 33} textAnchor="middle" fontSize="8" fontWeight="700" fill="white" fontFamily={FONT}>{name}</text>
+              </g>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Indicador "HOY" */}
+      {todayIndex !== undefined && todayIndex >= 0 && todayIndex < xs.length && on && (() => {
+        const tx = xs[todayIndex];
+        const bw = 28;
+        const bx = Math.max(padL + bw / 2 + 2, Math.min(W - padR - bw / 2 - 2, tx));
+        return (
+          <g style={{ pointerEvents: 'none' }}>
+            <line x1={tx} x2={tx} y1={padT + 2} y2={base}
+              stroke={WE_COLOR} strokeWidth="1.5" strokeDasharray="4 3" opacity="0.55" />
+            <rect x={bx - bw / 2} y={padT - 14} width={bw} height={15} rx="5" fill={WE_COLOR} />
+            <text x={bx} y={padT - 4} textAnchor="middle" fontSize="8" fontWeight="800"
+              fill="white" fontFamily={FONT}>HOY</text>
+          </g>
+        );
+      })()}
+
+      {/* Tooltip al hover — muestra las series con valor del mismo punto */}
+      {hov && on && (() => {
+        const rows = ([
+          { v: income[hov.i],  color: tk.incLine },
+          { v: expense[hov.i], color: tk.expLine },
+          { v: debtArr[hov.i], color: tk.debtLine },
+        ] as { v: number | null | undefined; color: string }[])
+          .filter((r): r is { v: number; color: string } => r.v != null && r.v > 0)
+          .map(r => ({ ...r, lbl: fmtK(r.v) }));
+        if (!rows.length) return null;
+
+        const tw   = Math.max(...rows.map(r => r.lbl.length * 7 + 22), 48);
+        const th   = rows.length === 1 ? 22 : rows.length * 18 + 4;
+        const tx   = Math.max(padL + tw / 2 + 4, Math.min(W - padR - tw / 2 - 4, hov.cx));
+        const above = hov.cy - th - 14 >= padT + 6;
+        const ty    = above ? hov.cy - th / 2 - 14 : hov.cy + th / 2 + 14;
+        const dotX  = tx - tw / 2 + 10;
+        const lblX  = tx - tw / 2 + 18;
+        const guideColor = hov.type === 'inc' ? tk.incLine : hov.type === 'exp' ? tk.expLine : tk.debtLine;
+
+        return (
+          <g style={{ pointerEvents: 'none' }}>
+            <line x1={hov.cx} x2={hov.cx} y1={hov.cy} y2={base}
+              stroke={guideColor} strokeWidth="1" strokeDasharray="3 3" opacity="0.35" />
+            <rect x={tx - tw / 2} y={ty - th / 2} width={tw} height={th} rx="7"
+              fill="rgba(17,24,39,0.92)" />
+            {rows.map((r, k) => {
+              const ly = ty - ((rows.length - 1) * 18) / 2 + k * 18;
+              return (
+                <g key={k}>
+                  <circle cx={dotX} cy={ly} r="3" fill={r.color} />
+                  <text x={lblX} y={ly + 4} textAnchor="start" fontSize="10" fontWeight="700"
+                    fill={r.color} fontFamily={FONT}>{r.lbl}</text>
+                </g>
+              );
+            })}
+          </g>
+        );
+      })()}
     </svg>
   );
+
+  return svgEl;
 }
 
 // ── Modelo 2: Barras Apiladas ────────────────────────────────────────────
@@ -146,7 +367,7 @@ export function StackedBarsChart({ months, income, expense, height, darkMode = f
   months: string[]; income: number[]; expense: number[]; height: number; darkMode?: boolean;
 }>) {
   const tk = darkMode
-    ? { incFill: 'rgba(16,185,129,.65)', expFill: 'rgba(248,113,113,.70)', grid: 'rgba(255,255,255,.06)', axis: '#5a3a3a', lastAxis: '#f87171' }
+    ? { incFill: 'rgba(45,138,45,.65)',  expFill: 'rgba(224,85,85,.65)',   grid: 'rgba(255,255,255,.06)', axis: '#9aba9a', lastAxis: '#2d8a2d' }
     : { incFill: 'rgba(45,138,45,.65)',  expFill: 'rgba(224,85,85,.65)',   grid: 'rgba(255,255,255,.55)', axis: '#9aba9a', lastAxis: '#2d8a2d' };
   const W = 600, H = height;
   const padL = 10, padR = 10, padT = 24, padB = 26;
@@ -194,7 +415,7 @@ export function PillBarsChart({ months, income, expense, height, darkMode = fals
   months: string[]; income: number[]; expense: number[]; height: number; darkMode?: boolean;
 }>) {
   const tk = darkMode
-    ? { incFill: '#818cf8', expFill: '#fb7185', grid: 'rgba(99,102,241,.10)', axis: '#3a3880', lastAxis: '#818cf8' }
+    ? { incFill: '#4f46e5', expFill: '#f43f5e', grid: 'rgba(99,102,241,.15)', axis: '#6366f1', lastAxis: '#4f46e5' }
     : { incFill: '#4f46e5', expFill: '#f43f5e', grid: 'rgba(99,102,241,.15)', axis: '#6366f1', lastAxis: '#4f46e5' };
   const W = 600, H = height;
   const padL = 10, padR = 10, padT = 24, padB = 26;
@@ -238,8 +459,8 @@ export function MinimalBarsChart({ months, income, height, darkMode = false }: R
   months: string[]; income: number[]; height: number; darkMode?: boolean;
 }>) {
   const tk = darkMode
-    ? { barFull: '#fbbf24', barMid: 'rgba(251,191,36,.42)', barLow: 'rgba(251,191,36,.28)', line: 'rgba(251,191,36,.50)', dot: '#fbbf24', ring: 'rgba(251,191,36,.20)', grid: '#1e1c10', axis: '#4a4020', lastAxis: '#fbbf24' }
-    : { barFull: '#d97706', barMid: 'rgba(217,119,6,.42)',  barLow: 'rgba(217,119,6,.26)',  line: 'rgba(217,119,6,.50)',  dot: '#d97706', ring: 'rgba(217,119,6,.20)',  grid: 'rgba(0,0,0,.07)', axis: '#b08040', lastAxis: '#d97706' };
+    ? { barFull: '#d97706', barMid: 'rgba(217,119,6,.42)',  barLow: 'rgba(217,119,6,.26)',  line: 'rgba(217,119,6,.50)',  dot: '#d97706', ring: 'rgba(217,119,6,.20)',  grid: 'rgba(255,255,255,.07)', axis: '#b08040', lastAxis: '#d97706' }
+    : { barFull: '#d97706', barMid: 'rgba(217,119,6,.42)',  barLow: 'rgba(217,119,6,.26)',  line: 'rgba(217,119,6,.50)',  dot: '#d97706', ring: 'rgba(217,119,6,.20)',  grid: 'rgba(0,0,0,.07)',       axis: '#b08040', lastAxis: '#d97706' };
   const W = 600, H = height;
   const padL = 10, padR = 10, padT = 28, padB = 26;
   const availH = H - padT - padB;
@@ -290,8 +511,84 @@ export function MinimalBarsChart({ months, income, height, darkMode = false }: R
   );
 }
 
+// ── Gráfico vacío: solo ejes X/Y sin datos ───────────────────────────────
+export function EmptyLineChart({ months, height, darkMode = false, legendItems }: Readonly<{
+  months: string[]; height: number; darkMode?: boolean; legendItems?: { label: string; color: string }[];
+}>) {
+  const tk = darkMode ? M3_DARK : M3_LIGHT;
+  const W = 800, H = height;
+  const padL = 48, padR = 20, padT = 50, padB = 36;
+  const plotH = H - padT - padB;
+  const base  = H - padB;
+  const ticks = 4;
+  const xs = months.length > 1
+    ? months.map((_, i) => padL + (i / (months.length - 1)) * (W - padL - padR))
+    : [padL, W - padR];
+  const legend = legendItems ?? [
+    { label: 'Ingresos', color: tk.incLine },
+    { label: 'Gastos',   color: tk.expLine },
+  ];
+
+  return (
+    <svg
+      width="100%"
+      height={H}
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ display: 'block' }}
+    >
+      {/* Leyenda */}
+      {legend.map((e, k) => {
+        const x = padL + legend.slice(0, k).reduce((s, p) => s + p.label.length * 6.5 + 28, 0);
+        return (
+          <g key={e.label}>
+            <circle cx={x} cy={18} r="5" fill={e.color} opacity={0.5} />
+            <text x={x + 10} y={23} fontSize="11" fontWeight="700" fill={e.color} opacity={0.5} fontFamily={FONT}>{e.label}</text>
+          </g>
+        );
+      })}
+
+      {/* Grid horizontal */}
+      {Array.from({ length: ticks }, (_, i) => {
+        const yy = padT + ((i + 1) / (ticks + 1)) * plotH;
+        return (
+          <g key={i}>
+            <line x1={padL} x2={W - padR} y1={yy} y2={yy} stroke={tk.grid} strokeWidth="1" strokeDasharray="3 5" />
+          </g>
+        );
+      })}
+
+      {/* Eje Y */}
+      <line x1={padL} x2={padL} y1={padT} y2={base} stroke={tk.axisLine} strokeWidth="1.5" />
+
+      {/* Eje X */}
+      <line x1={padL} x2={W - padR} y1={base} y2={base} stroke={tk.axisLine} strokeWidth="1.5" />
+
+      {/* Etiquetas X */}
+      {months.map((m, i) => (
+        <text key={i} x={xs[i]} y={H - 10} textAnchor="middle" fontSize="9" fontWeight="500" fill={tk.axisText} fontFamily={FONT}>{m}</text>
+      ))}
+
+      {/* Ticks X */}
+      {xs.map((x, i) => (
+        <line key={i} x1={x} x2={x} y1={base} y2={base + 4} stroke={tk.axisLine} strokeWidth="1.5" />
+      ))}
+
+      {/* Mensaje central */}
+      <text x={W / 2} y={padT + plotH / 2 - 8} textAnchor="middle" fontSize="13" fontWeight="600"
+        fill={darkMode ? 'rgba(255,255,255,0.28)' : 'rgba(17,24,39,0.28)'} fontFamily={FONT}>
+        Sin datos para este período
+      </text>
+      <text x={W / 2} y={padT + plotH / 2 + 14} textAnchor="middle" fontSize="10" fontWeight="500"
+        fill={darkMode ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.18)'} fontFamily={FONT}>
+        Sincroniza Notion para ver el historial
+      </text>
+    </svg>
+  );
+}
+
 const M3_DEBT_LIGHT = { line: '#d97706', fill: 'rgba(217,119,6,.11)', grid: 'rgba(220,200,160,.80)', axisLine: 'rgba(217,119,6,.30)', axisText: '#c4a96a', dotStroke: 'rgba(255,255,255,.92)' };
-const M3_DEBT_DARK  = { line: '#fbbf24', fill: 'rgba(251,191,36,.12)', grid: 'rgba(255,255,255,.07)', axisLine: 'rgba(251,191,36,.22)', axisText: '#7a6a3a', dotStroke: '#0f1a0f' };
+const M3_DEBT_DARK  = { line: '#d97706', fill: 'rgba(217,119,6,.14)', grid: 'rgba(255,255,255,.07)', axisLine: 'rgba(217,119,6,.30)', axisText: '#c4a96a', dotStroke: 'rgba(13,15,18,.95)' };
 
 export function DebtLineChart({ months, remaining, height, darkMode = false }: Readonly<{
   months: string[]; remaining: (number|null)[]; height: number; darkMode?: boolean;
@@ -334,8 +631,8 @@ export function DebtLineChart({ months, remaining, height, darkMode = false }: R
         return (
           <g key={i}>
             <line x1={padL} x2={W - padR} y1={yy} y2={yy} stroke={tk.grid} strokeWidth="1" strokeDasharray="3 5" />
-            <text x={padL - 6} y={yy + 4} textAnchor="end" fontSize="10" fontWeight="600" fill={tk.axisText} fontFamily={FONT}>
-              {val >= 1000 ? `S/${(val / 1000).toFixed(0)}k` : `S/${val}`}
+            <text x={padL - 6} y={yy + 4} textAnchor="end" fontSize="9" fontWeight="500" fill={tk.axisText} fontFamily={FONT}>
+              {formatCompactCurrency(val, 0)}
             </text>
           </g>
         );
@@ -349,7 +646,7 @@ export function DebtLineChart({ months, remaining, height, darkMode = false }: R
 
       {/* Etiquetas eje X */}
       {months.map((m, i) => (
-        <text key={m} x={xs[i]} y={H - 10} textAnchor="middle" fontSize="11" fontWeight="700" fill={tk.axisText} fontFamily={FONT}>{m}</text>
+        <text key={m} x={xs[i]} y={H - 10} textAnchor="middle" fontSize="9" fontWeight="500" fill={tk.axisText} fontFamily={FONT}>{m}</text>
       ))}
 
       {/* Tick marks eje X */}

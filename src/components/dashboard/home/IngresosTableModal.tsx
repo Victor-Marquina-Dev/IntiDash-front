@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
-import { formatNotionDate } from '@/lib/format';
+import { formatCurrency, formatNullableCurrency, formatNotionDate } from '@/lib/format';
 import { Icon } from '@/components/icons';
 import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
@@ -70,7 +70,7 @@ export function IngresosModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <div style={{ textAlign: 'right', flexShrink: 0, paddingRight: 16 }}>
               <div style={{ fontSize: 10.5, color: C.textMute, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>Total</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: C.pos, letterSpacing: -1, fontVariantNumeric: 'tabular-nums', lineHeight: 1.15, marginTop: 2 }}>
-                S/ {total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                {formatCurrency(total)}
               </div>
             </div>
           )}
@@ -135,7 +135,7 @@ export function IngresosModal({ onClose }: Readonly<{ onClose: () => void }>) {
                           {row.nombre || '-'}
                         </td>
                         <td style={{ padding: '12px 16px', color: C.pos, fontWeight: 700, fontVariantNumeric: 'tabular-nums', borderBottom: borderBot, whiteSpace: 'nowrap' }}>
-                          {row.ingreso != null ? `S/ ${row.ingreso.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '-'}
+                          {formatNullableCurrency(row.ingreso)}
                         </td>
                         <td style={{ padding: '12px 16px', borderBottom: borderBot }}>
                           {row.categoriaIngreso

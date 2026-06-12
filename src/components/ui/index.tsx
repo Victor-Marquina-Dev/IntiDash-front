@@ -5,6 +5,51 @@ import { createPortal } from 'react-dom';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
 
+export const FORM_INPUT_STYLE: React.CSSProperties = {
+  width: '100%',
+  padding: '9px 12px',
+  borderRadius: 9,
+  border: `1px solid ${C.border}`,
+  background: '#fff',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 13,
+  color: C.text,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+export const FORM_LABEL_STYLE: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: C.textMute,
+  textTransform: 'uppercase',
+  letterSpacing: 0.7,
+  display: 'block',
+  marginBottom: 5,
+};
+
+export const FORM_CANCEL_BUTTON_STYLE: React.CSSProperties = {
+  padding: '10px 16px',
+  borderRadius: 10,
+  border: `1px solid ${C.border}`,
+  background: 'none',
+  cursor: 'pointer',
+  color: C.textDim,
+  fontFamily: 'var(--font-ui)',
+  fontSize: 13,
+};
+
+export const FORM_SUBMIT_BUTTON_STYLE: React.CSSProperties = {
+  padding: '10px 20px',
+  borderRadius: 10,
+  border: 'none',
+  color: '#fff',
+  fontFamily: 'var(--font-ui)',
+  fontSize: 13,
+  fontWeight: 600,
+  transition: 'all 0.15s',
+};
+
 // ── Card ────────────────────────────────────────────────────────────────
 interface CardProps {
   children: React.ReactNode;

@@ -101,6 +101,20 @@ export interface PrestamoRow {
   fecha: string | null;
 }
 
+export interface GoalRow {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  montoMeta: number | null;
+  montoActual: number;
+  fechaFin: string | null;
+  estado: string;
+  color: string;
+  icono: string;
+  notionPageId?: string | null;
+  syncedAt?: string | null;
+}
+
 export interface DbTransaction {
   id: string;
   descripcion: string;
@@ -148,6 +162,14 @@ export interface CreateOptions {
   cuentasBancarias: string[];
   categoriasGasto: string[];
   deudas: string[];
+}
+
+export interface PresupuestoLimiteRow {
+  id: string;
+  categoria: string;
+  limite: number;
+  color: string;
+  createdAt?: string | null;
 }
 
 export interface NotionConfig {

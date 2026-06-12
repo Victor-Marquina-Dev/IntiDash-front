@@ -71,6 +71,34 @@ export const apiClient = {
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };
 
+export async function downloadBlob(path: string): Promise<{ blob: Blob; filename: string }> {
+  const activeWs = getActiveWorkspace();
+  const response = await fetch(resolveUrl(path), {
+    credentials: 'include',
+    headers: {
+      ...(activeWs ? { 'X-Workspace-Id': activeWs } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    let message = `HTTP ${response.status}`;
+    try {
+      const errorBody = await response.json();
+      message = errorBody?.message ?? errorBody?.error ?? message;
+    } catch {
+      // Keep the HTTP status fallback.
+    }
+    throw new Error(message);
+  }
+
+  const disposition = response.headers.get('content-disposition') ?? '';
+  const match = disposition.match(/filename="?([^"]+)"?/i);
+  return {
+    blob: await response.blob(),
+    filename: match?.[1] ?? 'florin-export.xlsx',
+  };
+}
+
 export async function getOr<T>(path: string, fallback: T): Promise<T> {
   try {
     return await apiClient.get<T>(path);

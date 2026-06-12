@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
+import { formatIntegerCurrency, formatNullableCurrency } from '@/lib/format';
 import { Icon } from '@/components/icons';
 import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
@@ -52,7 +53,7 @@ export function CategoriasModal({ onClose, canWrite = true }: Readonly<{ onClose
               <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '11px 16px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: active ? 600 : 400, color: active ? C.text : C.textMute, borderBottom: `2px solid ${active ? C.olive : 'transparent'}`, marginBottom: -1, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {t.label}
                 <span style={{ fontSize: 11, background: active ? `${C.olive}20` : C.border, color: active ? C.olive : C.textMute, borderRadius: 10, padding: '1px 7px', fontWeight: 600 }}>{t.count}</span>
-                {!loading && <span style={{ fontSize: 11, color: active ? C.olive : C.textMute, fontVariantNumeric: 'tabular-nums' }}>S/ {t.total.toLocaleString('es-PE', { minimumFractionDigits: 0 })}</span>}
+                {!loading && <span style={{ fontSize: 11, color: active ? C.olive : C.textMute, fontVariantNumeric: 'tabular-nums' }}>{formatIntegerCurrency(t.total)}</span>}
               </button>
             );
           })}
@@ -85,10 +86,10 @@ export function CategoriasModal({ onClose, canWrite = true }: Readonly<{ onClose
                           {row.tipo ? <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 20, background: `${C.olive}10`, border: `1px solid ${C.olive}25`, fontSize: 11.5, color: C.olive, fontWeight: 600 }}>{row.tipo}</span> : '—'}
                         </td>
                         {tab === 'egreso' ? <>
-                          <td style={{ padding: '12px 16px', color: C.neg, fontWeight: 600, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>{row.gastosPorDeuda != null ? `S/ ${row.gastosPorDeuda.toLocaleString('es-PE', { minimumFractionDigits: 0 })}` : '—'}</td>
-                          <td style={{ padding: '12px 16px', color: C.warn, fontWeight: 600, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>{row.gastosUnicos != null ? `S/ ${row.gastosUnicos.toLocaleString('es-PE', { minimumFractionDigits: 0 })}` : '—'}</td>
-                        </> : <td style={{ padding: '12px 16px', color: C.pos, fontWeight: 600, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>{row.ingresosTotales != null ? `S/ ${row.ingresosTotales.toLocaleString('es-PE', { minimumFractionDigits: 0 })}` : '—'}</td>}
-                        <td style={{ padding: '12px 16px', fontWeight: 700, color: C.text, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>S/ {total.toLocaleString('es-PE', { minimumFractionDigits: 0 })}</td>
+                          <td style={{ padding: '12px 16px', color: C.neg, fontWeight: 600, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>{formatNullableCurrency(row.gastosPorDeuda, '—', 0)}</td>
+                          <td style={{ padding: '12px 16px', color: C.warn, fontWeight: 600, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>{formatNullableCurrency(row.gastosUnicos, '—', 0)}</td>
+                        </> : <td style={{ padding: '12px 16px', color: C.pos, fontWeight: 600, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>{formatNullableCurrency(row.ingresosTotales, '—', 0)}</td>}
+                        <td style={{ padding: '12px 16px', fontWeight: 700, color: C.text, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>{formatIntegerCurrency(total)}</td>
                       </tr>
                     );
                   })}

@@ -4,6 +4,8 @@ import React from 'react';
 import { useDashboardCategories, type CategoryTab } from '@/shared/hooks/use-dashboard-categories';
 import { CategoriasModal, NewCategoriaModal } from './CategoryModals';
 import { CardHeaderSection, type CardTab } from './CardHeaderSection';
+import { Icon } from '@/components/icons';
+import { formatCompactCurrency, formatIntegerCurrency } from '@/lib/format';
 
 const DARK_TOKENS = {
   cardBg: 'linear-gradient(145deg,#1A1D21,#16181C)',
@@ -50,9 +52,7 @@ const LIGHT_TOKENS = {
 type Tokens = typeof LIGHT_TOKENS;
 
 function fmtTotal(v: number) {
-  if (v >= 1000000) return `S/${(v / 1000000).toFixed(1)}M`;
-  if (v >= 1000)    return `S/${(v / 1000).toFixed(1)}k`;
-  return `S/${v.toLocaleString('es-PE')}`;
+  return formatCompactCurrency(v);
 }
 
 function initials(name: string) {
@@ -69,8 +69,9 @@ interface DonutViewProps {
 }
 
 // El color de cada categoría viene del hook (escala roja=egreso / verde=ingreso).
-// "Otros" se agrupa en gris neutro.
-const OTROS_COLOR   = '#9ca3af';
+// "Otros" usa una tonalidad baja del mismo color familiar.
+const OTROS_ING = '#B8CCBA';
+const OTROS_EG  = '#DDBFBF';
 
 function useCounter(target: number, duration = 900) {
   const [val, setVal] = React.useState(0);
@@ -92,7 +93,7 @@ function useCounter(target: number, duration = 900) {
   return val;
 }
 
-function buildDonutRows(rows: DonutViewProps['rows']) {
+function buildDonutRows(rows: DonutViewProps['rows'], tab: string) {
   const active = rows.filter(r => r.value > 0);
   const sorted = [...active].sort((a, b) => b.value - a.value);
   const top4   = sorted.slice(0, 4);  // conserva r.color (escala por tipo del hook)
@@ -102,13 +103,14 @@ function buildDonutRows(rows: DonutViewProps['rows']) {
   const otrosVal = rest.reduce((s, r) => s + r.value, 0);
   const top4Pct  = top4.reduce((s, r) => s + r.pct, 0);
   const otrosPct = Math.max(0, 100 - top4Pct);
+  const otrosColor = tab === 'egreso' ? OTROS_EG : OTROS_ING;
   return [
     ...top4,
-    { nombre: 'Otros', value: otrosVal, pct: otrosPct, barPct: total > 0 ? (otrosVal / total) * 100 : 0, color: OTROS_COLOR },
+    { nombre: 'Otros', value: otrosVal, pct: otrosPct, barPct: total > 0 ? (otrosVal / total) * 100 : 0, color: otrosColor },
   ];
 }
 
-function DonutView({ rows, tokens, tabs: _tabs, activeTab: _activeTab }: Readonly<DonutViewProps>) {
+function DonutView({ rows, tokens, tabs: _tabs, activeTab }: Readonly<DonutViewProps>) {
   const CX = 210, CY = 133, R = 110, SW = 44;
   const CIRC = 2 * Math.PI * R;
   const FONT = 'var(--font-ui),system-ui,sans-serif';
@@ -121,7 +123,7 @@ function DonutView({ rows, tokens, tabs: _tabs, activeTab: _activeTab }: Readonl
   }, []);
 
   const total     = rows.reduce((s, r) => s + r.value, 0);
-  const displayRows = buildDonutRows(rows);
+  const displayRows = buildDonutRows(rows, activeTab);
 
   const segs = displayRows.map((row, i) => {
     const startPct = displayRows.slice(0, i).reduce((sum, item) => sum + item.pct, 0);
@@ -286,7 +288,7 @@ export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMo
       flexDirection: 'column',
     }}>
       <CardHeaderSection
-        icon="🍩"
+        icon={<Icon.filter size={16} strokeWidth={2.2} />}
         label="Categorias"
         tabs={tabs}
         activeTab={tab}
@@ -350,7 +352,7 @@ export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMo
                 </div>
                 <div style={{ textAlign: 'right', minWidth: 68, flexShrink: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: -0.5, color: amountColor, fontVariantNumeric: 'tabular-nums' }}>
-                    S/ {row.value.toLocaleString('es-PE')}
+                    {formatIntegerCurrency(row.value)}
                   </div>
                   <div style={{ fontSize: 10, color: tokens.pctC, fontWeight: 700, marginTop: 2 }}>
                     {row.pct}%

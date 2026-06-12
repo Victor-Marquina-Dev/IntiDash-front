@@ -4,7 +4,9 @@ import React from 'react';
 import { C } from '@/lib/colors';
 import { Card, Tag } from '@/components/ui';
 import type { BP } from '@/lib/breakpoints';
+import { formatIntegerCurrency } from '@/lib/format';
 import { fmtBalanceDec, fmtBalanceInt, useDashboardBalance } from '@/shared/hooks/use-dashboard-balance';
+import { Icon } from '@/components/icons';
 
 export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<{ bp: BP; darkMode?: boolean; onNavigate?: (screen: string) => void }>) {
   const D = darkMode ?? false;
@@ -45,11 +47,11 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
   const metricLblC  = D ? 'rgba(255,255,255,0.38)' : '#6B7280';
   const metricSubC  = D ? 'rgba(255,255,255,0.30)' : '#9CA3AF';
   const sepC        = D ? 'rgba(255,255,255,.06)'  : 'rgba(17,24,39,0.08)';
-  const barInactive = D ? 'rgba(143,168,143,0.25)' : 'rgba(204,220,204,0.50)';
-  const barActive   = D ? 'rgba(143,168,143,0.70)' : '#8FA88F';
-  const barShadow   = D ? 'none'                   : 'none';
-  const barLblC     = D ? 'rgba(255,255,255,0.30)' : '#9CA3AF';
-  const barActLblC  = D ? 'rgba(255,255,255,0.85)' : '#111827';
+  const barInactive = D ? 'rgba(143,168,143,0.35)'  : 'rgba(204,220,204,0.50)';
+  const barActive   = D ? '#8FA88F'                 : '#8FA88F';
+  const barShadow   = D ? 'none'                    : 'none';
+  const barLblC     = D ? 'rgba(255,255,255,0.30)'  : '#9CA3AF';
+  const barActLblC  = D ? 'rgba(255,255,255,0.85)'  : '#111827';
 
   // Normalize bar heights (max 64px)
   const barH = balance.bars.heights;
@@ -81,7 +83,7 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
 
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', padding: isMobile ? '0 18px 8px' : '0 32px 10px' }}>
-        <span style={{ fontSize: 15, lineHeight: 1 }}>💰</span>
+        <Icon.wallet size={15} strokeWidth={2.2} />
         <span style={{ fontSize: 12, fontWeight: 800, color: labelC, letterSpacing: 1.5, textTransform: 'uppercase', marginLeft: 7 }}>
           Balance Total · todas las cuentas
         </span>
@@ -116,38 +118,40 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
           </div>
         </div>
 
-        {/* Derecha: chart estilo Ingresos */}
-        <div style={{ flexShrink: 0, width: isMobile ? '100%' : 200 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 44, marginBottom: 3 }}>
-            {barH.map((h, i) => {
-              const last     = i === barH.length - 1;
-              const pct      = barPct[i];
-              const pctColor = last
-                ? barActLblC
-                : pct == null ? 'transparent'
-                : pct >= 0 ? barActLblC
-                : (D ? '#f87171' : '#c84040');
-              return (
-                <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'flex-end', height: '100%', position: 'relative' }}>
-                  <div style={{ width: '100%', borderRadius: '4px 4px 0 0', height: `${h}%`, background: last ? barActive : barInactive, boxShadow: last ? barShadow : 'none', position: 'relative' }}>
-                    {(pct != null || last) && (
-                      <span style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', fontSize: 9, fontWeight: 700, color: pctColor, whiteSpace: 'nowrap', lineHeight: 1, marginBottom: 3, pointerEvents: 'none' }}>
-                        {last ? `${balance.isPositiveChange ? '+' : ''}${balance.pctAbs}%` : `${Math.abs(pct!)}%`}
-                      </span>
-                    )}
+        {/* Derecha: chart — solo si hay datos reales */}
+        {barH.length > 0 && (
+          <div style={{ flexShrink: 0, width: isMobile ? '100%' : 200 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 44, marginBottom: 3 }}>
+              {barH.map((h, i) => {
+                const last     = i === barH.length - 1;
+                const pct      = barPct[i];
+                const pctColor = last
+                  ? barActLblC
+                  : pct == null ? 'transparent'
+                  : pct >= 0 ? barActLblC
+                  : (D ? '#CF9C9C' : '#c84040');
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', alignItems: 'flex-end', height: '100%', position: 'relative' }}>
+                    <div style={{ width: '100%', borderRadius: '4px 4px 0 0', height: `${h}%`, background: last ? barActive : barInactive, boxShadow: last ? barShadow : 'none', position: 'relative' }}>
+                      {(pct != null || last) && (
+                        <span style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', fontSize: 9, fontWeight: 700, color: pctColor, whiteSpace: 'nowrap', lineHeight: 1, marginBottom: 3, pointerEvents: 'none' }}>
+                          {last ? `${balance.isPositiveChange ? '+' : ''}${balance.pctAbs}%` : `${Math.abs(pct!)}%`}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {barLbl.map((lbl, i) => (
+                <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                  <span style={{ fontSize: 8.5, fontWeight: 600, color: i === barLbl.length - 1 ? barActLblC : barLblC }}>{lbl}</span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {barLbl.map((lbl, i) => (
-              <div key={i} style={{ flex: 1, textAlign: 'center' }}>
-                <span style={{ fontSize: 8.5, fontWeight: 600, color: i === barLbl.length - 1 ? barActLblC : barLblC }}>{lbl}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
 
       </div>
 
@@ -178,7 +182,7 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
             <span style={{ fontSize: 9, fontWeight: 800, color: metricLblC, letterSpacing: 1.4, textTransform: 'uppercase' }}>Flujo neto</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: balance.flujoPos ? C.pos : C.neg, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-            {balance.flujoNeto !== null ? `${balance.flujoPos ? '+' : ''}S/ ${Math.round(Math.abs(balance.flujoNeto)).toLocaleString('es-PE')}` : '—'}
+            {balance.flujoNeto !== null ? `${balance.flujoPos ? '+' : ''}${formatIntegerCurrency(Math.abs(balance.flujoNeto))}` : '—'}
           </div>
           <div style={{ fontSize: 10, color: metricSubC, fontWeight: 600, marginTop: 3 }}>Ingresos − Gastos</div>
         </div>
@@ -189,7 +193,7 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
             <span style={{ fontSize: 9, fontWeight: 800, color: metricLblC, letterSpacing: 1.4, textTransform: 'uppercase' }}>Patrimonio neto</span>
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: D ? '#c8d0c8' : C.text, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
-            {balance.patrimonio !== null ? `S/ ${Math.round(balance.patrimonio).toLocaleString('es-PE')}` : '—'}
+            {balance.patrimonio !== null ? formatIntegerCurrency(balance.patrimonio) : '—'}
           </div>
           <div style={{ fontSize: 10, color: metricSubC, fontWeight: 600, marginTop: 3 }}>Activos − Deudas</div>
         </div>

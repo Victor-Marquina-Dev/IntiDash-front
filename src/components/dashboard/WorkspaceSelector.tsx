@@ -2,10 +2,17 @@
 
 import React from 'react';
 import { useWorkspaces } from '@/shared/hooks/use-workspaces';
+import type { AuthUser } from '@/shared/services/auth.service';
 
 const ROLE_LABEL: Record<string, string> = { owner: 'Dueño', editor: 'Editor', viewer: 'Lectura' };
 
-export function WorkspaceSelector({ darkMode }: Readonly<{ darkMode: boolean }>) {
+function firstName(user: AuthUser | null | undefined): string {
+  if (!user) return '';
+  const src = user.name || user.email || '';
+  return src.split(/[\s@._-]+/)[0] ?? '';
+}
+
+export function WorkspaceSelector({ darkMode, user }: Readonly<{ darkMode: boolean; user?: AuthUser | null }>) {
   const ws = useWorkspaces(true);
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement | null>(null);
@@ -41,8 +48,8 @@ export function WorkspaceSelector({ darkMode }: Readonly<{ darkMode: boolean }>)
         }}
       >
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#8FA88F', flexShrink: 0 }} />
-        <span style={{ fontSize: 13, fontWeight: 600, color: fg, whiteSpace: 'nowrap', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {active?.name ?? 'Espacio'}
+        <span style={{ fontSize: 13, fontWeight: 600, color: fg, whiteSpace: 'nowrap', lineHeight: 1 }}>
+          Espacio de {firstName(user)}
         </span>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
           <path d="M2 3.5 L5 6.5 L8 3.5" stroke={subC} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -76,7 +83,7 @@ export function WorkspaceSelector({ darkMode }: Readonly<{ darkMode: boolean }>)
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#8FA88F' : (darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(17,24,39,0.2)'), flexShrink: 0 }} />
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ display: 'block', fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? '#8FA88F' : fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {w.name}
+                    Espacio de {firstName(user)}
                   </span>
                   <span style={{ display: 'block', fontSize: 11, color: subC }}>{ROLE_LABEL[w.role] ?? w.role}</span>
                 </span>

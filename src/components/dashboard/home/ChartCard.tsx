@@ -3,8 +3,9 @@
 import React from 'react';
 import type { BP } from '@/lib/breakpoints';
 import { useDashboardChart } from '@/shared/hooks/use-dashboard-chart';
-import { AreaLineChart, DebtLineChart } from './ChartVisuals';
+import { AreaLineChart, DebtLineChart, EmptyLineChart } from './ChartVisuals';
 import { CardHeaderSection } from './CardHeaderSection';
+import { Icon } from '@/components/icons';
 
 const CARD_BG = {
   dark: { bg: 'linear-gradient(145deg,#1A1D21,#16181C)', brd: 'rgba(255,255,255,0.08)', sh: '0 4px 24px rgba(0,0,0,.5)' },
@@ -13,7 +14,7 @@ const CARD_BG = {
 
 type ChartSection = 'comparativa' | 'deuda';
 
-export function ChartCard({ bp, darkMode }: Readonly<{ accent?: string; bp: BP; darkMode?: boolean }>) {
+export function ChartCard({ bp, darkMode, onNavigate }: Readonly<{ accent?: string; bp: BP; darkMode?: boolean; onNavigate?: (screen: string) => void }>) {
   const [section, setSection] = React.useState<ChartSection>('comparativa');
   const [hovered, setHovered] = React.useState(false);
   const chart = useDashboardChart();
@@ -47,23 +48,31 @@ export function ChartCard({ bp, darkMode }: Readonly<{ accent?: string; bp: BP; 
         transition: 'transform .25s, box-shadow .25s, border-color .25s',
       }}>
       <CardHeaderSection
-        icon="📈"
+        icon={<Icon.list size={16} strokeWidth={2.2} />}
         label="Analisis"
         tabs={tabs}
         activeTab={section}
         onTabChange={id => setSection(id as ChartSection)}
+        onDetail={onNavigate ? () => onNavigate('analytics') : undefined}
+        detailTitle="Ir a Análisis"
         darkMode={isDark}
       />
 
       <div style={{ padding: bp === 'mobile' ? '0 10px 10px' : '0 16px 12px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {section === 'comparativa' && (
-          <AreaLineChart
-            months={chart.comparativa.months}
-            income={chart.comparativa.income}
-            expense={chart.comparativa.expense}
-            height={chartHeight}
-            darkMode={isDark}
-          />
+          chart.comparativa.hasData
+            ? <AreaLineChart
+                months={chart.comparativa.months}
+                income={chart.comparativa.income}
+                expense={chart.comparativa.expense}
+                height={chartHeight}
+                darkMode={isDark}
+              />
+            : <EmptyLineChart
+                months={chart.comparativa.months.length > 0 ? chart.comparativa.months : ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']}
+                height={chartHeight}
+                darkMode={isDark}
+              />
         )}
         {section === 'deuda' && (
           <DebtLineChart

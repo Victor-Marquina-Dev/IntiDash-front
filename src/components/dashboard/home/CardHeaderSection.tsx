@@ -50,7 +50,7 @@ export interface CardTab {
 }
 
 interface CardHeaderSectionProps {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   tabs: CardTab[];
   activeTab: string;
@@ -112,7 +112,7 @@ export function CardHeaderSection({
         boxSizing: 'border-box',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span style={{ fontSize: 15, lineHeight: 1, fontWeight: 900, color: tokens.labelC, flexShrink: 0 }}>{icon}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', color: tokens.labelC, flexShrink: 0 }}>{icon}</span>
           <span style={{
             fontSize: 12,
             fontWeight: 800,

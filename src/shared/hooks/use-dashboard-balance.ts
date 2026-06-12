@@ -3,8 +3,6 @@ import { useDataSyncedRefresh } from '@/shared/hooks/use-data-synced-refresh';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-const FALLBACK_BARS = [14, 22, 30, 40, 52, 64];
-const FALLBACK_LABELS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun'];
 
 interface DashboardBalanceSummary {
   totalBalance: number;
@@ -48,8 +46,9 @@ function mapChartBars(values: (number | null)[] | undefined): ChartBar[] {
 }
 
 function buildBarStats(chartBars: ChartBar[]) {
-  const values = chartBars.length === 6 ? chartBars.map(bar => bar.val) : FALLBACK_BARS;
-  const labels = chartBars.length === 6 ? chartBars.map(bar => bar.label) : FALLBACK_LABELS;
+  if (chartBars.length === 0) return { values: [], labels: [], heights: [], pct: [] };
+  const values = chartBars.map(bar => bar.val);
+  const labels = chartBars.map(bar => bar.label);
   const nonZero = values.filter(value => value > 0);
   const min = nonZero.length > 0 ? Math.min(...nonZero) : 1;
   const range = (nonZero.length > 0 ? Math.max(...nonZero) - min : 0) || 1;

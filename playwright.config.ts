@@ -1,9 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Requisitos previos para correr los tests:
- *   - Backend corriendo en http://localhost:3001  (npm run dev en finanzas-1.0-back)
- *   - Frontend corriendo en http://localhost:3000  (npm run dev en finanzas-1.0-front)
+ * Requisito previo:
  *   - Usuarios QA sembrados: npm run db:seed-permissions en el back
  */
 export default defineConfig({
@@ -21,6 +19,22 @@ export default defineConfig({
     actionTimeout:    8_000,
     navigationTimeout: 15_000,
   },
+
+  webServer: [
+    {
+      command: 'npm run dev',
+      cwd: '../finanzas-1.0-back',
+      url: 'http://localhost:3001/health',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      command: 'npm run dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: true,
+      timeout: 90_000,
+    },
+  ],
 
   projects: [
     // Setup: guarda la sesión autenticada de cada rol en un archivo de estado

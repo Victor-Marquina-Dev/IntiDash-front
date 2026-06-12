@@ -1,4 +1,5 @@
 import React from 'react';
+import { isDateInMonth } from '@/lib/format';
 import { useDataSyncedRefresh } from '@/shared/hooks/use-data-synced-refresh';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { CuentaBancariaRow } from '@/shared/types/finance.types';
@@ -66,7 +67,7 @@ export function useDashboardKpis() {
   const [ahorroRows, setAhorroRows] = React.useState<AhorroAccount[]>([]);
 
   const refresh = React.useCallback(() => {
-    Promise.all([
+    return Promise.all([
       notionPaymentsService.getIngresos(),
       notionPaymentsService.getGastosUnicos(),
       notionPaymentsService.getGastosDeudas(),
@@ -74,9 +75,16 @@ export function useDashboardKpis() {
       notionPaymentsService.getMonthlyChart(),
       notionPaymentsService.getCuentasBancarias(),
     ]).then(([ingresos, gastosUnicos, gastosDeudas, deudas, chart, cuentas]) => {
-      const ingresosTotal = ingresos.reduce((sum, row) => sum + (row.ingreso ?? 0), 0);
-      const gastosUnicosTotal = gastosUnicos.reduce((sum, row) => sum + (row.monto ?? 0), 0);
-      const gastosDeudasTotal = gastosDeudas.reduce((sum, row) => sum + (row.montoGastado ?? 0), 0);
+      const currentMonth = new Date();
+      const ingresosTotal = ingresos
+        .filter(row => isDateInMonth(row.fecha, currentMonth))
+        .reduce((sum, row) => sum + (row.ingreso ?? 0), 0);
+      const gastosUnicosTotal = gastosUnicos
+        .filter(row => isDateInMonth(row.fecha, currentMonth))
+        .reduce((sum, row) => sum + (row.monto ?? 0), 0);
+      const gastosDeudasTotal = gastosDeudas
+        .filter(row => isDateInMonth(row.fecha, currentMonth))
+        .reduce((sum, row) => sum + (row.montoGastado ?? 0), 0);
       const suscripciones = deudas.filter(row => row.tipoPago !== 'Deuda');
       const suscripcionesTotal = suscripciones.reduce((sum, row) => sum + (row.cantidad ?? 0), 0);
 

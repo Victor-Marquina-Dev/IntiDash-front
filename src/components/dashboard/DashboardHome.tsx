@@ -8,7 +8,6 @@ import { CategoriesDonut } from './home/CategoriesDonut';
 import { HeroBalance } from './home/HeroBalance';
 import { KpiRail } from './home/KpiRail';
 import { TarjetasCard } from './home/TarjetasCard';
-import { NotionSync } from './home/NotionSync';
 import { Debts } from './home/DebtsCard';
 
 interface DashboardHomeProps {
@@ -40,6 +39,7 @@ export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }:
     padding,
     display: 'grid',
     gridTemplateColumns: mainColumns,
+    gridTemplateRows: isDesktop ? '100%' : undefined,
     gap,
     height: isDesktop ? 'calc(100vh - 68px)' : 'auto',
     overflow: isDesktop ? 'hidden' : 'visible',
@@ -53,6 +53,7 @@ export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }:
     gridTemplateRows: isDesktop ? 'auto 1fr' : undefined,
     gap,
     minWidth: 0,
+    ...(isDesktop ? { height: '100%', overflowY: 'hidden' } : {}),
   };
 
   const railStyle: CSSProperties = {
@@ -68,19 +69,16 @@ export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }:
       <div style={contentGridStyle}>
         <HeroBalance bp={bp} darkMode={darkMode} onNavigate={onNavigate} />
         <KpiRail showCharts={tweaks.microCharts} bp={bp} darkMode={darkMode} onNavigate={onNavigate} canWrite={canWrite} />
-        <ChartCard accent={accent} bp={bp} darkMode={darkMode} />
+        <ChartCard accent={accent} bp={bp} darkMode={darkMode} onNavigate={onNavigate} />
         <div style={{ gridColumn: isDesktop ? '3' : 'span 12', display: 'flex', flexDirection: 'column', alignSelf: isDesktop ? 'stretch' : undefined }}>
           <CategoriesDonut darkMode={darkMode} canWrite={canWrite} />
         </div>
       </div>
 
       <div style={railStyle}>
-        <TarjetasCard darkMode={darkMode} canWrite={canWrite} />
+        <TarjetasCard darkMode={darkMode} canWrite={canWrite} onNavigate={onNavigate} />
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <Debts bp={bp} darkMode={darkMode} canWrite={canWrite} />
-        </div>
-        <div style={{ flexShrink: 0 }}>
-          <NotionSync darkMode={darkMode} canWrite={canWrite} />
         </div>
       </div>
     </div>

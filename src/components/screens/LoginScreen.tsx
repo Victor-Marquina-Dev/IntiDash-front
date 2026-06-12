@@ -60,7 +60,7 @@ export function LoginScreen({ loading, errorMessage, onLogin, onRegister }: Read
         boxShadow: '0 24px 70px rgba(20,24,18,0.12)',
       }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: C.olive, letterSpacing: 1.2, textTransform: 'uppercase' }}>
-          Florin
+          IntiDash
         </div>
         <h1 style={{ margin: '8px 0 6px', fontSize: 26, lineHeight: 1.1, letterSpacing: -0.8 }}>
           {mode === 'login' ? 'Iniciar sesion' : 'Crear cuenta'}

@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
-import { ModalShell } from '@/components/ui';
+import { FORM_CANCEL_BUTTON_STYLE, FORM_INPUT_STYLE, FORM_LABEL_STYLE, FORM_SUBMIT_BUTTON_STYLE, ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
+import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
 
 export function NewSuscripcionModal({ onClose, onSuccess }: Readonly<{ onClose: () => void; onSuccess: () => void }>) {
   const [nombre, setNombre]       = React.useState('');
@@ -21,11 +22,9 @@ export function NewSuscripcionModal({ onClose, onSuccess }: Readonly<{ onClose: 
     setStatus('loading'); setErrMsg('');
     try {
       await notionPaymentsService.createDeudaSuscripcion({ nombre: nombre.trim(), cantidad: cantidad ? parseFloat(cantidad) : undefined, fechaInicio: fechaInicio || undefined, ciclo, tipoPago: 'Suscripción' });
-      setStatus('ok'); onSuccess(); setTimeout(onClose, 900);
+      setStatus('ok'); dispatchDataSynced(); onSuccess(); setTimeout(onClose, 900);
     } catch (err: unknown) { setStatus('error'); setErrMsg((err instanceof Error ? err.message : null) ?? 'Error'); }
   }
-
-  const inp: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 9, border: `1px solid ${C.border}`, background: '#fff', fontFamily: 'var(--font-ui)', fontSize: 13, color: C.text, outline: 'none', boxSizing: 'border-box' };
 
   return (
     <ModalShell onClose={onClose}>
@@ -40,13 +39,13 @@ export function NewSuscripcionModal({ onClose, onSuccess }: Readonly<{ onClose: 
         </div>
         <form onSubmit={handleSubmit} style={{ padding: '16px 24px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {([
-            { label: 'Nombre', required: true, node: <input required placeholder="Ej. Netflix, Spotify..." value={nombre} onChange={e => setNombre(e.target.value)} style={inp} /> },
-            { label: 'Cantidad (S/)', node: <input type="number" step="0.01" min="0" placeholder="0.00" value={cantidad} onChange={e => setCantidad(e.target.value)} style={inp} /> },
-            { label: 'Ciclo', node: <select value={ciclo} onChange={e => setCiclo(e.target.value)} style={{ ...inp, cursor: 'pointer' }}><option>Mensual</option><option>Anual</option><option>Un pago</option></select> },
-            { label: 'Fecha Inicio', node: <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={inp} /> },
+            { label: 'Nombre', required: true, node: <input required placeholder="Ej. Netflix, Spotify..." value={nombre} onChange={e => setNombre(e.target.value)} style={FORM_INPUT_STYLE} /> },
+            { label: 'Cantidad (S/)', node: <input type="number" step="0.01" min="0" placeholder="0.00" value={cantidad} onChange={e => setCantidad(e.target.value)} style={FORM_INPUT_STYLE} /> },
+            { label: 'Ciclo', node: <select value={ciclo} onChange={e => setCiclo(e.target.value)} style={{ ...FORM_INPUT_STYLE, cursor: 'pointer' }}><option>Mensual</option><option>Anual</option><option>Un pago</option></select> },
+            { label: 'Fecha Inicio', node: <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} style={FORM_INPUT_STYLE} /> },
           ] as { label: string; required?: boolean; node: React.ReactNode }[]).map(({ label, node, required }) => (
             <div key={label}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: C.textMute, textTransform: 'uppercase', letterSpacing: 0.7, display: 'block', marginBottom: 5 }}>
+              <label style={FORM_LABEL_STYLE}>
                 {label}{required && <span style={{ color: C.neg, marginLeft: 2 }}>*</span>}
               </label>
               {node}
@@ -54,10 +53,10 @@ export function NewSuscripcionModal({ onClose, onSuccess }: Readonly<{ onClose: 
           ))}
           {errMsg && <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(200,60,60,0.08)', border: '1px solid rgba(200,60,60,0.2)', fontSize: 12, color: '#c83c3c' }}>{errMsg}</div>}
           <div style={{ display: 'flex', gap: 8, paddingTop: 4 }}>
-            <button type="submit" disabled={status === 'loading' || status === 'ok'} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', cursor: status === 'loading' || status === 'ok' ? 'default' : 'pointer', background: status === 'ok' ? C.pos : C.olive, color: '#fff', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: 600, opacity: status === 'loading' ? 0.7 : 1, transition: 'all 0.15s' }}>
+            <button type="submit" disabled={status === 'loading' || status === 'ok'} style={{ ...FORM_SUBMIT_BUTTON_STYLE, cursor: status === 'loading' || status === 'ok' ? 'default' : 'pointer', background: status === 'ok' ? C.pos : C.olive, opacity: status === 'loading' ? 0.7 : 1 }}>
               {status === 'loading' ? 'Guardando...' : status === 'ok' ? '✓ Guardado' : 'Guardar en Notion'}
             </button>
-            <button type="button" onClick={onClose} style={{ padding: '10px 16px', borderRadius: 10, border: `1px solid ${C.border}`, background: 'none', cursor: 'pointer', color: C.textDim, fontFamily: 'var(--font-ui)', fontSize: 13 }}>Cancelar</button>
+            <button type="button" onClick={onClose} style={FORM_CANCEL_BUTTON_STYLE}>Cancelar</button>
           </div>
         </form>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { KpiCard } from './KpiCard';
+import { Icon } from '@/components/icons';
 
 interface SuscripcionesKpiCardProps {
   darkMode: boolean;
@@ -15,14 +16,13 @@ export function SuscripcionesKpiCard({ darkMode, amount, count, onDetail, onCrea
     <KpiCard
       darkMode={darkMode}
       theme="neutral"
-      icon="🔔"
+      icon={<Icon.bell size={16} strokeWidth={2.2} />}
       label="Suscripciones"
       badge={`${count} activas`}
       amount={amount}
       subtitle="total mensual de suscripciones"
-      onDetail={onDetail}
+      onCardClick={onDetail}
       onCreate={onCreate}
-      detailTitle="Ver suscripciones"
       createTitle="Nueva suscripcion"
       centerAmount
     />

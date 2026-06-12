@@ -43,7 +43,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
         amount={kpis.ingresos.total}
         monthlyData={kpis.ingresos.monthly}
         monthlyLabels={kpis.ingresos.monthlyLabels}
-        onDetail={() => onNavigate?.('tx')}
+        onCardClick={() => onNavigate?.('cards')}
         onCreate={canWrite ? () => setShowNewIngModal(true) : undefined}
       />
       <GastosKpiCard
@@ -51,7 +51,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
         amount={kpis.gastos.total}
         monthlyData={kpis.gastos.monthly}
         monthlyLabels={kpis.gastos.monthlyLabels}
-        onDetail={() => onNavigate?.('tx')}
+        onCardClick={() => onNavigate?.('cards')}
         onCreate={canWrite ? () => setShowNewGasModal(true) : undefined}
       />
       <AhorroKpiCard
@@ -59,13 +59,17 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
         amount={kpis.ahorro.total}
         delta={kpis.ahorro.delta}
         accounts={kpis.ahorro.accounts}
+        onDetail={() => {
+          try { localStorage.setItem('florin:pending-group', 'AHORRO'); } catch {}
+          onNavigate?.('cards');
+        }}
       />
       <SuscripcionesKpiCard
         darkMode={isDark}
         amount={kpis.suscripciones.total}
         count={kpis.suscripciones.count}
         onDetail={() => setShowSuscModal(true)}
-        onCreate={canWrite ? () => setShowNewSuscModal(true) : undefined}
+        onCreate={undefined}
       />
     </div>
   );
@@ -73,8 +77,8 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
   const modals = (
     <>
       {showSuscModal && <SuscripcionesModal onClose={() => setShowSuscModal(false)} />}
-      {canWrite && showNewIngModal && <NewIngresoModal onClose={() => setShowNewIngModal(false)} onSuccess={kpis.refresh} />}
-      {canWrite && showNewGasModal && <NewGastoModal onClose={() => setShowNewGasModal(false)} onSuccess={kpis.refresh} />}
+      {canWrite && showNewIngModal && <NewIngresoModal onClose={() => setShowNewIngModal(false)} onSuccess={async () => { await kpis.refresh(); }} />}
+      {canWrite && showNewGasModal && <NewGastoModal onClose={() => setShowNewGasModal(false)} onSuccess={async () => { await kpis.refresh(); }} />}
       {canWrite && showNewSuscModal && <NewSuscripcionModal onClose={() => setShowNewSuscModal(false)} onSuccess={kpis.refresh} />}
     </>
   );

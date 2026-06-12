@@ -18,7 +18,7 @@ import { useWorkspaces } from '@/shared/hooks/use-workspaces';
 import type { AuthUser } from '@/shared/services/auth.service';
 import { WorkspaceMembersCard } from '@/components/screens/notion/WorkspaceMembersCard';
 
-type SettingsSection = 'profile' | 'account' | 'appearance' | 'notifications' | 'workspace' | 'notionSync';
+export type SettingsSection = 'profile' | 'account' | 'appearance' | 'notifications' | 'workspace' | 'notionSync';
 
 interface NotionScreenProps {
   accent: string;
@@ -26,6 +26,7 @@ interface NotionScreenProps {
   darkMode?: boolean;
   onToggleDark?: () => void;
   canWrite?: boolean;
+  initialSection?: SettingsSection;
 }
 
 const NAV_ITEMS: ReadonlyArray<SettingsNavItem<SettingsSection>> = [
@@ -60,8 +61,8 @@ function getRoleLabel(role?: string) {
   return ROLE_LABELS[role || ''] || 'Usuario';
 }
 
-export function NotionScreen({ accent, user, darkMode = false, onToggleDark, canWrite = true }: Readonly<NotionScreenProps>) {
-  const [section, setSection] = React.useState<SettingsSection>('profile');
+export function NotionScreen({ accent, user, darkMode = false, onToggleDark, canWrite = true, initialSection = 'profile' }: Readonly<NotionScreenProps>) {
+  const [section, setSection] = React.useState<SettingsSection>(initialSection);
   const { list: workspaces, active: activeWorkspace } = useWorkspaces(true);
   const theme = darkMode ? settingsDarkTheme : settingsLightTheme;
   const displayName = getDisplayName(user);
