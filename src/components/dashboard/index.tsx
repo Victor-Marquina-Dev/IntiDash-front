@@ -12,6 +12,7 @@ import { useWorkspaces } from '@/shared/hooks/use-workspaces';
 import type { ScreenId } from './navigation';
 import type { SettingsSection } from '@/components/screens/NotionScreen';
 import { useDashboardNavigation } from './use-dashboard-navigation';
+import { OnboardingFlow } from './onboarding/OnboardingFlow';
 
 interface DashboardProps {
   tweaks: Tweaks;
@@ -44,6 +45,28 @@ export function Dashboard({
     setNotionSection('notionSync');
     navigateTo('notion');
   }, [navigateTo]);
+
+  // Onboarding de bienvenida: se muestra una sola vez tras el registro (?onboarding=1)
+  const [showOnboarding, setShowOnboarding] = React.useState(false);
+  const onboardingKey = `intidash_onboarding_done_${user?.email ?? ''}`;
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('onboarding') === '1' && !localStorage.getItem(onboardingKey)) {
+      setShowOnboarding(true);
+    }
+  }, [onboardingKey]);
+
+  const closeOnboarding = React.useCallback(() => {
+    localStorage.setItem(onboardingKey, '1');
+    window.history.replaceState(null, '', window.location.pathname);
+    setShowOnboarding(false);
+  }, [onboardingKey]);
+
+  const onboardingToNotion = React.useCallback(() => {
+    closeOnboarding();
+    navigateToNotionSync();
+  }, [closeOnboarding, navigateToNotionSync]);
 
   const toggleDarkMode = React.useCallback(() => {
     setDarkMode(d => !d);
@@ -103,6 +126,14 @@ export function Dashboard({
           )}
         </div>
       </main>
+
+      {showOnboarding && (
+        <OnboardingFlow
+          userName={user?.name}
+          onFinish={closeOnboarding}
+          onGoToNotion={onboardingToNotion}
+        />
+      )}
     </div>
   );
 }
