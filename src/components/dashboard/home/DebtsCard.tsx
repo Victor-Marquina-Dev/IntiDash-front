@@ -2,100 +2,291 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
-import { Icon } from '@/components/icons';
-import { ProgressBar } from '@/components/charts';
 import type { BP } from '@/lib/breakpoints';
+import { formatCurrencyParts } from '@/lib/format';
 import { useDashboardDebts, widgetPct } from '@/shared/hooks/use-dashboard-debts';
 import { DeudasModal, NewDeudaModal } from './KpiRail';
 import { NewPrestamoModal, PrestamosModal } from './PrestamosModals';
 import { CardHeaderSection } from './CardHeaderSection';
+import { Icon } from '@/components/icons';
+import type { DeudaRow, PrestamoRow } from '@/shared/types/finance.types';
 
+// ── Tokens de color por tema ──────────────────────────────────────────────
 const DARK = {
   cardBg:     'linear-gradient(145deg,#1A1D21,#16181C)',
   cardBrd:    'rgba(255,255,255,0.08)',
   boxShadow:  '0 4px 24px rgba(0,0,0,.5)',
-  loadC:      'rgba(255,255,255,0.35)',
   metricInt:  'rgba(255,255,255,0.88)',
   metricSym:  'rgba(255,255,255,0.50)',
   metricDec:  'rgba(255,255,255,0.22)',
   metricSub:  'rgba(255,255,255,0.35)',
-  debtBrd:    'rgba(255,255,255,.06)',
-  debtBarBg:  'rgba(255,255,255,.05)',
-  debtNumC:   'rgba(255,255,255,0.88)',
-  subItemBg:  'rgba(255,255,255,.04)',
-  subItemBrd: 'rgba(255,255,255,.08)',
-  subNameC:   'rgba(255,255,255,0.82)',
-  subSubC:    'rgba(255,255,255,0.35)',
-  subAmtC:    'rgba(255,255,255,0.82)',
-  fActBg:     'rgba(255,255,255,0.90)',
-  fActC:      '#111',
-  fInBg:      'rgba(255,255,255,.03)',
-  fInC:       'rgba(255,255,255,0.38)',
-  fInBrd:     'rgba(255,255,255,.08)',
-  gradFade:   'rgba(13,15,18,0.96)',
+  itemBg:     'rgba(255,255,255,.04)',
+  itemBrd:    'rgba(255,255,255,.08)',
+  nameC:      'rgba(255,255,255,0.88)',
+  subC:       'rgba(255,255,255,0.38)',
+  amtC:       'rgba(255,255,255,0.88)',
+  barBg:      'rgba(255,255,255,.07)',
+  pillActBg:  'rgba(255,255,255,0.90)',
+  pillActC:   '#111',
+  pillInBg:   'rgba(255,255,255,.04)',
+  pillInC:    'rgba(255,255,255,0.42)',
+  pillInBrd:  'rgba(255,255,255,.10)',
+  emptyC:     'rgba(255,255,255,0.32)',
+  scrollBg:   'rgba(255,255,255,0.06)',
 };
-
 const LIGHT = {
   cardBg:     '#FFFFFF',
   cardBrd:    'rgba(17,24,39,0.08)',
   boxShadow:  '0 1px 2px rgba(17,24,39,.04)',
-  loadC:      '#9CA3AF',
   metricInt:  '#111827',
   metricSym:  '#6B7280',
   metricDec:  'rgba(17,24,39,0.30)',
   metricSub:  '#9CA3AF',
-  debtBrd:    'rgba(17,24,39,0.08)',
-  debtBarBg:  'rgba(17,24,39,0.06)',
-  debtNumC:   '#111827',
-  subItemBg:  '#FAFAFA',
-  subItemBrd: 'rgba(17,24,39,0.06)',
-  subNameC:   '#111827',
-  subSubC:    '#9CA3AF',
-  subAmtC:    '#111827',
-  fActBg:     '#111827',
-  fActC:      '#fff',
-  fInBg:      'transparent',
-  fInC:       '#6B7280',
-  fInBrd:     'rgba(17,24,39,0.10)',
-  gradFade:   'rgba(255,255,255,0.96)',
+  itemBg:     '#FAFAFA',
+  itemBrd:    'rgba(17,24,39,0.07)',
+  nameC:      '#111827',
+  subC:       '#9CA3AF',
+  amtC:       '#111827',
+  barBg:      'rgba(17,24,39,0.07)',
+  pillActBg:  '#111827',
+  pillActC:   '#fff',
+  pillInBg:   'transparent',
+  pillInC:    '#6B7280',
+  pillInBrd:  'rgba(17,24,39,0.10)',
+  emptyC:     '#9CA3AF',
+  scrollBg:   'rgba(17,24,39,0.04)',
 };
 
+// ── Colores por tipo de item ──────────────────────────────────────────────
+const DEBT_CUOTA = C.warn;       // ámbar
+const DEBT_PAGO  = C.neg;        // rojo
+const PREST_COLORS = [C.neg, C.warn];
+
+// ── Mini item (2 col grid, tamaño fijo) ───────────────────────────────────
+interface MiniItemProps {
+  color:      string;
+  initial:    string;
+  name:       string;
+  sub:        string;
+  amount:     number;
+  amountPre?: string;
+  pct?:       number;
+  tk:         typeof LIGHT;
+}
+function MiniItem({ color, initial, name, sub, amount, amountPre = 'S/', pct, tk }: MiniItemProps) {
+  const [hov, setHov] = React.useState(false);
+  const { integer: intPart, decimal: decPart } = formatCurrencyParts(amount);
+
+  const dc      = color;
+  const dcText  = color;
+  const dcBadge = color;
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex', flexDirection: 'column', gap: 7,
+        padding: '11px 12px',
+        borderRadius: 14,
+        background: hov ? `${color}10` : `${color}07`,
+        border: `1px solid ${hov ? `${color}35` : `${color}1C`}`,
+        boxShadow: hov ? `0 4px 14px ${color}22` : 'none',
+        transform: hov ? 'translateY(-1px)' : 'none',
+        transition: 'background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s',
+        minWidth: 0,
+        cursor: 'default',
+      }}>
+
+      {/* Fila principal */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+
+        {/* Icono con color sólido */}
+        <div style={{
+          width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+          background: dcBadge,
+          color: '#fff',
+          display: 'grid', placeItems: 'center',
+          fontSize: 12, fontWeight: 900, letterSpacing: 0.3,
+          boxShadow: `0 3px 8px ${dc}45`,
+        }}>
+          {initial}
+        </div>
+
+        {/* Nombre + subtítulo */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 12.5, fontWeight: 700, color: tk.nameC,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            lineHeight: 1.25,
+          }}>
+            {name || '—'}
+          </div>
+          <div style={{
+            fontSize: 10, color: tk.subC, marginTop: 2,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {sub}
+          </div>
+        </div>
+
+        {/* Monto */}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: dcText, fontVariantNumeric: 'tabular-nums', lineHeight: 1.2, letterSpacing: -0.3 }}>
+            {amountPre}{intPart}
+            <span style={{ fontSize: 9.5, fontWeight: 600, opacity: 0.72 }}>{decPart}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Barra de progreso */}
+      {pct !== undefined && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ flex: 1, height: 3.5, borderRadius: 6, background: `${color}20`, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: 6, background: dc }} />
+          </div>
+          <span style={{ fontSize: 9, fontWeight: 800, color: dcText, flexShrink: 0, fontVariantNumeric: 'tabular-nums', letterSpacing: 0.2 }}>
+            {pct}%
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Skeleton item ─────────────────────────────────────────────────────────
+function SkeletonItem({ isDark }: { isDark: boolean }) {
+  const cls = isDark ? 'fz-skeleton--dark' : 'fz-skeleton';
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, padding: '11px 12px', borderRadius: 14, background: isDark ? 'rgba(255,255,255,.04)' : 'rgba(17,24,39,.03)', border: `1px solid ${isDark ? 'rgba(255,255,255,.07)' : 'rgba(17,24,39,.06)'}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className={cls} style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0 }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div className={cls} style={{ height: 11, width: '68%', borderRadius: 5 }} />
+          <div className={cls} style={{ height: 9,  width: '40%', borderRadius: 5 }} />
+        </div>
+        <div className={cls} style={{ height: 11, width: 46, borderRadius: 5, flexShrink: 0 }} />
+      </div>
+      <div className={cls} style={{ height: 3.5, borderRadius: 6, width: '80%' }} />
+    </div>
+  );
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────
+function EmptyState({ message, tk }: { message: string; tk: typeof LIGHT }) {
+  return (
+    <div style={{ padding: '20px 0', textAlign: 'center', fontSize: 11.5, color: tk.emptyC }}>
+      {message}
+    </div>
+  );
+}
+
+// ── Resumen de tab (card clickeable) ─────────────────────────────────────
+function AmountCard({ amount, subtitle, tk, isDark, color, onClick, onNew, newLine1, newLine2 }: {
+  amount: number; subtitle: string; tk: typeof LIGHT; isDark: boolean; color: string;
+  onClick: () => void; onNew?: () => void; newLine1?: string; newLine2?: string;
+}) {
+  const [hov,     setHov]     = React.useState(false);
+  const [pressed, setPressed] = React.useState(false);
+  const { integer: intPart, decimal: decPart } = formatCurrencyParts(amount);
+  return (
+    <div style={{ padding: '8px 14px 10px', display: 'flex', gap: 8, flexShrink: 0 }}>
+
+      {/* Bloque de monto clickeable */}
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => { setHov(false); setPressed(false); }}
+        onMouseDown={() => setPressed(true)}
+        onMouseUp={() => setPressed(false)}
+        style={{
+          flex: 1, padding: '14px 16px 12px',
+          borderRadius: 16, cursor: 'pointer', textAlign: 'center',
+          fontFamily: 'var(--font-ui),system-ui,sans-serif',
+          border: `1.5px solid ${pressed ? `${color}55` : hov ? `${color}35` : (isDark ? 'rgba(255,255,255,.10)' : 'rgba(17,24,39,.09)')}`,
+          background: pressed
+            ? `${color}18`
+            : hov
+            ? `${color}0D`
+            : (isDark ? 'rgba(255,255,255,.04)' : 'rgba(17,24,39,.025)'),
+          boxShadow: pressed
+            ? `0 0 0 4px ${color}1A, 0 2px 8px ${color}22`
+            : hov
+            ? `0 4px 16px ${color}18`
+            : 'none',
+          transform: pressed ? 'scale(0.985)' : hov ? 'translateY(-1px)' : 'none',
+          transition: 'all .15s',
+        }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, justifyContent: 'center', lineHeight: 1 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: tk.metricSym }}>S/</span>
+          <span style={{ fontSize: 34, fontWeight: 900, color: tk.metricInt, letterSpacing: -1.5, fontVariantNumeric: 'tabular-nums' }}>{intPart}</span>
+          <span style={{ fontSize: 18, fontWeight: 600, color: tk.metricDec }}>{decPart}</span>
+        </div>
+        <div style={{ fontSize: 11, color: tk.metricSub, fontWeight: 500, marginTop: 4 }}>{subtitle}</div>
+      </button>
+
+      {/* Botón Nueva deuda / Nuevo préstamo */}
+      {onNew && (
+        <button
+          onClick={onNew}
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 2, minWidth: 60, padding: '0 10px',
+            borderRadius: 16, cursor: 'pointer',
+            background: `${color}0E`,
+            border: `1.5px dashed ${color}45`,
+            color,
+            fontFamily: 'var(--font-ui),system-ui,sans-serif',
+            transition: 'all .15s',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${color}18`; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = `${color}0E`; }}>
+          <span style={{ fontSize: 24, fontWeight: 300, lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.3, textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.3 }}>
+            {newLine1 ?? 'Nueva'}<br />{newLine2 ?? 'deuda'}
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Componente principal ──────────────────────────────────────────────────
 export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; darkMode?: boolean; canWrite?: boolean }>) {
-  const isDark = darkMode ?? false;
-  const tk = isDark ? DARK : LIGHT;
+  const isDark    = darkMode ?? false;
+  const tk        = isDark ? DARK : LIGHT;
   const isDesktop = bp === 'desktop';
-  const [tab, setTab]         = React.useState<'debts' | 'subs' | 'prestamos'>('subs');
-  const [showTable, setShowTable] = React.useState(false);
-  const [showNew,   setShowNew]   = React.useState(false);
-  const [debtFilter, setDebtFilter] = React.useState<'cuotas' | 'un_pago'>('cuotas');
+
+  const [tab,         setTab]         = React.useState<'debts' | 'prestamos'>('debts');
+  const [debtFilter,  setDebtFilter]  = React.useState<'cuotas' | 'un_pago'>('un_pago');
+  const [showTable,   setShowTable]   = React.useState(false);
+  const [showNew,     setShowNew]     = React.useState(false);
+  const [hovered,     setHovered]     = React.useState(false);
+
   const {
-    loading,
-    fetchDeudas,
-    fetchPrestamos,
-    prestamosRows,
-    debts,
-    subs,
-    debtsCuotas,
-    debtsUnPago,
-    visibleDebts,
-    totals,
+    loading, fetchDeudas, fetchPrestamos,
+    prestamosRows, debts,
+    debtsCuotas, debtsUnPago, visibleDebts, totals,
   } = useDashboardDebts(debtFilter);
 
   const isDebts     = tab === 'debts';
   const isPrestamos = tab === 'prestamos';
-  const list        = isDebts ? debts : subs;
+  const emptyMsg    = canWrite ? 'Sin datos · Sincroniza desde Ajustes' : 'Sin datos disponibles';
 
-  // Métricas pre-calculadas (evita IIFEs en JSX)
-  const metricRaw  = isDebts ? totals.debt : totals.prestado;
-  const metricInt  = Math.floor(metricRaw).toLocaleString('es-PE');
-  const metricDec  = (metricRaw % 1).toFixed(2).slice(1);
-  const presPct    = totals.presPct;
-  const subsInt    = Math.floor(totals.subs).toLocaleString('es-PE');
-  const subsDec    = (totals.subs % 1).toFixed(2).slice(1);
-  const emptyMessage = canWrite ? 'Sin datos. Sincroniza desde Ajustes.' : 'Sin datos para mostrar.';
+  // Color del scrollbar según tab activo
+  const scrollThumb = isDebts
+    ? (debtFilter === 'cuotas' ? `${DEBT_CUOTA}90` : `${DEBT_PAGO}90`)
+    : `${PREST_COLORS[0]}90`;
 
-  const [hovered, setHovered] = React.useState(false);
-  const WalletIcon = Icon.wallet;
+  // Resumen por tab
+  const summaryAmount   = isPrestamos ? totals.faltante : totals.debt;
+  const summarySubtitle = isPrestamos ? 'total pendiente en préstamos' : 'total pendiente en deudas';
+
+  // Items a renderizar según el tab activo
+  const deudaItems    = [...visibleDebts].sort((a, b) => (b.cantidad ?? 0) - (a.cantidad ?? 0));
+  const prestamoItems = [...prestamosRows].sort((a, b) => (b.montoPrestamo ?? 0) - (a.montoPrestamo ?? 0));
+
+  const anyEmpty = isPrestamos ? prestamoItems.length === 0 : deudaItems.length === 0;
 
   return (
     <div
@@ -110,231 +301,139 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
         display: 'flex', flexDirection: 'column',
         transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
         transition: 'transform .25s, box-shadow .25s, border-color .25s',
-        ...(isDesktop && { flex: 1 }),
+        ...(isDesktop ? { flex: 1, minHeight: 0 } : {}),
       }}>
 
+      {/* ── Header con tabs ── */}
       <CardHeaderSection
-        icon="🗂️"
+        icon={<Icon.list size={16} strokeWidth={2.2} />}
         label="Otras Secciones"
         tabs={[
-          { id: 'subs',      label: 'Suscripciones', badge: loading ? '…' : subs.length },
-          { id: 'debts',     label: 'Deudas',         badge: loading ? '…' : debts.length },
-          { id: 'prestamos', label: 'Préstamos',       badge: loading ? '…' : prestamosRows.length },
+          { id: 'debts',     label: 'Deudas',     badge: loading ? '…' : debts.length },
+          { id: 'prestamos', label: 'Préstamos',   badge: loading ? '…' : prestamosRows.length },
         ]}
         activeTab={tab}
-        onTabChange={id => setTab(id as 'subs' | 'debts' | 'prestamos')}
-        onDetail={() => setShowTable(true)}
-        onCreate={canWrite ? () => setShowNew(true) : undefined}
-        detailTitle="Ver tabla"
-        createTitle="Nuevo"
+        onTabChange={id => setTab(id as 'debts' | 'prestamos')}
         darkMode={isDark}
       />
 
-      {/* ── Contenido ── */}
-      <div key={tab} className="fz-tab-content" style={{ flex: 1, padding: '0 16px 10px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* ── Resumen central clickeable ── */}
+      {!loading && (
+        <AmountCard
+          key={tab}
+          amount={summaryAmount}
+          subtitle={summarySubtitle}
+          tk={tk}
+          isDark={isDark}
+          color={isDebts ? DEBT_PAGO : PREST_COLORS[0]}
+          onClick={() => setShowTable(true)}
+        />
+      )}
 
-      {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-          {[1,2,3].map(i => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 13px', borderRadius: 14, background: tk.subItemBg }}>
-              <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0 }} />
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: `${55 + i * 12}%`, borderRadius: 6 }} />
-                <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 10, width: '35%', borderRadius: 6 }} />
-              </div>
-              <div className={isDark ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: 52, borderRadius: 6 }} />
-            </div>
-          ))}
+      {/* ── Sub-filtro deudas ── */}
+      {!loading && isDebts && (
+        <div style={{ display: 'flex', gap: 6, padding: '0 16px 8px', flexShrink: 0 }}>
+          {(['un_pago', 'cuotas'] as const).map(f => {
+            const active = debtFilter === f;
+            const count  = f === 'cuotas' ? debtsCuotas.length : debtsUnPago.length;
+            return (
+              <button key={f} onClick={() => setDebtFilter(f)} style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '4px 10px', borderRadius: 20,
+                fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                border: `1px solid ${active ? tk.pillActBg : tk.pillInBrd}`,
+                background: active ? tk.pillActBg : tk.pillInBg,
+                color: active ? tk.pillActC : tk.pillInC,
+                fontFamily: 'var(--font-ui), system-ui, sans-serif',
+                transition: 'all .18s',
+              }}>
+                {f === 'cuotas' ? 'A cuotas' : 'Un pago'}
+                <span style={{ fontSize: 9, fontWeight: 900, padding: '1px 5px', borderRadius: 6, background: active ? 'rgba(255,255,255,.22)' : 'rgba(17,24,39,0.08)', color: active ? tk.pillActC : tk.pillInC }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {!loading && (
-        <>
-          {/* ── Métrica principal (solo deudas y préstamos) ── */}
-          {(isDebts || isPrestamos) && (
-            <div style={{ marginBottom: 10, flexShrink: 0, textAlign: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, justifyContent: 'center' }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: tk.metricSym }}>S/</span>
-                <span style={{ fontSize: 36, fontWeight: 900, color: tk.metricInt, letterSpacing: -1.5, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{metricInt}</span>
-                <span style={{ fontSize: 20, fontWeight: 600, color: tk.metricDec }}>{metricDec}</span>
-              </div>
-              {isDebts && <div style={{ fontSize: 11, color: tk.metricSub, fontWeight: 500, marginTop: 4 }}>{totals.paidAvg}% promedio pagado</div>}
-              {isPrestamos && <div style={{ fontSize: 11, color: tk.metricSub, fontWeight: 500, marginTop: 4 }}>{presPct}% cobrado</div>}
-            </div>
-          )}
+      {/* ── Lista con scroll interno ── */}
+      <div style={{
+        flex: 1, minHeight: 0,
+        overflowY: 'auto',
+        padding: loading ? '8px 14px 12px' : '0 14px 12px',
+        scrollbarWidth: 'thin',
+        scrollbarColor: `${scrollThumb} transparent`,
+      }}>
 
-          {isPrestamos && prestamosRows.length > 0 && (
-            <div style={{ marginBottom: 10, flexShrink: 0 }}>
-              <ProgressBar pct={presPct} color={C.pos} height={5} />
-            </div>
-          )}
+        {/* Skeleton */}
+        {loading && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+            {[1,2,3,4].map(i => <SkeletonItem key={i} isDark={isDark} />)}
+          </div>
+        )}
 
-          {/* ── Lista préstamos ── */}
-          {isPrestamos && (
-            prestamosRows.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: C.textMute }}>{emptyMessage}</div>
-            ) : (
-              <div style={isDesktop ? { position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' } : {}}>
-                <div style={isDesktop
-                  ? { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, paddingRight: 2 }
-                  : { display: 'flex', flexDirection: 'column', gap: 6 }
-                }>
-                  {[...prestamosRows].sort((a, b) => (b.montoPrestamo ?? 0) - (a.montoPrestamo ?? 0)).map((p, i) => {
-                    const faltante = p.cantidadFaltante ?? ((p.montoPrestamo ?? 0) - (p.montoPagado ?? 0));
-                    const pct = p.montoPrestamo && p.montoPrestamo > 0 ? Math.min(100, Math.round((p.montoPagado ?? 0) / p.montoPrestamo * 100)) : 0;
-                    const color = i % 2 === 0 ? C.neg : C.warn;
-                    return (
-                      <div key={p.id} style={{ padding: '10px 12px', borderRadius: 10, background: `${color}06`, border: `1px solid ${C.border}`, borderLeft: `3px solid ${color}` }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, marginBottom: 9 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: `${color}18`, color, display: 'grid', placeItems: 'center' }}>
-                            <WalletIcon size={13} />
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12.5, color: C.text, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre || '—'}</div>
-                            <div style={{ fontSize: 10, color: C.textMute, marginTop: 2 }}>{p.cuentaBancaria || 'Sin cuenta'}</div>
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, gap: 2 }}>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: faltante > 0 ? color : C.pos, fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-                              S/ {faltante.toLocaleString('es-PE', { minimumFractionDigits: 0 })}
-                            </span>
-                            <span style={{ fontSize: 9, color: C.textMute, fontVariantNumeric: 'tabular-nums' }}>de S/ {(p.montoPrestamo ?? 0).toLocaleString('es-PE', { minimumFractionDigits: 0 })}</span>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ flex: 1 }}><ProgressBar pct={pct} color={C.pos} height={5} /></div>
-                          <span style={{ fontSize: 10, color: C.pos, fontWeight: 600, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{pct}% cobrado</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )
-          )}
+        {/* Empty state */}
+        {!loading && anyEmpty && <EmptyState message={emptyMsg} tk={tk} />}
 
-          {/* ── Lista deudas/suscripciones ── */}
-          {!isPrestamos && list.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px 0', fontSize: 12, color: C.textMute }}>
-              {emptyMessage}
-            </div>
-          ) : !isPrestamos && (
-            <div style={isDesktop ? { position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' } : {}}>
-              <div style={isDesktop
-                ? { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, paddingRight: 2 }
-                : { display: 'flex', flexDirection: 'column', gap: 6 }
-              }>
-                {isDebts && (
-                  <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-                    {(['cuotas', 'un_pago'] as const).map(f => {
-                      const active = debtFilter === f;
-                      const label  = f === 'cuotas' ? 'A cuotas' : 'Un pago';
-                      const count  = f === 'cuotas' ? debtsCuotas.length : debtsUnPago.length;
-                      return (
-                        <button key={f} onClick={() => setDebtFilter(f)} style={{
-                          display: 'flex', alignItems: 'center', gap: 5,
-                          padding: '4px 10px', borderRadius: 20,
-                          fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-                          border: `1px solid ${active ? tk.fActBg : tk.fInBrd}`,
-                          background: active ? tk.fActBg : tk.fInBg,
-                          color: active ? tk.fActC : tk.fInC,
-                          fontFamily: 'var(--font-ui), system-ui, sans-serif',
-                          transition: 'all .18s',
-                        }}>
-                          {label}
-                          <span style={{ fontSize: 9, fontWeight: 900, padding: '1px 4px', borderRadius: 6, background: 'rgba(255,255,255,.2)' }}>
-                            {count}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+        {/* Grid de ítems — Deudas */}
+        {!loading && isDebts && !anyEmpty && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+            {deudaItems.map((d: DeudaRow) => {
+              const color = d.tipoPago === 'cuotas' ? DEBT_CUOTA : DEBT_PAGO;
+              const pct   = widgetPct(d);
+              const pendientes = d.cuotasPendientes ? `${d.cuotasPendientes} cuotas pend.` : d.tipoPago || 'Deuda';
+              return (
+                <MiniItem
+                  key={d.id}
+                  tk={tk}
+                  color={color}
+                  initial={(d.nombre?.[0] ?? '?').toUpperCase()}
+                  name={d.nombre}
+                  sub={pendientes}
+                  amount={d.cantidad ?? 0}
+                  pct={pct}
+                />
+              );
+            })}
+          </div>
+        )}
 
-                {isDebts && [...visibleDebts].sort((a, b) => (b.cantidad ?? 0) - (a.cantidad ?? 0)).map((d, i, arr) => {
-                  const dc       = i % 2 === 0 ? C.olive : C.pos;
-                  const pct      = widgetPct(d);
-                  const isLast   = i === arr.length - 1;
-                  const total    = d.cantidad ?? 0;
-                  const intPart  = Math.floor(total).toLocaleString('es-PE');
-                  const decPart  = (total % 1).toFixed(2).slice(1);
-                  return (
-                    <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: isLast ? 'none' : `1px solid ${tk.debtBrd}` }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: dc, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.nombre || '—'}</div>
-                        <div style={{ height: 3, background: tk.debtBarBg, borderRadius: 10, overflow: 'hidden', marginTop: 5 }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: dc, borderRadius: 10 }} />
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 1, justifyContent: 'center' }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: tk.metricSym }}>S/</span>
-                          <span style={{ fontSize: 20, fontWeight: 900, color: tk.debtNumC, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{intPart}</span>
-                          <span style={{ fontSize: 11, fontWeight: 600, color: tk.metricDec }}>{decPart}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+        {/* Grid de ítems — Préstamos */}
+        {!loading && isPrestamos && !anyEmpty && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
+            {prestamoItems.map((p: PrestamoRow, i) => {
+              const color    = PREST_COLORS[i % 2];
+              const faltante = p.cantidadFaltante ?? Math.max(0, (p.montoPrestamo ?? 0) - (p.montoPagado ?? 0));
+              const pct      = p.montoPrestamo && p.montoPrestamo > 0
+                ? Math.min(100, Math.round(((p.montoPagado ?? 0) / p.montoPrestamo) * 100))
+                : 0;
+              return (
+                <MiniItem
+                  key={p.id}
+                  tk={tk}
+                  color={color}
+                  initial={(p.nombre?.[0] ?? '?').toUpperCase()}
+                  name={p.nombre}
+                  sub={p.cuentaBancaria || 'Sin cuenta'}
+                  amount={faltante}
+                  pct={pct}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-                {tab === 'subs' && (
-                  <div style={{ marginBottom: 10, flexShrink: 0, textAlign: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, justifyContent: 'center' }}>
-                      <span style={{ fontSize: 16, fontWeight: 700, color: tk.metricSym }}>S/</span>
-                      <span style={{ fontSize: 36, fontWeight: 900, color: tk.metricInt, letterSpacing: -1.5, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{subsInt}</span>
-                      <span style={{ fontSize: 20, fontWeight: 600, color: tk.metricDec }}>{subsDec}</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: tk.metricSub, fontWeight: 500, marginTop: 4 }}>total mensual de suscripciones</div>
-                  </div>
-                )}
-
-                {tab === 'subs' && [...subs].sort((a, b) => (b.cantidad ?? 0) - (a.cantidad ?? 0)).map((s) => {
-                  const bc      = isDark ? '#0C5E3F' : '#8FA88F';
-                  const initials = ((s.nombre ?? '')[0] ?? '?').toUpperCase();
-                  const total   = s.cantidad ?? 0;
-                  const intPart = Math.floor(total).toLocaleString('es-PE');
-                  const decPart = (total % 1).toFixed(2).slice(1);
-                  return (
-                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 13px', borderRadius: 14, background: tk.subItemBg, border: `1px solid ${tk.subItemBrd}`, marginBottom: 6 }}>
-                      <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: bc, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 900, letterSpacing: 0.3 }}>
-                        {initials}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: tk.subNameC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.nombre || '—'}</div>
-                        <div style={{ fontSize: 10, color: tk.subSubC, fontWeight: 500, marginTop: 1 }}>{s.ciclo || 'mensual'}</div>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 900, color: tk.subAmtC, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.3 }}>
-                          S/ {intPart}<span style={{ fontSize: 10, fontWeight: 600, color: tk.subSubC }}>{decPart}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {isDesktop && list.length > 3 && (
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 32, background: `linear-gradient(to bottom, transparent, ${tk.gradFade})`, pointerEvents: 'none' }} />
-              )}
-            </div>
-          )}
-
-        </>
+      {/* ── Modales ── */}
+      {showTable && isDebts     && <DeudasModal onClose={() => setShowTable(false)} />}
+      {showTable && isPrestamos && <PrestamosModal onClose={() => setShowTable(false)} canWrite={canWrite} />}
+      {canWrite && showNew && isDebts && (
+        <NewDeudaModal onClose={() => setShowNew(false)} onSuccess={() => { setShowNew(false); fetchDeudas(); }} />
       )}
-
-      {showTable && !isPrestamos && <DeudasModal onClose={() => setShowTable(false)} />}
-      {showTable && isPrestamos  && <PrestamosModal onClose={() => setShowTable(false)} canWrite={canWrite} />}
-      {canWrite && showNew   && !isPrestamos && <NewDeudaModal onClose={() => setShowNew(false)} onSuccess={() => {
-        setShowNew(false);
-        fetchDeudas();
-      }} />}
-      {canWrite && showNew   && isPrestamos  && <NewPrestamoModal onClose={() => setShowNew(false)} onSuccess={() => {
-        setShowNew(false);
-        fetchPrestamos();
-      }} />}
-
-      </div>{/* fin contenido */}
+      {canWrite && showNew && isPrestamos && (
+        <NewPrestamoModal onClose={() => setShowNew(false)} onSuccess={() => { setShowNew(false); fetchPrestamos(); }} />
+      )}
     </div>
   );
 }
-
-// ── Notion sync ──────────────────────────────────────────────────────────

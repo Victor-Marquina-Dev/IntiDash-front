@@ -60,6 +60,8 @@ export const Icon = {
   edit:      _ico(<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></>),
   moon:      _ico(<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />),
   sun:       _ico(<><circle cx="12" cy="12" r="4.5" /><path d="M12 2V4M12 20V22M2 12H4M20 12H22M4.93 4.93L6.34 6.34M17.66 17.66L19.07 19.07M4.93 19.07L6.34 17.66M17.66 6.34L19.07 4.93" /></>),
+  shield:    _ico(<><path d="M12 3 L4 7 V13 C4 17.4 7.5 20.5 12 22 C16.5 20.5 20 17.4 20 13 V7 Z" /><path d="M9 12 L11 14 L15 10" /></>),
+  gauge:     _ico(<><path d="M3.05 11 A9 9 0 1 1 20.95 11" /><path d="M12 20 L12 12" /><path d="M9 9 L12 12" /><circle cx="12" cy="20" r="1.5" fill="currentColor" strokeWidth="0" /></>),
 };
 
 export type IconKey = keyof typeof Icon;

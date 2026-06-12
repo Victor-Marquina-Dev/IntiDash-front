@@ -1,244 +1,380 @@
-﻿'use client';
+'use client';
 
 import React from 'react';
 import { C } from '@/lib/colors';
-import { formatNotionDate } from '@/lib/format';
-import { Icon } from '@/components/icons';
-import { Button, ModalShell } from '@/components/ui';
+import { formatCurrency, formatNullableCurrency, formatNotionDate } from '@/lib/format';
+import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { PrestamoRow } from '@/shared/types/finance.types';
 
-const fmtFecha = formatNotionDate;
+const FONT  = 'var(--font-ui),system-ui,sans-serif';
+const COLOR = C.neg;
 
+const fmtAmt = (n: number | null | undefined) =>
+  formatNullableCurrency(n, '—');
 
-export type PrestamoWidgetRow = PrestamoRow;
+const initial = (name: string) => (name || '?').charAt(0).toUpperCase();
 
-function EditPrestamoModal({ row, cuentas, onClose, onSuccess }: Readonly<{
-  row: PrestamoWidgetRow; cuentas: string[];
-  onClose: () => void; onSuccess: (updated: PrestamoWidgetRow) => void;
+// ── Shared styles ─────────────────────────────────────────────────────────
+const inputStyle: React.CSSProperties = {
+  width: '100%', height: 34, borderRadius: 8, border: `1px solid ${C.border}`,
+  padding: '0 10px', fontSize: 13, fontFamily: FONT, color: C.text,
+  background: '#fff', boxSizing: 'border-box', outline: 'none', marginTop: 4,
+};
+const labelStyle: React.CSSProperties = {
+  fontSize: 10.5, color: C.textMute, fontWeight: 600,
+  textTransform: 'uppercase', letterSpacing: 0.6, fontFamily: FONT,
+};
+const cancelBtn: React.CSSProperties = {
+  height: 32, padding: '0 14px', borderRadius: 8, border: `1px solid ${C.border}`,
+  background: 'transparent', color: C.textDim, cursor: 'pointer', fontSize: 12.5,
+  fontFamily: FONT, fontWeight: 500,
+};
+const saveBtn = (c: string): React.CSSProperties => ({
+  height: 32, padding: '0 16px', borderRadius: 8, border: 'none',
+  background: c, color: '#fff', cursor: 'pointer', fontSize: 12.5,
+  fontFamily: FONT, fontWeight: 600,
+});
+
+function PencilIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  );
+}
+
+// ── Edit state ────────────────────────────────────────────────────────────
+interface FS { nombre: string; montoPrestamo: string; cuentaBancaria: string; fecha: string; }
+
+const rowToFS = (r: PrestamoRow): FS => ({
+  nombre:        r.nombre || '',
+  montoPrestamo: r.montoPrestamo != null ? String(r.montoPrestamo) : '',
+  cuentaBancaria: r.cuentaBancaria || '',
+  fecha:         r.fecha ? String(r.fecha).slice(0, 10) : '',
+});
+const emptyFS = (): FS => ({ nombre: '', montoPrestamo: '', cuentaBancaria: '', fecha: new Date().toISOString().split('T')[0] });
+
+// ── RowCard ───────────────────────────────────────────────────────────────
+function RowCard({ row, color, onUpdated }: Readonly<{
+  row: PrestamoRow; color: string; onUpdated: (r: PrestamoRow) => void;
 }>) {
-  const toDateInput = (iso: string | null) => {
-    if (!iso) return '';
-    const d = new Date(iso);
-    const y = d.getUTCFullYear(), m = String(d.getUTCMonth() + 1).padStart(2, '0'), dd = String(d.getUTCDate()).padStart(2, '0');
-    return `${y}-${m}-${dd}`;
-  };
-  const [nombre, setNombre]         = React.useState(row.nombre);
-  const [monto, setMonto]           = React.useState(row.montoPrestamo != null ? String(row.montoPrestamo) : '');
-  const [cuenta, setCuenta]         = React.useState(row.cuentaBancaria);
-  const [fecha, setFecha]           = React.useState(toDateInput(row.fecha));
-  const [saving, setSaving]         = React.useState(false);
-  const [error, setError]           = React.useState('');
+  const [editing, setEditing] = React.useState(false);
+  const [form,    setForm]    = React.useState<FS>(emptyFS);
+  const [saving,  setSaving]  = React.useState(false);
+  const [hov,     setHov]     = React.useState(false);
 
+  const faltante = row.cantidadFaltante ?? Math.max(0, (row.montoPrestamo ?? 0) - (row.montoPagado ?? 0));
+  const pct      = row.montoPrestamo && row.montoPrestamo > 0
+    ? Math.min(100, Math.round(((row.montoPagado ?? 0) / row.montoPrestamo) * 100))
+    : 0;
+
+  const startEdit = () => { setForm(rowToFS(row)); setEditing(true); };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const body: Partial<PrestamoRow> = {
+        nombre:         form.nombre.trim() || row.nombre,
+        montoPrestamo:  form.montoPrestamo ? parseFloat(form.montoPrestamo) : null,
+        cuentaBancaria: form.cuentaBancaria,
+        fecha:          form.fecha ? `${form.fecha}T00:00:00Z` : null,
+      };
+      await notionPaymentsService.patchPrestamo(row.id, body);
+      onUpdated({ ...row, ...body });
+      setEditing(false);
+    } catch { /* best-effort */ }
+    setSaving(false);
+  };
+
+  const set = (k: keyof FS) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        borderRadius: 14,
+        border: `1px solid ${editing ? `${color}35` : hov ? 'rgba(17,24,39,.12)' : 'rgba(17,24,39,.07)'}`,
+        background: editing ? `${color}06` : hov ? '#fafbf8' : '#fff',
+        transition: 'all .15s', overflow: 'hidden',
+      }}>
+
+      {/* Fila principal */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+        {/* Avatar */}
+        <div style={{
+          width: 38, height: 38, borderRadius: 11, flexShrink: 0,
+          background: `linear-gradient(145deg, ${color}CC, ${color})`,
+          color: '#fff', display: 'grid', placeItems: 'center',
+          fontSize: 14, fontWeight: 800,
+          boxShadow: `0 3px 8px ${color}40`,
+        }}>
+          {initial(row.nombre)}
+        </div>
+
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'nowrap' }}>
+            <span style={{ fontSize: 13.5, fontWeight: 700, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {row.nombre || '—'}
+            </span>
+            {row.cuentaBancaria && (
+              <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: `${color}18`, color, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {row.cuentaBancaria}
+              </span>
+            )}
+          </div>
+
+          {/* Progreso de pago */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+            <div style={{ flex: 1, height: 4, borderRadius: 6, background: 'rgba(17,24,39,.08)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, borderRadius: 6, background: pct >= 100 ? C.pos : color, transition: 'width .3s' }} />
+            </div>
+            <span style={{ fontSize: 9.5, fontWeight: 800, color: pct >= 100 ? C.pos : C.textMute, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+              {pct}%
+            </span>
+            {row.fecha && (
+              <span style={{ fontSize: 10, color: C.textMute, flexShrink: 0 }}>
+                {formatNotionDate(row.fecha)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Por cobrar */}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.3 }}>
+            {fmtAmt(faltante)}
+          </div>
+          {row.montoPrestamo != null && (
+            <div style={{ fontSize: 10, color: C.textMute, fontVariantNumeric: 'tabular-nums', marginTop: 1 }}>
+              de {fmtAmt(row.montoPrestamo)}
+            </div>
+          )}
+        </div>
+
+        {/* Editar */}
+        <button
+          title="Editar"
+          onClick={editing ? () => setEditing(false) : startEdit}
+          style={{ width: 28, height: 28, borderRadius: 7, border: `1px solid ${editing ? `${color}40` : 'rgba(17,24,39,.12)'}`, background: editing ? `${color}15` : 'transparent', color: editing ? color : C.textDim, cursor: 'pointer', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+          <PencilIcon />
+        </button>
+      </div>
+
+      {/* Formulario inline */}
+      {editing && (
+        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ height: 1, background: `${color}20`, marginBottom: 2 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <label>
+              <span style={labelStyle}>Nombre</span>
+              <input style={inputStyle} value={form.nombre} onChange={set('nombre')} />
+            </label>
+            <label>
+              <span style={labelStyle}>Monto prestado (S/)</span>
+              <input style={inputStyle} type="number" step="0.01" min="0" value={form.montoPrestamo} onChange={set('montoPrestamo')} />
+            </label>
+            <label>
+              <span style={labelStyle}>Cuenta bancaria</span>
+              <input style={inputStyle} value={form.cuentaBancaria} onChange={set('cuentaBancaria')} placeholder="Nombre de cuenta" />
+            </label>
+            <label>
+              <span style={labelStyle}>Fecha</span>
+              <input style={inputStyle} type="date" value={form.fecha} onChange={set('fecha')} />
+            </label>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 2 }}>
+            <button onClick={() => setEditing(false)} style={cancelBtn}>Cancelar</button>
+            <button onClick={save} disabled={saving} style={{ ...saveBtn(color), opacity: saving ? 0.7 : 1 }}>
+              {saving ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── CreateForm ────────────────────────────────────────────────────────────
+function CreateForm({ onCreated, onCancel }: Readonly<{ onCreated: () => void; onCancel: () => void }>) {
+  const [form,   setForm]   = React.useState<FS>(emptyFS);
+  const [saving, setSaving] = React.useState(false);
+  const nombreRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => { nombreRef.current?.focus(); }, []);
+
+  const set = (k: keyof FS) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const create = async () => {
+    if (!form.nombre.trim()) return;
+    setSaving(true);
+    try {
+      await notionPaymentsService.createPrestamo({
+        nombre:         form.nombre.trim(),
+        montoPrestamo:  form.montoPrestamo ? parseFloat(form.montoPrestamo) : null,
+        cuentaBancaria: form.cuentaBancaria,
+        fecha:          form.fecha ? `${form.fecha}T00:00:00Z` : null,
+      });
+      onCreated();
+    } catch { /* best-effort */ }
+    setSaving(false);
+  };
+
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') create();
+    if (e.key === 'Escape') onCancel();
+  };
+
+  return (
+    <div style={{ borderRadius: 14, border: `1.5px dashed ${COLOR}45`, background: `${COLOR}05`, padding: '14px 14px 16px' }}>
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: COLOR, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, fontFamily: FONT }}>
+        Nuevo préstamo
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <label>
+          <span style={labelStyle}>Nombre *</span>
+          <input ref={nombreRef} style={inputStyle} value={form.nombre} onChange={set('nombre')} onKeyDown={onKey} placeholder="Ej. Préstamo Juan" />
+        </label>
+        <label>
+          <span style={labelStyle}>Monto prestado (S/)</span>
+          <input style={inputStyle} type="number" step="0.01" min="0" value={form.montoPrestamo} onChange={set('montoPrestamo')} onKeyDown={onKey} placeholder="0.00" />
+        </label>
+        <label>
+          <span style={labelStyle}>Cuenta bancaria</span>
+          <input style={inputStyle} value={form.cuentaBancaria} onChange={set('cuentaBancaria')} onKeyDown={onKey} placeholder="Nombre de cuenta" />
+        </label>
+        <label>
+          <span style={labelStyle}>Fecha</span>
+          <input style={inputStyle} type="date" value={form.fecha} onChange={set('fecha')} />
+        </label>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
+        <button onClick={onCancel} style={cancelBtn}>Cancelar</button>
+        <button onClick={create} disabled={saving || !form.nombre.trim()} style={{ ...saveBtn(COLOR), opacity: (saving || !form.nombre.trim()) ? 0.5 : 1 }}>
+          {saving ? 'Creando...' : 'Crear préstamo'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── PrestamosModal ────────────────────────────────────────────────────────
+export function PrestamosModal({ onClose, canWrite = true }: Readonly<{ onClose: () => void; canWrite?: boolean }>) {
+  const [rows,       setRows]       = React.useState<PrestamoRow[]>([]);
+  const [loading,    setLoading]    = React.useState(true);
+  const [hasError,   setHasError]   = React.useState(false);
+  const [showCreate, setShowCreate] = React.useState(false);
+
+  const load = React.useCallback(() => {
+    setLoading(true);
+    notionPaymentsService.getPrestamos()
+      .then((d: PrestamoRow[]) => { setRows(d); setLoading(false); })
+      .catch(() => { setHasError(true); setLoading(false); });
+  }, []);
+
+  React.useEffect(() => {
+    const id = window.setTimeout(load, 0);
+    return () => window.clearTimeout(id);
+  }, [load]);
   React.useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', h);
     return () => document.removeEventListener('keydown', h);
   }, [onClose]);
 
-  async function handleSave() {
-    if (!nombre.trim()) { setError('El nombre es requerido.'); return; }
-    setSaving(true); setError('');
-    try {
-      await notionPaymentsService.patchPrestamo(row.id, { nombre: nombre.trim(), montoPrestamo: monto ? Number(monto) : null, cuentaBancaria: cuenta, fecha: fecha || null });
-      onSuccess({ ...row, nombre: nombre.trim(), montoPrestamo: monto ? Number(monto) : null, cuentaBancaria: cuenta, fecha: fecha ? `${fecha}T00:00:59Z` : null });
-    } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Error al guardar.'); setSaving(false); }
-  }
+  const totalFaltante = rows.reduce((s, r) => s + (r.cantidadFaltante ?? Math.max(0, (r.montoPrestamo ?? 0) - (r.montoPagado ?? 0))), 0);
+  const COLORS = [COLOR, C.warn];
 
-  const inp: React.CSSProperties = { width: '100%', padding: '9px 12px', borderRadius: 9, border: `1px solid ${C.border}`, background: C.bg, fontSize: 13, color: C.text, fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' };
+  const handleUpdated = (upd: PrestamoRow) => setRows(rs => rs.map(r => r.id === upd.id ? upd : r));
+  const handleCreated = () => { setShowCreate(false); load(); };
 
   return (
-    <ModalShell onClose={onClose} maxWidth={420} zIndex={400}>
-      <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, width: '100%', maxWidth: 420, padding: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Editar préstamo</div>
-          <button onClick={onClose} aria-label="Cerrar edicion de prestamo" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMute, padding: 4 }}>✕</button>
+    <ModalShell onClose={onClose} maxWidth={680}>
+      <div style={{
+        background: '#fafbf8', borderRadius: 20,
+        boxShadow: '0 32px 80px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06)',
+        width: '100%', maxWidth: 680, maxHeight: '85vh',
+        display: 'flex', flexDirection: 'column',
+        fontFamily: FONT, overflow: 'hidden',
+      }}>
+
+        {/* Header */}
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(17,24,39,.08)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: `${COLOR}18`, color: COLOR, display: 'grid', placeItems: 'center', flexShrink: 0, fontSize: 20 }}>
+            💸
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Préstamos</div>
+            <div style={{ fontSize: 12, color: C.textMute, marginTop: 1 }}>
+              {loading ? 'Cargando...' : `${rows.length} préstamo${rows.length !== 1 ? 's' : ''} registrado${rows.length !== 1 ? 's' : ''}`}
+            </div>
+          </div>
+
+          {/* Total por cobrar */}
+          {!loading && rows.length > 0 && (
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: 9.5, color: C.textMute, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 700 }}>Por cobrar</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: COLOR, letterSpacing: -0.8, fontVariantNumeric: 'tabular-nums' }}>
+                {formatCurrency(totalFaltante)}
+              </div>
+            </div>
+          )}
+
+          {/* + Nuevo */}
+          {canWrite && (
+            <button
+              onClick={() => setShowCreate(s => !s)}
+              style={{
+                height: 32, padding: '0 14px', borderRadius: 10,
+                background: showCreate ? `${COLOR}18` : `${COLOR}0E`,
+                border: `1px solid ${COLOR}30`,
+                color: COLOR, cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                fontFamily: FONT, display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+              }}>
+              <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 300 }}>+</span>
+              Nuevo
+            </button>
+          )}
+
+          {/* Cerrar */}
+          <button
+            onClick={onClose}
+            style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(17,24,39,.07)', border: 'none', cursor: 'pointer', color: C.textDim, display: 'grid', placeItems: 'center', fontSize: 20, fontWeight: 300, flexShrink: 0, fontFamily: 'system-ui,sans-serif' }}>
+            ×
+          </button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <div style={{ fontSize: 11, color: C.textMute, marginBottom: 5, fontWeight: 600 }}>Nombre *</div>
-            <input value={nombre} onChange={e => setNombre(e.target.value)} style={inp} />
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: C.textMute, marginBottom: 5, fontWeight: 600 }}>Monto prestado</div>
-            <input type="number" value={monto} onChange={e => setMonto(e.target.value)} placeholder="0.00" style={inp} />
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: C.textMute, marginBottom: 5, fontWeight: 600 }}>Cuenta bancaria</div>
-            {cuentas.length > 0 ? (
-              <select value={cuenta} onChange={e => setCuenta(e.target.value)} style={inp}>
-                <option value="">— Sin cuenta —</option>
-                {cuentas.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            ) : (
-              <input value={cuenta} onChange={e => setCuenta(e.target.value)} placeholder="Nombre de cuenta" style={inp} />
-            )}
-          </div>
-          <div>
-            <div style={{ fontSize: 11, color: C.textMute, marginBottom: 5, fontWeight: 600 }}>Fecha</div>
-            <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={inp} />
-          </div>
-          {error && <div style={{ fontSize: 12, color: C.neg, padding: '6px 10px', background: `${C.neg}10`, borderRadius: 7 }}>{error}</div>}
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 6 }}>
-            <Button ghost onClick={onClose} disabled={saving}>Cancelar</Button>
-            <Button primary onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar cambios'}</Button>
-          </div>
+
+        {/* Body */}
+        <div style={{
+          overflowY: 'auto', flex: 1, padding: '14px 18px 18px',
+          scrollbarWidth: 'thin', scrollbarColor: `${COLOR}60 transparent`,
+          display: 'flex', flexDirection: 'column', gap: 8,
+        }}>
+          {showCreate && (
+            <CreateForm onCreated={handleCreated} onCancel={() => setShowCreate(false)} />
+          )}
+          {loading && (
+            <div style={{ textAlign: 'center', padding: '48px 0', color: C.textMute, fontSize: 13 }}>Cargando datos...</div>
+          )}
+          {hasError && (
+            <div style={{ textAlign: 'center', padding: '48px 0', color: COLOR, fontSize: 13 }}>Error al cargar. Verifica el backend.</div>
+          )}
+          {!loading && !hasError && rows.length === 0 && !showCreate && (
+            <div style={{ textAlign: 'center', padding: '48px 0', color: C.textMute, fontSize: 13 }}>
+              Sin préstamos registrados.
+            </div>
+          )}
+          {!loading && !hasError && rows.map((row, i) => (
+            <RowCard key={row.id} row={row} color={COLORS[i % COLORS.length]} onUpdated={handleUpdated} />
+          ))}
         </div>
       </div>
     </ModalShell>
-  );
-}
-
-export function PrestamosModal({ onClose, canWrite = true }: Readonly<{ onClose: () => void; canWrite?: boolean }>) {
-  const [rows, setRows]             = React.useState<PrestamoWidgetRow[]>([]);
-  const [loading, setLoading]       = React.useState(true);
-  const [hasError, setHasError]     = React.useState(false);
-  const [editRow, setEditRow]       = React.useState<PrestamoWidgetRow | null>(null);
-  const [cuentas, setCuentas]       = React.useState<string[]>([]);
-
-  const load = () => {
-    notionPaymentsService.getPrestamos()
-      .then((data: PrestamoWidgetRow[]) => { setRows(data); setLoading(false); })
-      .catch(() => { setHasError(true); setLoading(false); });
-  };
-
-  React.useEffect(() => {
-    load();
-    notionPaymentsService.getOptions()
-      .then((d: { cuentasBancarias?: string[] }) => { if (d.cuentasBancarias) setCuentas(d.cuentasBancarias); })
-      .catch(() => {});
-  }, []);
-
-  React.useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && !editRow) onClose(); };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose, editRow]);
-
-  const totalPrestamo = rows.reduce((s, r) => s + (r.montoPrestamo ?? 0), 0);
-  const totalPagado   = rows.reduce((s, r) => s + (r.montoPagado ?? 0), 0);
-  const totalFaltante = rows.reduce((s, r) => s + (r.cantidadFaltante ?? ((r.montoPrestamo ?? 0) - (r.montoPagado ?? 0))), 0);
-  const emptyMessage = canWrite ? 'Sin prestamos. Sincroniza desde Ajustes.' : 'Sin prestamos para mostrar.';
-
-  return (
-    <>
-      <ModalShell onClose={onClose} maxWidth={820}>
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 18, width: '100%', maxWidth: 820, maxHeight: '82vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-          {/* Header */}
-          <div style={{ padding: '18px 22px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>Préstamos</div>
-              <div style={{ fontSize: 11.5, color: C.textMute, marginTop: 2 }}>
-                {rows.length} registros · por cobrar{' '}
-                <span style={{ color: C.neg, fontWeight: 600 }}>S/ {totalFaltante.toLocaleString('es-PE', { minimumFractionDigits: 0 })}</span>
-              </div>
-            </div>
-            <button onClick={onClose} aria-label="Cerrar prestamos" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMute, padding: 4, fontSize: 16 }}>✕</button>
-          </div>
-
-          {/* Body */}
-          <div style={{ overflowY: 'auto', flex: 1 }}>
-            {loading && <div style={{ padding: 40, textAlign: 'center', color: C.textMute, fontSize: 13 }}>Cargando...</div>}
-            {hasError && <div style={{ padding: 40, textAlign: 'center', color: C.neg, fontSize: 13 }}>Error al cargar datos.</div>}
-            {!loading && !hasError && rows.length === 0 && (
-              <div style={{ padding: 40, textAlign: 'center', color: C.textMute, fontSize: 13 }}>{emptyMessage}</div>
-            )}
-            {!loading && !hasError && rows.length > 0 && (
-              <div style={{ borderRadius: 0, overflow: 'hidden' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: 'rgba(63,86,28,0.04)' }}>
-                        {['#', 'Nombre', 'Cuenta Bancaria', 'Fecha', 'Monto Prestado', 'Monto Pagado', 'Por Cobrar', ...(canWrite ? [''] : [])].map((h, hi) => (
-                          <th key={hi} style={{ padding: hi === 0 ? '10px 12px' : '10px 16px', textAlign: hi === 0 ? 'center' : 'left', fontSize: 10.5, fontWeight: 700, color: C.textDim, textTransform: 'uppercase', letterSpacing: 0.8, borderBottom: `1px solid ${C.border}`, whiteSpace: 'nowrap' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r, i) => {
-                        const faltante = r.cantidadFaltante ?? ((r.montoPrestamo ?? 0) - (r.montoPagado ?? 0));
-                        const pct = r.montoPrestamo && r.montoPrestamo > 0 ? Math.min(100, Math.round((r.montoPagado ?? 0) / r.montoPrestamo * 100)) : 0;
-                        const bb = i < rows.length - 1 ? `1px solid ${C.border}` : 'none';
-                        return (
-                          <tr key={r.id} style={{ background: i % 2 === 0 ? '#fff' : 'rgba(63,86,28,0.012)' }}>
-                            <td style={{ padding: '12px', textAlign: 'center', color: C.textMute, fontSize: 11.5, borderBottom: bb }}>{i + 1}</td>
-                            <td style={{ padding: '12px 16px', fontWeight: 600, color: C.text, borderBottom: bb }}>{r.nombre || '—'}</td>
-                            <td style={{ padding: '12px 16px', borderBottom: bb }}>
-                              {r.cuentaBancaria
-                                ? <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 20, background: `${C.olive}10`, border: `1px solid ${C.olive}22`, color: C.textDim, fontSize: 11.5, fontWeight: 500 }}>{r.cuentaBancaria}</span>
-                                : <span style={{ color: C.textMute }}>—</span>}
-                            </td>
-                            <td style={{ padding: '12px 16px', color: C.textMute, borderBottom: bb, whiteSpace: 'nowrap', fontSize: 12 }}>{r.fecha ? fmtFecha(r.fecha) : '—'}</td>
-                            <td style={{ padding: '12px 16px', color: C.text, fontWeight: 700, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>
-                              {r.montoPrestamo != null ? `S/ ${r.montoPrestamo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '—'}
-                            </td>
-                            <td style={{ padding: '12px 16px', borderBottom: bb }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                <span style={{ color: C.pos, fontWeight: 600, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                                  {r.montoPagado != null ? `S/ ${r.montoPagado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '—'}
-                                </span>
-                                {r.montoPrestamo != null && r.montoPrestamo > 0 && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <div style={{ flex: 1, height: 4, borderRadius: 2, background: C.border, overflow: 'hidden' }}>
-                                      <div style={{ width: `${pct}%`, height: '100%', background: C.pos, borderRadius: 2 }} />
-                                    </div>
-                                    <span style={{ fontSize: 10, color: C.pos, fontWeight: 600, flexShrink: 0 }}>{pct}%</span>
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                            <td style={{ padding: '12px 16px', borderBottom: bb }}>
-                              <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 20, fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: 12, whiteSpace: 'nowrap', background: faltante > 0 ? `${C.neg}10` : `${C.pos}10`, border: `1px solid ${faltante > 0 ? `${C.neg}22` : `${C.pos}22`}`, color: faltante > 0 ? C.neg : C.pos }}>
-                                S/ {faltante.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                              </span>
-                            </td>
-                            {canWrite && (
-                              <td style={{ padding: '12px 10px', borderBottom: bb }}>
-                                <button
-                                  onClick={() => setEditRow(r)}
-                                  aria-label="Editar prestamo"
-                                  title="Editar"
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMute, padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color .15s' }}
-                                  onMouseEnter={e => (e.currentTarget.style.color = C.olive)}
-                                  onMouseLeave={e => (e.currentTarget.style.color = C.textMute)}
-                                >
-                                  <Icon.edit size={15} />
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot>
-                      <tr style={{ background: 'rgba(63,86,28,0.04)', borderTop: `2px solid ${C.border}` }}>
-                        <td colSpan={4} style={{ padding: '10px 16px', fontWeight: 700, color: C.text, fontSize: 12 }}>Total</td>
-                        <td style={{ padding: '10px 16px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>S/ {totalPrestamo.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                        <td style={{ padding: '10px 16px', fontWeight: 700, color: C.pos, fontVariantNumeric: 'tabular-nums' }}>S/ {totalPagado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                        <td colSpan={canWrite ? 2 : 1} style={{ padding: '10px 16px', fontWeight: 700, color: C.neg, fontVariantNumeric: 'tabular-nums' }}>S/ {totalFaltante.toLocaleString('es-PE', { minimumFractionDigits: 2 })}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </ModalShell>
-
-      {canWrite && editRow && (
-        <EditPrestamoModal
-          row={editRow}
-          cuentas={cuentas}
-          onClose={() => setEditRow(null)}
-          onSuccess={updated => {
-            setRows(prev => prev.map(r => r.id === updated.id ? updated : r));
-            setEditRow(null);
-          }}
-        />
-      )}
-    </>
   );
 }
 

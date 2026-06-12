@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
-import { formatNotionDate } from '@/lib/format';
+import { formatCurrency, formatNotionDate, formatNullableCurrency } from '@/lib/format';
 
 const fmtFecha = formatNotionDate;
 export interface NSIng  { id:string; nombre:string; ingreso:number|null; categoriaIngreso:string; cuentaBancaria:string; fecha:string|null }
@@ -70,7 +70,7 @@ export function NotionDataModal({
   const emptyRow = (cols:number) => (
     <tr><td colSpan={cols} style={{ padding:'20px 14px', textAlign:'center', color:C.textMute, fontSize:13 }}>Sin datos. Sincroniza primero.</td></tr>
   );
-  const fmtS = (n:number|null) => n != null ? `S/ ${n.toLocaleString('es-PE',{minimumFractionDigits:2})}` : '-';
+  const fmtS = (n:number|null) => formatNullableCurrency(n);
 
   return (
         <div
@@ -267,7 +267,7 @@ export function NotionDataModal({
                                 <td style={{...tdB(i,prestamos.length), color:C.textDim}}>{r.cuentaBancaria||'-'}</td>
                                 <td style={{...tdB(i,prestamos.length), color:C.textMute, whiteSpace:'nowrap'}}>{fmtFecha(r.fecha)}</td>
                                 <td style={{...tdB(i,prestamos.length), color:C.pos, fontWeight:600, fontVariantNumeric:'tabular-nums', whiteSpace:'nowrap'}}>{fmtS(r.montoPagado)}</td>
-                                <td style={{...tdB(i,prestamos.length), color:falt>0?C.neg:C.pos, fontWeight:600, fontVariantNumeric:'tabular-nums', whiteSpace:'nowrap'}}>S/ {falt.toLocaleString('es-PE',{minimumFractionDigits:2})}</td>
+                                <td style={{...tdB(i,prestamos.length), color:falt>0?C.neg:C.pos, fontWeight:600, fontVariantNumeric:'tabular-nums', whiteSpace:'nowrap'}}>{formatCurrency(falt)}</td>
                               </tr>
                             );
                           })}

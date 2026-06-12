@@ -1,0 +1,10 @@
+<svg width="32" height="32" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Curva ascendente -->
+  <path d="M5 145 C 20 55, 95 15, 168 22"
+        fill="none" stroke="#6B8C6B"
+        stroke-width="9" stroke-linecap="round"/>
+  <!-- Barras -->
+  <rect x="18" y="120" width="30" height="50" rx="15" fill="#8FA88F"/>
+  <rect x="60" y="80"  width="30" height="90" rx="15" fill="#8FA88F"/>
+  <rect x="102" y="40" width="30" height="130" rx="15" fill="#8FA88F"/>
+</svg>

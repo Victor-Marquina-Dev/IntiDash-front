@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { C } from '@/lib/colors';
-import { formatNotionDate } from '@/lib/format';
+import { formatCurrency, formatIntegerCurrency, formatNullableCurrency, formatNotionDate } from '@/lib/format';
 import { Icon } from '@/components/icons';
 import { ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
@@ -54,7 +54,7 @@ export function GastosModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <div style={{ textAlign: 'right', flexShrink: 0, paddingRight: 16 }}>
               <div style={{ fontSize: 10.5, color: C.textMute, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 600 }}>Total</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: C.neg, letterSpacing: -1, fontVariantNumeric: 'tabular-nums', lineHeight: 1.15, marginTop: 2 }}>
-                S/ {total.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                {formatCurrency(total)}
               </div>
             </div>
           )}
@@ -72,7 +72,7 @@ export function GastosModal({ onClose }: Readonly<{ onClose: () => void }>) {
               <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '11px 16px', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: active ? 600 : 400, color: active ? C.text : C.textMute, borderBottom: `2px solid ${active ? C.neg : 'transparent'}`, marginBottom: -1, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {t.label}
                 <span style={{ fontSize: 11, background: active ? `${C.neg}18` : C.border, color: active ? C.neg : C.textMute, borderRadius: 10, padding: '1px 7px', fontWeight: 600 }}>{t.count}</span>
-                {!loading && <span style={{ fontSize: 11, color: active ? C.neg : C.textMute, fontVariantNumeric: 'tabular-nums' }}>S/ {t.subtotal.toLocaleString('es-PE', { minimumFractionDigits: 0 })}</span>}
+                {!loading && <span style={{ fontSize: 11, color: active ? C.neg : C.textMute, fontVariantNumeric: 'tabular-nums' }}>{formatIntegerCurrency(t.subtotal)}</span>}
               </button>
             );
           })}
@@ -110,7 +110,7 @@ export function GastosModal({ onClose }: Readonly<{ onClose: () => void }>) {
                               {row.cuentaBancaria ? <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 20, background: `${C.olive}10`, border: `1px solid ${C.olive}22`, fontSize: 11.5, color: C.textDim, fontWeight: 500 }}>{row.cuentaBancaria}</span> : '-'}
                             </td>
                             <td style={{ padding: '12px 16px', color: C.neg, fontWeight: 700, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>
-                              {row.monto != null ? `S/ ${row.monto.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '-'}
+                              {formatNullableCurrency(row.monto)}
                             </td>
                             <td style={{ padding: '12px 16px', color: C.textMute, borderBottom: bb, whiteSpace: 'nowrap', fontSize: 12 }}>
                               {row.fecha ? fmtFecha(row.fecha) : '-'}
@@ -150,7 +150,7 @@ export function GastosModal({ onClose }: Readonly<{ onClose: () => void }>) {
                               {row.cuentaBancaria ? <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 20, background: `${C.olive}10`, border: `1px solid ${C.olive}22`, fontSize: 11.5, color: C.textDim, fontWeight: 500 }}>{row.cuentaBancaria}</span> : '-'}
                             </td>
                             <td style={{ padding: '12px 16px', color: C.neg, fontWeight: 700, fontVariantNumeric: 'tabular-nums', borderBottom: bb, whiteSpace: 'nowrap' }}>
-                              {row.montoGastado != null ? `S/ ${row.montoGastado.toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '-'}
+                              {formatNullableCurrency(row.montoGastado)}
                             </td>
                             <td style={{ padding: '12px 16px', borderBottom: bb }}>
                               {row.cualDeuda ? <span style={{ display: 'inline-flex', padding: '3px 10px', borderRadius: 20, background: `${C.warn}10`, border: `1px solid ${C.warn}22`, fontSize: 11.5, color: C.warn, fontWeight: 600 }}>{row.cualDeuda}</span> : '-'}

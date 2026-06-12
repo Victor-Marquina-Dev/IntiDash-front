@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Icon } from '@/components/icons';
+import { formatCurrencyParts } from '@/lib/format';
 
 type KpiTheme = 'green' | 'red' | 'neutral';
 
@@ -31,25 +32,25 @@ type ThemeTokens = {
 const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
   green: {
     dark: {
-      cardBg: 'linear-gradient(145deg,#0a1a0e,#081209)',
-      cardBrdDef: 'rgba(12,94,63,0.40)',
-      cardBrdHov: 'rgba(12,94,63,.70)',
-      cardShDef: '0 4px 20px rgba(0,0,0,.3)',
-      cardShHov: '0 12px 32px rgba(12,94,63,.30)',
-      accent: '#0C5E3F',
-      label: '#4a6b4a',
-      badgeBg: 'rgba(12,94,63,.25)',
-      badgeBrd: 'rgba(12,94,63,.40)',
-      badgeC: '#4DB384',
-      amtC: '#e8eaed',
-      decC: '#4a5060',
-      subC: '#5f6373',
-      barHl: 'rgba(12,94,63,.60)',
-      barNorm: '#0a1a0e',
-      btnBg: 'rgba(12,94,63,.20)',
-      btnBrd: 'rgba(12,94,63,.35)',
-      btnC: '#4DB384',
-      btnHovBg: '#0C5E3F',
+      cardBg: '#7A9A7A',
+      cardBrdDef: 'rgba(50,80,50,.30)',
+      cardBrdHov: 'rgba(50,80,50,.55)',
+      cardShDef: '0 4px 20px rgba(40,80,40,.20)',
+      cardShHov: '0 12px 32px rgba(40,80,40,.35)',
+      accent: '#2d5a2d',
+      label: '#3a5a3a',
+      badgeBg: 'rgba(255,255,255,.55)',
+      badgeBrd: 'rgba(255,255,255,.80)',
+      badgeC: '#2d5a2d',
+      amtC: '#1a3a1a',
+      decC: '#4a704a',
+      subC: '#3a5a3a',
+      barHl: 'rgba(30,60,30,.55)',
+      barNorm: 'rgba(255,255,255,.35)',
+      btnBg: 'rgba(255,255,255,.55)',
+      btnBrd: 'rgba(255,255,255,.80)',
+      btnC: '#2d5a2d',
+      btnHovBg: '#2d5a2d',
       btnHovC: '#fff',
     },
     light: {
@@ -77,26 +78,26 @@ const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
   },
   red: {
     dark: {
-      cardBg: '#1e1a1a',
-      cardBrdDef: '#2e1c1c',
-      cardBrdHov: 'rgba(239,68,68,.35)',
-      cardShDef: '0 4px 20px rgba(0,0,0,.3)',
-      cardShHov: '0 12px 32px rgba(239,68,68,.18)',
-      accent: '#ef4444',
-      label: '#a88b8b',
-      badgeBg: 'rgba(239,68,68,.15)',
-      badgeBrd: 'rgba(239,68,68,.25)',
-      badgeC: '#ef4444',
-      amtC: '#e8eaed',
-      decC: '#5a3a3a',
-      subC: '#7a5f5f',
-      barHl: 'rgba(239,68,68,.5)',
-      barNorm: '#2e2020',
-      btnBg: 'rgba(239,68,68,.12)',
-      btnBrd: 'rgba(239,68,68,.2)',
-      btnC: '#ef4444',
-      btnHovBg: 'rgba(239,68,68,.28)',
-      btnHovC: '#ef4444',
+      cardBg: '#BC9090',
+      cardBrdDef: 'rgba(100,40,40,.25)',
+      cardBrdHov: 'rgba(100,40,40,.50)',
+      cardShDef: '0 4px 20px rgba(100,40,40,.20)',
+      cardShHov: '0 12px 32px rgba(100,40,40,.35)',
+      accent: '#6a2020',
+      label: '#5a3030',
+      badgeBg: 'rgba(255,255,255,.55)',
+      badgeBrd: 'rgba(255,255,255,.80)',
+      badgeC: '#6a2020',
+      amtC: '#3a1a1a',
+      decC: '#7a4040',
+      subC: '#5a3030',
+      barHl: 'rgba(100,30,30,.55)',
+      barNorm: 'rgba(255,255,255,.35)',
+      btnBg: 'rgba(255,255,255,.55)',
+      btnBrd: 'rgba(255,255,255,.80)',
+      btnC: '#6a2020',
+      btnHovBg: '#6a2020',
+      btnHovC: '#fff',
     },
     light: {
       cardBg: '#f5eaea',
@@ -192,8 +193,8 @@ export function MiniBars({ data, labels, darkMode, theme, invertPct = false }: R
     return Number.isFinite(pct) ? pct : null;
   });
 
-  const posC = darkMode ? '#10b981' : '#3a6a3a';
-  const negC = darkMode ? '#f87171' : '#c84040';
+  const posC = darkMode ? 'rgba(255,255,255,0.82)' : '#1e5e1e';
+  const negC = darkMode ? 'rgba(255,255,255,0.82)' : '#8b1a1a';
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -249,15 +250,17 @@ export function MiniBars({ data, labels, darkMode, theme, invertPct = false }: R
 interface KpiCardProps {
   darkMode: boolean;
   theme: KpiTheme;
-  icon: string;
+  icon: React.ReactNode;
   label: string;
-  badge: React.ReactNode;
+  badge?: React.ReactNode;
   amount: number | null;
   subtitle: string;
   onDetail?: () => void;
   onCreate?: () => void;
+  onCardClick?: () => void;
   detailTitle?: string;
   createTitle?: string;
+  createSign?: 'plus' | 'minus';
   detailIcon?: (props: { size?: number; strokeWidth?: number }) => React.ReactNode;
   footer?: React.ReactNode;
   centerAmount?: boolean;
@@ -273,8 +276,10 @@ export function KpiCard({
   subtitle,
   onDetail,
   onCreate,
+  onCardClick,
   detailTitle = 'Ver historial',
   createTitle = 'Nuevo',
+  createSign = 'plus',
   detailIcon: DetailIcon = Icon.chart,
   footer,
   centerAmount = false,
@@ -302,22 +307,25 @@ export function KpiCard({
   }, [amount]);
 
   const t = THEMES[theme][darkMode ? 'dark' : 'light'];
-  const fmtMain = amount != null ? `S/ ${Math.floor(displayed).toLocaleString('es-PE')}` : '-';
-  const fmtDec  = amount != null ? `.${(displayed % 1).toFixed(2).slice(2)}` : '';
+  const amountParts = amount != null ? formatCurrencyParts(displayed) : null;
+  const fmtMain = amountParts ? `S/ ${amountParts.integer}` : '-';
+  const fmtDec  = amountParts ? amountParts.decimal : '';
 
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={onCardClick}
       style={{
         background: t.cardBg,
         borderRadius: 16,
         padding: '14px 16px 12px',
         border: `1px solid ${hovered ? t.cardBrdHov : t.cardBrdDef}`,
-        boxShadow: hovered ? t.cardShHov : t.cardShDef,
-        transition: 'transform .25s, box-shadow .25s, border-color .25s',
-        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-        cursor: 'default',
+        boxShadow: hovered
+          ? `${t.cardShHov}, inset 0 0 0 1000px rgba(17,24,39,0.13)`
+          : t.cardShDef,
+        transition: 'box-shadow .25s, border-color .25s',
+        cursor: onCardClick ? 'pointer' : 'default',
         fontFamily: 'var(--font-ui), system-ui, sans-serif',
         display: 'flex',
         flexDirection: 'column',
@@ -327,29 +335,31 @@ export function KpiCard({
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ fontSize: 15, lineHeight: 1, fontWeight: 900, color: t.accent }}>{icon}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', color: t.accent }}>{icon}</span>
             <span style={{ fontSize: 12, fontWeight: 800, color: t.label, letterSpacing: 1.5, textTransform: 'uppercase' }}>{label}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              background: t.badgeBg,
-              border: `1px solid ${t.badgeBrd}`,
-              color: t.badgeC,
-              fontSize: 11,
-              fontWeight: 700,
-              padding: '3px 9px',
-              borderRadius: 20,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}>
-              {badge}
-            </div>
+            {badge != null && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                background: t.badgeBg,
+                border: `1px solid ${t.badgeBrd}`,
+                color: t.badgeC,
+                fontSize: 11,
+                fontWeight: 700,
+                padding: '3px 9px',
+                borderRadius: 20,
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}>
+                {badge}
+              </div>
+            )}
             {onDetail && (
               <button
-                onClick={onDetail}
+                onClick={e => { e.stopPropagation(); onDetail(); }}
                 aria-label={detailTitle}
                 onMouseEnter={() => setBtnHov('detail')}
                 onMouseLeave={() => setBtnHov(null)}
@@ -373,7 +383,7 @@ export function KpiCard({
             )}
             {onCreate && (
               <button
-                onClick={onCreate}
+                onClick={e => { e.stopPropagation(); onCreate(); }}
                 aria-label={createTitle}
                 onMouseEnter={() => setBtnHov('create')}
                 onMouseLeave={() => setBtnHov(null)}
@@ -386,13 +396,18 @@ export function KpiCard({
                   background: btnHov === 'create' ? t.btnHovBg : t.btnBg,
                   color: btnHov === 'create' ? t.btnHovC : t.btnC,
                   cursor: 'pointer',
-                  display: 'grid',
-                  placeItems: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   transition: 'all .2s',
                   flexShrink: 0,
+                  padding: 0,
                 }}
               >
-                <Icon.plus size={12} strokeWidth={2} />
+                {createSign === 'minus'
+                  ? <span style={{ fontSize: 18, lineHeight: '28px', fontWeight: 300, display: 'block', marginTop: -1 }}>−</span>
+                  : <Icon.plus size={12} strokeWidth={2} />
+                }
               </button>
             )}
           </div>

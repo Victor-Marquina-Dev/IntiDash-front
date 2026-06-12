@@ -7,10 +7,10 @@ import type { CategoriaRow } from '@/shared/types/finance.types';
 // Modo claro: empiezan en el token semántico (#DC2626 / #16A34A)
 // Modo oscuro: empiezan un paso más suave (#EF4444 / #22C55E) porque los
 // fondos oscuros amplifican la saturación y los tonos muy vívidos se ven duros.
-const EGRESO_LIGHT  = ['#F5EAEA', '#EDD5D5', '#E0BFBF', '#CFAAAA', '#BC9090', '#A87878'] as const;
-const EGRESO_DARK   = ['#872F2F', '#9E3D3D', '#B55252', '#CC7070', '#E09090', '#F0B8B8'] as const;
-const INGRESO_LIGHT = ['#CCDCCC', '#BBD0BB', '#A8C0A8', '#8FA88F', '#7A9A7A', '#6B8B6B'] as const;
-const INGRESO_DARK  = ['#0C5E3F', '#1A7A52', '#2D9668', '#4DB384', '#78C9A4', '#A8DECA'] as const;
+const EGRESO_LIGHT  = ['#A87878', '#BC9090', '#CFAAAA', '#E0BFBF', '#EDD5D5', '#F5EAEA'] as const;
+const EGRESO_DARK   = ['#A87878', '#BC9090', '#CFAAAA', '#E0BFBF', '#EDD5D5', '#F5EAEA'] as const;
+const INGRESO_LIGHT = ['#6B8B6B', '#7A9A7A', '#8FA88F', '#A8C0A8', '#BBD0BB', '#CCDCCC'] as const;
+const INGRESO_DARK  = ['#6B8B6B', '#7A9A7A', '#8FA88F', '#A8C0A8', '#BBD0BB', '#CCDCCC'] as const;
 
 export type CategoryTab = 'egreso' | 'ingreso';
 

@@ -111,7 +111,7 @@ export function NotionSync({ darkMode = false, canWrite = true }: Readonly<{ dar
     if (!canWrite && configLoaded && !maskedTok) return 'Solo lectura. La sincronizacion la gestiona el dueno o editor';
     if (!canWrite && configLoaded && maskedTok && !isConfigured) return 'Solo lectura. Las tablas se configuran desde una cuenta con permisos';
     if (configLoaded && !maskedTok) return 'Configura tu token de Notion para sincronizar';
-    if (configLoaded && maskedTok && !isConfigured) return 'Configura las tablas en Ajustes para sincronizar';
+    if (configLoaded && maskedTok && !isConfigured) return 'Token guardado · Ve a Ajustes y asigna las tablas de Notion';
     if (!lastSync) return 'Sin sincronizar aún';
     if (!nowMs) return `Última sync registrada — ${NOTION_SYNC_ENDPOINTS.length} tablas`;
     const mins = Math.floor((nowMs - new Date(lastSync).getTime()) / 60000);

@@ -10,10 +10,9 @@ export const USERS = {
 /** Inicia sesión y espera a que el dashboard esté visible. */
 export async function login(page: Page, role: keyof typeof USERS) {
   const { email, password } = USERS[role];
-  await page.goto('/');
+  await page.goto('/login');
   await page.locator('input[type="email"]').fill(email);
   await page.locator('input[type="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
-  // Esperar logo/nav del dashboard
-  await expect(page.getByText('Florín').first()).toBeVisible({ timeout: 12_000 });
+  await expect(page.getByText('IntiDash').first()).toBeVisible({ timeout: 12_000 });
 }

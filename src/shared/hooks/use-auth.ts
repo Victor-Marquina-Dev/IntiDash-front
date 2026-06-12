@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { authService, type AuthUser } from '@/shared/services/auth.service';
+import { setActiveWorkspace } from '@/shared/services/api-client';
 
 type AuthStatus = 'loading' | 'authenticated' | 'anonymous';
 
@@ -74,6 +75,7 @@ export function useAuth() {
 
   const logout = React.useCallback(async () => {
     await authService.logout().catch(() => {});
+    setActiveWorkspace(null);
     setUser(null);
     setStatus('anonymous');
   }, []);

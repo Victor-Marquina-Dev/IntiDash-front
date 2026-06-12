@@ -2,10 +2,9 @@
 
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
+import { DASHBOARD_NAV_ITEMS, SETTINGS_NAV_ITEM, type ScreenId } from './navigation';
+import { IntiDashIcon } from '@/components/brand/IntiDashLogo';
 
-export type ScreenId = 'home' | 'tx' | 'cards' | 'goals' | 'charts' | 'debts' | 'notion';
-
-const GearIcon      = Icon.gear;
 const PanelLeftIcon = Icon.panelLeft;
 
 interface SidebarProps {
@@ -16,15 +15,6 @@ interface SidebarProps {
   mobile?: boolean;
   mobileOpen?: boolean;
 }
-
-const NAV: { id: ScreenId; label: string; I: (typeof Icon)[keyof typeof Icon] }[] = [
-  { id: 'home',   label: 'Dashboard',      I: Icon.home },
-  { id: 'cards',  label: 'Cuentas',        I: Icon.wallet },
-  { id: 'tx',     label: 'Transacciones',  I: Icon.list },
-  { id: 'charts', label: 'Análisis',       I: Icon.chart },
-  { id: 'goals',  label: 'Objetivos',      I: Icon.target },
-  { id: 'debts',  label: 'Deudas',         I: Icon.cards },
-];
 
 export function Sidebar({ active, setActive, expanded, setExpanded, mobile = false, mobileOpen = false }: Readonly<SidebarProps>) {
   const show = mobile ? true : expanded;
@@ -52,7 +42,6 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
         transition: 'width .25s cubic-bezier(.2,.8,.2,1)',
       }),
     }}>
-      {/* Brand */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: show ? '6px 8px 14px' : '6px 0 14px',
@@ -60,21 +49,25 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
       }}>
         <div style={{
           width: 36, height: 36, borderRadius: 10,
-          background: 'linear-gradient(135deg, #A8C066 0%, #6B8A30 100%)',
+          background: 'rgba(143,168,143,0.15)',
           display: 'grid', placeItems: 'center',
-          color: '#fff', fontWeight: 800, fontSize: 17,
-          letterSpacing: -1, flexShrink: 0,
-          boxShadow: '0 6px 18px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.22)',
-        }}>F</div>
+          flexShrink: 0,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)',
+          border: '1px solid rgba(143,168,143,0.25)',
+        }}>
+          <IntiDashIcon size={24} variant="white" />
+        </div>
         {show && (
           <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', letterSpacing: -0.4 }}>Florín</div>
-            <div style={{ fontSize: 10.5, color: C.navbarTextDim, letterSpacing: 0.2, marginTop: 1 }}>finanzas personal</div>
+            <div style={{ display: 'inline-flex', letterSpacing: '0.18em', lineHeight: 1, userSelect: 'none' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', fontFamily: 'var(--font-ui), system-ui, sans-serif' }}>INTI</span>
+              <span style={{ fontSize: 14, fontWeight: 300, color: '#fff', fontFamily: 'var(--font-ui), system-ui, sans-serif' }}>DASH</span>
+            </div>
+            <div style={{ fontSize: 10.5, color: C.navbarTextDim, letterSpacing: 0.2, marginTop: 3 }}>finanzas personal</div>
           </div>
         )}
       </div>
 
-      {/* User card */}
       {show && (
         <div style={{
           margin: '0 0 12px',
@@ -107,10 +100,9 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
         </div>
       )}
 
-      {/* Separador */}
       <div style={{ height: 1, background: C.navbarBorder, margin: '0 4px 10px' }} />
 
-      {NAV.map(n => {
+      {DASHBOARD_NAV_ITEMS.map(n => {
         const isActive = n.id === active;
         return (
           <button key={n.id}
@@ -144,19 +136,19 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
       <div style={{ flex: 1 }} />
 
       <button
-        onClick={() => setActive('notion')}
+        onClick={() => setActive(SETTINGS_NAV_ITEM.id)}
         className="fz-nav"
         style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: show ? '10px 12px' : '10px',
-          background: active === 'notion' ? 'rgba(255,255,255,0.10)' : 'transparent',
-          color: active === 'notion' ? '#fff' : C.navbarText,
+          background: active === SETTINGS_NAV_ITEM.id ? 'rgba(255,255,255,0.10)' : 'transparent',
+          color: active === SETTINGS_NAV_ITEM.id ? '#fff' : C.navbarText,
           border: 'none', borderRadius: 10, cursor: 'pointer',
-          fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: active === 'notion' ? 600 : 500,
+          fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: active === SETTINGS_NAV_ITEM.id ? 600 : 500,
           justifyContent: show ? 'flex-start' : 'center',
           position: 'relative',
         }}>
-        {active === 'notion' && (
+        {active === SETTINGS_NAV_ITEM.id && (
           <span style={{
             position: 'absolute', left: -12, top: '50%',
             transform: 'translateY(-50%)',
@@ -164,8 +156,8 @@ export function Sidebar({ active, setActive, expanded, setExpanded, mobile = fal
             background: C.olive, borderRadius: '0 2px 2px 0',
           }} />
         )}
-        <GearIcon size={18} />
-        {show && <span>Ajustes</span>}
+        <SETTINGS_NAV_ITEM.I size={18} />
+        {show && <span>{SETTINGS_NAV_ITEM.label}</span>}
       </button>
 
       {!mobile && (

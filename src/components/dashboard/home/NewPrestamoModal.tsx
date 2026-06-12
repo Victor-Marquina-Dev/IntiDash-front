@@ -4,6 +4,7 @@ import React from 'react';
 import { C } from '@/lib/colors';
 import { Button, ModalShell } from '@/components/ui';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
+import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
 
 export function NewPrestamoModal({ onClose, onSuccess }: Readonly<{ onClose: () => void; onSuccess: () => void }>) {
   const [nombre, setNombre]             = React.useState('');
@@ -31,7 +32,7 @@ export function NewPrestamoModal({ onClose, onSuccess }: Readonly<{ onClose: () 
     setSaving(true); setError('');
     try {
       await notionPaymentsService.createPrestamo({ nombre: nombre.trim(), montoPrestamo: montoPrestamo ? Number(montoPrestamo) : undefined, cuentaBancaria: cuentaBancaria || undefined, fecha: fecha || undefined });
-      onSuccess();
+      dispatchDataSynced(); onSuccess();
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Error al guardar.'); setSaving(false); }
   }
 

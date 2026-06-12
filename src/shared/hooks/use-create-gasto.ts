@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
+import { dispatchDataSyncedSoon } from '@/shared/hooks/use-data-synced-refresh';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import type { GastoDeudaRow, GastoUnicoRow } from '@/shared/types/finance.types';
 
@@ -31,7 +31,7 @@ export function useCreateGasto() {
         await notionPaymentsService.createGastoDeuda(body as Partial<GastoDeudaRow>);
       }
       setStatus('ok');
-      dispatchDataSynced();
+      dispatchDataSyncedSoon();
       return true;
     } catch (error: unknown) {
       setStatus('error');

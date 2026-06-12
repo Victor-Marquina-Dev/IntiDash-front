@@ -1,6 +1,7 @@
 'use client';
 
 import { KpiCard } from './KpiCard';
+import { Icon } from '@/components/icons';
 
 interface AhorroKpiCardProps {
   darkMode: boolean;
@@ -20,14 +21,13 @@ export function AhorroKpiCard({ darkMode, amount, delta, accounts, onDetail, onC
     <KpiCard
       darkMode={darkMode}
       theme="neutral"
-      icon="💰"
+      icon={<Icon.target size={16} strokeWidth={2.2} />}
       label="Ahorro"
       badge={delta}
       amount={amount}
       subtitle={subtitle}
-      onDetail={onDetail}
+      onCardClick={onDetail}
       onCreate={onCreate}
-      detailTitle="Ver historial"
       createTitle="Nueva cuenta"
       centerAmount
     />
