@@ -53,7 +53,7 @@ export function Dashboard({
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('onboarding') === '1' && !localStorage.getItem(onboardingKey)) {
-      setShowOnboarding(true);
+      queueMicrotask(() => setShowOnboarding(true));
     }
   }, [onboardingKey]);
 

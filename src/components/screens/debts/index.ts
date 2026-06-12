@@ -1,0 +1,1 @@
+export { DeudaScreen } from './DeudaScreen';
