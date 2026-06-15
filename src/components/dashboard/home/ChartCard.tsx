@@ -3,16 +3,17 @@
 import React from 'react';
 import type { BP } from '@/lib/breakpoints';
 import { useDashboardChart } from '@/shared/hooks/use-dashboard-chart';
-import { AreaLineChart, DebtLineChart, EmptyLineChart } from './ChartVisuals';
+import { AreaLineChart, DebtLineChart, EmptyLineChart, NetLineChart } from './ChartVisuals';
 import { CardHeaderSection } from './CardHeaderSection';
 import { Icon } from '@/components/icons';
+import { RADIUS } from '@/lib/radius';
 
 const CARD_BG = {
-  dark: { bg: 'linear-gradient(145deg,#1A1D21,#16181C)', brd: 'rgba(255,255,255,0.08)', sh: '0 4px 24px rgba(0,0,0,.5)' },
-  light: { bg: '#FFFFFF', brd: 'rgba(17,24,39,0.08)', sh: '0 1px 2px rgba(17,24,39,.04)' },
+  dark:  { bg: 'linear-gradient(145deg,#1A1D21,#16181C)', brd: 'rgba(255,255,255,0.08)', sh: '0 4px 24px rgba(0,0,0,.5)' },
+  light: { bg: 'rgba(234,224,213,0.97)',                  brd: 'rgba(198,172,143,0.60)', sh: '0 1px 4px rgba(94,80,63,.08)' },
 };
 
-type ChartSection = 'comparativa' | 'deuda';
+type ChartSection = 'comparativa' | 'deuda' | 'neto';
 
 export function ChartCard({ bp, darkMode, onNavigate }: Readonly<{ accent?: string; bp: BP; darkMode?: boolean; onNavigate?: (screen: string) => void }>) {
   const [section, setSection] = React.useState<ChartSection>('comparativa');
@@ -26,6 +27,7 @@ export function ChartCard({ bp, darkMode, onNavigate }: Readonly<{ accent?: stri
   const tabs = [
     { id: 'comparativa', label: 'Comparativa', badge: chart.comparativa.badge },
     { id: 'deuda', label: 'Deuda', badge: chart.deuda.badge },
+    { id: 'neto', label: 'Neto', badge: chart.neto.badge },
   ];
 
   return (
@@ -34,7 +36,7 @@ export function ChartCard({ bp, darkMode, onNavigate }: Readonly<{ accent?: stri
       onMouseLeave={() => setHovered(false)}
       style={{
         gridColumn: span,
-        borderRadius: 22,
+        borderRadius: RADIUS.dashboardCard,
         overflow: 'hidden',
         background: card.bg,
         border: `1px solid ${hovered ? (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : card.brd}`,
@@ -81,6 +83,24 @@ export function ChartCard({ bp, darkMode, onNavigate }: Readonly<{ accent?: stri
             height={chartHeight}
             darkMode={isDark}
           />
+        )}
+        {section === 'neto' && (
+          chart.neto.hasData
+            ? <NetLineChart
+                months={chart.neto.months}
+                net={chart.neto.net}
+                height={chartHeight}
+                darkMode={isDark}
+              />
+            : <EmptyLineChart
+                months={chart.neto.months.length > 0 ? chart.neto.months : ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']}
+                height={chartHeight}
+                darkMode={isDark}
+                legendItems={[
+                  { label: 'Neto positivo', color: '#3C7828' },
+                  { label: 'Neto negativo', color: '#B43232' },
+                ]}
+              />
         )}
       </div>
     </div>

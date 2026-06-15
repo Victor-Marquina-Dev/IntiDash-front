@@ -39,7 +39,9 @@ export function useDashboardChart() {
 
   const incomeSlice  = rawIncome.slice(0, dataLen) as number[];
   const expenseSlice = rawExpense.slice(0, dataLen) as number[];
+  const netSlice = incomeSlice.map((income, index) => income - (expenseSlice[index] ?? 0));
   const hasRealData  = incomeSlice.some(v => v > 0) || expenseSlice.some(v => v > 0);
+  const hasNetData = netSlice.some(v => v !== 0);
 
   const debtRemaining = debtData?.remaining ?? [];
   const debtDataLen = debtData ? getLengthUntilNull(debtRemaining) : 0;
@@ -58,6 +60,12 @@ export function useDashboardChart() {
       months: CHART_MONTHS.slice(0, debtDataLen),
       remaining: debtRemaining.slice(0, debtDataLen),
       badge: hasDebtData ? `${debtDataLen}m` : '-',
+    },
+    neto: {
+      months: CHART_MONTHS.slice(0, dataLen),
+      net: netSlice,
+      badge: hasNetData ? `${dataLen}m` : '-',
+      hasData: hasNetData,
     },
   };
 }

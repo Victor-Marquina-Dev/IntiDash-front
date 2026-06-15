@@ -54,7 +54,7 @@ export function AccountItem({ cuenta, active, onSelect, darkMode = false }: Read
     >
       <div style={{
         width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-        background: logoSrc && !imgError ? '#fff' : (active ? C.primary : '#8FA88F'),
+        background: logoSrc && !imgError ? '#fff' : (active ? C.primary : '#3C7828'),
         color: '#fff',
         display: 'grid', placeItems: 'center',
         fontSize: 12, fontWeight: 900, letterSpacing: 0.3,

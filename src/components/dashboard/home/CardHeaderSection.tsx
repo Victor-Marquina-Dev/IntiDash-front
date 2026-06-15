@@ -2,25 +2,24 @@
 
 import React from 'react';
 import { Icon } from '@/components/icons';
+import { RADIUS } from '@/lib/radius';
 
 const TITLE_ROW_HEIGHT = 42;
-const TABS_ROW_HEIGHT = 46;
-const HEADER_BLOCK_HEIGHT = TITLE_ROW_HEIGHT + TABS_ROW_HEIGHT;
+const TABS_ROW_HEIGHT  = 34;
 const ROW_PAD_X = '0 16px';
 const ACTION_BTN_SIZE = 28;
 const ACTION_BTN_RADIUS = 8;
-const TAB_HEIGHT = 32;
-const TAB_PADDING = '0 14px';
+const TAB_HEIGHT = 26;
 const TAB_GAP = 6;
 
 const DARK = {
   labelC: 'rgba(255,255,255,0.38)',
-  tActiveBg: 'rgba(255,255,255,0.90)',
-  tActiveC: '#111',
+  tActiveBg: '#6B4F33',
+  tActiveC: '#fff',
   tActiveSh: 'none',
-  tInBg: 'rgba(255,255,255,0.04)',
-  tInC: 'rgba(255,255,255,0.38)',
-  tInBrd: 'rgba(255,255,255,0.08)',
+  tInBg: 'transparent',
+  tInC: 'rgba(255,255,255,0.35)',
+  tInBrd: 'transparent',
   btnBg: 'rgba(255,255,255,0.06)',
   btnBrd: 'rgba(255,255,255,0.12)',
   btnC: 'rgba(255,255,255,0.65)',
@@ -29,24 +28,24 @@ const DARK = {
 };
 
 const LIGHT = {
-  labelC: '#6B7280',
-  tActiveBg: '#111827',
+  labelC: '#5E503F',
+  tActiveBg: '#7D5A38',
   tActiveC: '#fff',
   tActiveSh: 'none',
-  tInBg: 'rgba(17,24,39,0.04)',
-  tInC: '#6B7280',
-  tInBrd: 'rgba(17,24,39,0.08)',
-  btnBg: 'rgba(17,24,39,0.04)',
-  btnBrd: 'rgba(17,24,39,0.10)',
-  btnC: '#374151',
-  btnHovBg: '#111827',
+  tInBg: 'transparent',
+  tInC: 'rgba(60,32,8,0.38)',
+  tInBrd: 'transparent',
+  btnBg: 'rgba(94,80,63,0.08)',
+  btnBrd: 'rgba(94,80,63,0.20)',
+  btnC: '#5E503F',
+  btnHovBg: '#7D5A38',
   btnHovC: '#fff',
 };
 
 export interface CardTab {
   id: string;
   label: string;
-  badge: string | number;
+  badge?: string | number;
 }
 
 interface CardHeaderSectionProps {
@@ -55,6 +54,9 @@ interface CardHeaderSectionProps {
   tabs: CardTab[];
   activeTab: string;
   onTabChange: (id: string) => void;
+  subTabs?: CardTab[];
+  activeSubTab?: string;
+  onSubTabChange?: (id: string) => void;
   onDetail?: () => void;
   onCreate?: () => void;
   onChart?: () => void;
@@ -65,12 +67,74 @@ interface CardHeaderSectionProps {
   darkMode?: boolean;
 }
 
+// Fila de tabs principales reutilizable — garantiza tabs idénticos en todas las cards
+export function CardTabsRow({
+  tabs,
+  activeTab,
+  onTabChange,
+  darkMode = false,
+  padX = ROW_PAD_X,
+  style,
+}: Readonly<{
+  tabs: CardTab[];
+  activeTab: string;
+  onTabChange: (id: string) => void;
+  darkMode?: boolean;
+  padX?: string;
+  style?: React.CSSProperties;
+}>) {
+  const tokens = darkMode ? DARK : LIGHT;
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: TAB_GAP,
+      height: TABS_ROW_HEIGHT,
+      padding: padX,
+      boxSizing: 'border-box',
+      overflowX: 'auto',
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      ...style,
+    }}>
+      {tabs.map(tab => {
+        const active = activeTab === tab.id;
+        return (
+          <button key={tab.id} onClick={() => onTabChange(tab.id)} style={{
+            height: TAB_HEIGHT,
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 5,
+            borderRadius: RADIUS.dashboardHeader,
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            border: 'none',
+            background: active ? tokens.tActiveBg : tokens.tInBg,
+            color: active ? tokens.tActiveC : tokens.tInC,
+            fontFamily: 'var(--font-ui),system-ui,sans-serif',
+            boxShadow: 'none',
+            transition: 'all .18s',
+          }}>
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CardHeaderSection({
-  icon,
   label,
   tabs,
   activeTab,
   onTabChange,
+  subTabs,
+  activeSubTab,
+  onSubTabChange,
   onDetail,
   onCreate,
   onChart,
@@ -101,8 +165,10 @@ export function CardHeaderSection({
     flexShrink: 0,
   });
 
+  const hasSubTabs = subTabs && subTabs.length > 0;
+
   return (
-    <div style={{ minHeight: HEADER_BLOCK_HEIGHT, flexShrink: 0 }}>
+    <div style={{ flexShrink: 0 }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -112,7 +178,6 @@ export function CardHeaderSection({
         boxSizing: 'border-box',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', color: tokens.labelC, flexShrink: 0 }}>{icon}</span>
           <span style={{
             fontSize: 12,
             fontWeight: 800,
@@ -170,47 +235,63 @@ export function CardHeaderSection({
         )}
       </div>
 
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: TAB_GAP,
-        height: TABS_ROW_HEIGHT,
-        padding: ROW_PAD_X,
-        boxSizing: 'border-box',
-        overflowX: 'auto',
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-      }}>
-        {tabs.map(tab => {
-          const active = activeTab === tab.id;
-          return (
-            <button key={tab.id} onClick={() => onTabChange(tab.id)} style={{
-              height: TAB_HEIGHT,
-              padding: TAB_PADDING,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              border: `1px solid ${active ? tokens.tActiveBg : tokens.tInBrd}`,
-              background: active ? tokens.tActiveBg : tokens.tInBg,
-              color: active ? tokens.tActiveC : tokens.tInC,
-              fontFamily: 'var(--font-ui),system-ui,sans-serif',
-              boxShadow: active && darkMode ? tokens.tActiveSh : 'none',
-              transition: 'all .18s',
-              flexShrink: 0,
-            }}>
-              {tab.label}
-              <span style={{ fontSize: 10, fontWeight: 900, padding: '1px 5px', borderRadius: 8, background: 'rgba(255,255,255,.2)' }}>
-                {tab.badge}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Fila de tabs principales */}
+      <CardTabsRow
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+        darkMode={darkMode}
+      />
+
+      {/* Fila de sub-tabs (opcional) */}
+      {hasSubTabs && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: TAB_GAP,
+          height: 38,
+          padding: ROW_PAD_X,
+          boxSizing: 'border-box',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          paddingBottom: 6,
+        }}>
+          {subTabs!.map(sub => {
+            const active = activeSubTab === sub.id;
+            return (
+              <button key={sub.id} onClick={() => onSubTabChange?.(sub.id)} style={{
+                height: 28,
+                padding: '0 12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                borderRadius: RADIUS.dashboardHeader,
+                fontSize: 11,
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                border: 'none',
+                background: active ? tokens.tActiveBg : tokens.tInBg,
+                color: active ? tokens.tActiveC : tokens.tInC,
+                fontFamily: 'var(--font-ui),system-ui,sans-serif',
+                boxShadow: 'none',
+                transition: 'all .18s',
+                flexShrink: 0,
+              }}>
+                {sub.label}
+                <span style={{
+                  fontSize: 9, fontWeight: 900, padding: '1px 5px', borderRadius: 6,
+                  background: active ? 'rgba(255,255,255,0.22)' : (darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(60,32,8,0.10)'),
+                  color: active ? '#fff' : tokens.tInC,
+                }}>
+                  {sub.badge}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

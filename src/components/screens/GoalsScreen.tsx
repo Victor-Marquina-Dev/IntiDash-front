@@ -35,9 +35,9 @@ const MODAL_BG: React.CSSProperties = {
 
 // Colores y íconos predefinidos para las metas
 const GOAL_COLORS = [
-  { label: 'Verde',   value: '#8FA88F' },
+  { label: 'Verde',   value: '#3C7828' },
   { label: 'Ámbar',   value: '#d97706' },
-  { label: 'Rojo',    value: '#CF9C9C' },
+  { label: 'Rojo',    value: '#B43232' },
   { label: 'Azul',    value: '#2563EB' },
   { label: 'Morado',  value: '#7C3AED' },
   { label: 'Negro',   value: '#111827' },
@@ -356,7 +356,7 @@ function GoalModal({ mode, initial, saving, onSave, onClose, onDelete }: GoalMod
   const [montoMeta,   setMontoMeta]   = React.useState(String(initial?.montoMeta ?? ''));
   const [montoActual, setMontoActual] = React.useState(String(initial?.montoActual ?? '0'));
   const [fechaFin,    setFechaFin]    = React.useState(initial?.fechaFin ? initial.fechaFin.slice(0, 10) : '');
-  const [color,       setColor]       = React.useState(initial?.color ?? '#8FA88F');
+  const [color,       setColor]       = React.useState(initial?.color ?? '#3C7828');
   const [icono,       setIcono]       = React.useState(initial?.icono ?? 'flame');
   const [confirmDel,  setConfirmDel]  = React.useState(false);
 
@@ -520,11 +520,11 @@ function GoalModal({ mode, initial, saving, onSave, onClose, onDelete }: GoalMod
 
 // ── Plantillas de inicio rápido ───────────────────────────────────────────
 const TEMPLATES: Partial<GoalRow>[] = [
-  { nombre: 'Fondo de emergencia', descripcion: 'Cubre 6 meses de gastos', montoMeta: 10000, montoActual: 0, color: '#8FA88F', icono: 'heart'    },
+  { nombre: 'Fondo de emergencia', descripcion: 'Cubre 6 meses de gastos', montoMeta: 10000, montoActual: 0, color: '#3C7828', icono: 'heart'    },
   { nombre: 'Viaje / Vacaciones',  descripcion: 'Tu próximo destino soñado', montoMeta: 3000,  montoActual: 0, color: '#111827', icono: 'flame'   },
   { nombre: 'Laptop nueva',        descripcion: 'Equipo de trabajo o hobby', montoMeta: 1500,  montoActual: 0, color: '#d97706', icono: 'book'    },
   { nombre: 'Vehículo propio',     descripcion: 'Meta a largo plazo',        montoMeta: 8000,  montoActual: 0, color: '#111827', icono: 'car'     },
-  { nombre: 'Hogar / Reforma',     descripcion: 'Mejoras para tu espacio',   montoMeta: 5000,  montoActual: 0, color: '#8FA88F', icono: 'home'    },
+  { nombre: 'Hogar / Reforma',     descripcion: 'Mejoras para tu espacio',   montoMeta: 5000,  montoActual: 0, color: '#3C7828', icono: 'home'    },
 ];
 
 // ── Empty state ───────────────────────────────────────────────────────────
@@ -545,10 +545,10 @@ function EmptyState({ onCreate, onTemplate }: { onCreate: () => void; onTemplate
         {/* Icono central decorativo */}
         <div style={{
           width: 64, height: 64, borderRadius: 20, marginBottom: 4,
-          background: 'linear-gradient(145deg,#8FA88F22,#8FA88F0d)',
-          border: '1.5px solid #8FA88F38',
-          display: 'grid', placeItems: 'center', color: '#8FA88F',
-          boxShadow: '0 8px 24px #8FA88F20',
+          background: 'linear-gradient(145deg,#3C782822,#3C78280d)',
+          border: '1.5px solid #3C782838',
+          display: 'grid', placeItems: 'center', color: '#3C7828',
+          boxShadow: '0 8px 24px #3C782820',
         }}>
           <Icon.target size={28} strokeWidth={1.75} />
         </div>

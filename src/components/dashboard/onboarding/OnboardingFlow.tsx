@@ -5,7 +5,7 @@ import { IntiDashWordmark } from '@/components/brand/IntiDashLogo';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
 
-const SAGE = '#8FA88F';
+const SAGE = '#3C7828';
 const SAGE_DEEP = '#6B8C6B';
 const INK = '#171C1A';
 const SUB = '#5A6661';
@@ -365,7 +365,7 @@ export function OnboardingFlow({ userName, onFinish, onGoToNotion }: Readonly<{
                     {accounts.length > 1 && (
                       <button
                         onClick={() => setAccounts(prev => prev.filter((_, idx) => idx !== i))}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 12, color: '#CF9C9C', fontWeight: 600, fontFamily: FONT }}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 12, color: '#B43232', fontWeight: 600, fontFamily: FONT }}
                       >
                         Quitar
                       </button>

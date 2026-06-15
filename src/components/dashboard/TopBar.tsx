@@ -6,6 +6,7 @@ import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
 import { IntiDashWordmark } from '@/components/brand/IntiDashLogo';
 import { useBreakpoint } from '@/lib/breakpoints';
+import { RADIUS } from '@/lib/radius';
 import type { AuthUser } from '@/shared/services/auth.service';
 import { notionPaymentsService, NOTION_SYNC_ENDPOINTS } from '@/shared/services/notion-payments.service';
 import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
@@ -20,6 +21,9 @@ const GearIcon     = Icon.gear;
 const MoonIcon     = Icon.moon;
 const SunIcon      = Icon.sun;
 const TrashIcon    = Icon.trash;
+const NAV_GROUP_RADIUS = RADIUS.dashboardHeader;
+const NAV_ACTIVE_RADIUS = RADIUS.dashboardHeader;
+const NAV_IDLE_RADIUS = RADIUS.dashboardHeader;
 
 function MomotechLogo({ dark = false }: Readonly<{ dark?: boolean }>) {
   return <IntiDashWordmark dark={dark} size={28} />;
@@ -31,7 +35,7 @@ interface TopBarProps {
   setActive?: (id: ScreenId) => void;
   onNavigateToNotionSync?: () => void;
   darkMode?: boolean;
-  onToggleDark?: () => void;
+  onToggleDark?: (origin?: { x: number; y: number }) => void;
   user?: AuthUser | null;
   onLogout?: () => void;
   canWrite?: boolean;
@@ -56,7 +60,7 @@ function NavTab({
         style={{
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '9px 18px',
-          borderRadius: 24,
+          borderRadius: NAV_ACTIVE_RADIUS,
           background: dark ? '#f0f0ee' : '#111827',
           border: 'none',
           color: dark ? '#0d1f0d' : '#ffffff',
@@ -84,7 +88,7 @@ function NavTab({
       style={{
         display: 'flex', alignItems: 'center',
         padding: '9px 16px',
-        borderRadius: 24,
+        borderRadius: NAV_IDLE_RADIUS,
         background: hovered ? (dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)') : 'transparent',
         border: 'none',
         color: dark ? 'rgba(255,255,255,0.55)' : '#6b7280',
@@ -161,6 +165,7 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
   const [hasToken,    setHasToken]    = React.useState(false);
   const [exportHovered, setExportHovered] = React.useState(false);
   const [exporting, setExporting] = React.useState(false);
+  const [darkModeHovered, setDarkModeHovered] = React.useState(false);
 
   React.useEffect(() => {
     notionPaymentsService.getConfig()
@@ -324,9 +329,9 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
               display: 'flex', alignItems: 'center',
               gap: isTablet ? 1 : 2,
               padding: '5px 6px',
-              borderRadius: 28,
-              background: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
-              border: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              borderRadius: NAV_GROUP_RADIUS,
+              background: 'rgba(255,255,255,0.10)',
+              border: `1px solid rgba(255,255,255,0.16)`,
             }}>
               {DASHBOARD_NAV_ITEMS.map(tab => (
                 <NavTab
@@ -456,12 +461,29 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
           {!isMobile && <NotificationBell dark={darkMode} />}
 
           {/* Dark mode */}
-          <IconBtn onClick={onToggleDark} label={darkMode ? 'Modo claro' : 'Modo oscuro'} dark={darkMode}>
-            {darkMode
-              ? <SunIcon  size={15} strokeWidth={1.8} />
-              : <MoonIcon size={15} strokeWidth={1.8} />
-            }
-          </IconBtn>
+          <button
+            aria-label={darkMode ? 'Modo claro' : 'Modo oscuro'}
+            title={darkMode ? 'Modo claro' : 'Modo oscuro'}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              onToggleDark?.({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+            }}
+            onMouseEnter={() => setDarkModeHovered(true)}
+            onMouseLeave={() => setDarkModeHovered(false)}
+            style={{
+              width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+              background: darkModeHovered
+                ? (darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.04)')
+                : 'transparent',
+              border: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+              color: darkMode ? 'rgba(255,255,255,0.6)' : '#6b7280',
+              cursor: 'pointer',
+              display: 'grid', placeItems: 'center',
+              transition: 'background 0.12s',
+            }}
+          >
+            {darkMode ? <SunIcon size={15} strokeWidth={1.8} /> : <MoonIcon size={15} strokeWidth={1.8} />}
+          </button>
 
           {/* Divider */}
           <div style={{ width: 1, height: 16, background: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.09)', flexShrink: 0, marginLeft: 2 }} />

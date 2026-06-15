@@ -7,6 +7,7 @@ import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
 import { NOTION_SYNC_ENDPOINTS, notionPaymentsService } from '@/shared/services/notion-payments.service';
 import { NotionDataModal, type NSCat, type NSCta, type NSDeu, type NSGasD, type NSGasU, type NSIng, type NSPre, type NSTrf } from './NotionDataModal';
 import { getActiveWorkspace } from '@/shared/services/workspace.service';
+import { RADIUS } from '@/lib/radius';
 
 const lsKey = () => `notion_last_sync_${getActiveWorkspace() ?? 'default'}`;
 
@@ -127,7 +128,7 @@ export function NotionSync({ darkMode = false, canWrite = true }: Readonly<{ dar
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          borderRadius: 22,
+          borderRadius: RADIUS.dashboardCard,
           background: darkMode ? 'linear-gradient(145deg,#1A1D21,#16181C)' : '#FFFFFF',
           border: `1px solid ${hovered ? (darkMode ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : (darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.08)')}`,
           boxShadow: hovered ? (darkMode ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : (darkMode ? '0 4px 24px rgba(0,0,0,.4)' : '0 1px 2px rgba(17,24,39,.04)'),

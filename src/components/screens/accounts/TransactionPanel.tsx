@@ -3,6 +3,7 @@
 import React from 'react';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewIngresoModal } from '@/components/dashboard/home/NewIngresoModal';
 import { NewGastoModal } from '@/components/dashboard/home/NewGastoModal';
 import { dispatchDataSynced } from '@/shared/hooks/use-data-synced-refresh';
@@ -237,36 +238,34 @@ function TransactionPanel({ cuentaNombre, ingresos, gastos, transferencias, show
 
       {/* Tabs + buscador */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
         gap: 12, flexShrink: 0,
-        padding: '12px 32px',
+        padding: '12px 32px 0',
         borderBottom: `1px solid ${brd}`,
       }}>
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none' }}>
-          {TABS.map(t => {
-            const isActive = tab === t.id;
-            return (
-              <button key={t.id} onClick={() => changeTab(t.id)} style={{
-                height: 32, padding: '0 14px',
-                display: 'flex', alignItems: 'center', gap: 6,
-                borderRadius: 20, fontSize: 12, fontWeight: 700,
-                cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--font-ui)',
-                border: `1px solid ${isActive ? C.primary : (D ? 'rgba(255,255,255,0.10)' : 'rgba(17,24,39,0.08)')}`,
-                background: isActive ? C.primary : (D ? 'rgba(255,255,255,0.05)' : 'rgba(17,24,39,0.04)'),
-                color: isActive ? '#fff' : (D ? 'rgba(255,255,255,0.50)' : C.textDim),
-                transition: 'all .18s', flexShrink: 0,
-              }}>
-                {t.label}
-                <span style={{
-                  fontSize: 10, fontWeight: 900, padding: '1px 6px', borderRadius: 8,
-                  background: isActive ? 'rgba(255,255,255,0.22)' : (D ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.09)'),
-                  color: isActive ? '#fff' : (D ? 'rgba(255,255,255,0.38)' : C.textMute), transition: 'all .18s',
-                }}>
-                  {t.count}
-                </span>
-              </button>
-            );
-          })}
+        <div style={{ '--color-primary': D ? '#C6AC8F' : '#8C6F4E' } as React.CSSProperties}>
+          <Tabs value={tab} onValueChange={(v) => changeTab(v as TxTab)}>
+            <TabsList
+              className="h-auto rounded-none bg-transparent p-0 border-none"
+            >
+              {TABS.map(t => (
+                <TabsTrigger
+                  key={t.id}
+                  value={t.id}
+                  className="relative rounded-none py-2 after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary hover:bg-transparent"
+                  style={{
+                    fontSize: 12, fontWeight: 700,
+                    color: tab === t.id
+                      ? (D ? '#C6AC8F' : '#8C6F4E')
+                      : (D ? 'rgba(255,255,255,0.45)' : C.textDim),
+                    fontFamily: 'var(--font-ui), system-ui, sans-serif',
+                  }}
+                >
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>

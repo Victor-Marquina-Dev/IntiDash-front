@@ -3,8 +3,14 @@
 import React from 'react';
 import { Icon } from '@/components/icons';
 import { formatCurrencyParts } from '@/lib/format';
+import { RADIUS } from '@/lib/radius';
 
 type KpiTheme = 'green' | 'red' | 'neutral';
+
+const KPI_AMOUNT_DARK = 'rgba(255,255,255,0.90)';
+const KPI_AMOUNT_LIGHT = '#2C1A0E';
+const KPI_DEC_DARK = 'rgba(255,255,255,0.12)';
+const KPI_DEC_LIGHT = 'rgba(17,24,39,0.18)';
 
 type ThemeTokens = {
   cardBg: string;
@@ -42,8 +48,8 @@ const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
       badgeBg: 'rgba(255,255,255,.55)',
       badgeBrd: 'rgba(255,255,255,.80)',
       badgeC: '#2d5a2d',
-      amtC: '#1a3a1a',
-      decC: '#4a704a',
+      amtC: KPI_AMOUNT_DARK,
+      decC: KPI_DEC_DARK,
       subC: '#3a5a3a',
       barHl: 'rgba(30,60,30,.55)',
       barNorm: 'rgba(255,255,255,.35)',
@@ -64,8 +70,8 @@ const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
       badgeBg: 'rgba(255,255,255,.6)',
       badgeBrd: 'rgba(255,255,255,.85)',
       badgeC: '#2d6a2d',
-      amtC: '#1a3a1a',
-      decC: '#7aA07a',
+      amtC: KPI_AMOUNT_LIGHT,
+      decC: KPI_DEC_LIGHT,
       subC: '#6a8f6a',
       barHl: 'rgba(35,80,35,.45)',
       barNorm: 'rgba(255,255,255,.4)',
@@ -88,8 +94,8 @@ const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
       badgeBg: 'rgba(255,255,255,.55)',
       badgeBrd: 'rgba(255,255,255,.80)',
       badgeC: '#6a2020',
-      amtC: '#3a1a1a',
-      decC: '#7a4040',
+      amtC: KPI_AMOUNT_DARK,
+      decC: KPI_DEC_DARK,
       subC: '#5a3030',
       barHl: 'rgba(100,30,30,.55)',
       barNorm: 'rgba(255,255,255,.35)',
@@ -110,8 +116,8 @@ const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
       badgeBg: 'rgba(255,255,255,.6)',
       badgeBrd: 'rgba(255,255,255,.85)',
       badgeC: '#8b2020',
-      amtC: '#3a1a1a',
-      decC: '#c07a7a',
+      amtC: KPI_AMOUNT_LIGHT,
+      decC: KPI_DEC_LIGHT,
       subC: '#8b6a6a',
       barHl: 'rgba(150,40,40,.4)',
       barNorm: 'rgba(255,255,255,.4)',
@@ -134,8 +140,8 @@ const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
       badgeBg: 'rgba(255,255,255,.08)',
       badgeBrd: 'rgba(255,255,255,.14)',
       badgeC: '#c8ccd4',
-      amtC: '#e8eaed',
-      decC: '#5a606c',
+      amtC: KPI_AMOUNT_DARK,
+      decC: KPI_DEC_DARK,
       subC: '#7a808c',
       barHl: 'rgba(255,255,255,.35)',
       barNorm: '#26282c',
@@ -156,8 +162,8 @@ const THEMES: Record<KpiTheme, { dark: ThemeTokens; light: ThemeTokens }> = {
       badgeBg: 'rgba(17,24,39,0.05)',
       badgeBrd: 'rgba(17,24,39,0.10)',
       badgeC: '#374151',
-      amtC: '#111827',
-      decC: '#9CA3AF',
+      amtC: KPI_AMOUNT_LIGHT,
+      decC: KPI_DEC_LIGHT,
       subC: '#6B7280',
       barHl: 'rgba(17,24,39,.35)',
       barNorm: 'rgba(17,24,39,.08)',
@@ -269,7 +275,6 @@ interface KpiCardProps {
 export function KpiCard({
   darkMode,
   theme,
-  icon,
   label,
   badge,
   amount,
@@ -318,7 +323,7 @@ export function KpiCard({
       onClick={onCardClick}
       style={{
         background: t.cardBg,
-        borderRadius: 16,
+        borderRadius: RADIUS.dashboardCard,
         padding: '14px 16px 12px',
         border: `1px solid ${hovered ? t.cardBrdHov : t.cardBrdDef}`,
         boxShadow: hovered
@@ -335,7 +340,6 @@ export function KpiCard({
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', color: t.accent }}>{icon}</span>
             <span style={{ fontSize: 12, fontWeight: 800, color: t.label, letterSpacing: 1.5, textTransform: 'uppercase' }}>{label}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>

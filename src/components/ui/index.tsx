@@ -4,6 +4,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
+import { RADIUS } from '@/lib/radius';
 
 export const FORM_INPUT_STYLE: React.CSSProperties = {
   width: '100%',
@@ -66,7 +67,7 @@ export function Card({ children, style, hoverable, pad = 20, className = '' }: C
       style={{
         background: C.card,
         border: `1px solid ${C.border}`,
-        borderRadius: 16,
+        borderRadius: RADIUS.dashboardCard,
         padding: pad,
         position: 'relative',
         display: 'flex',

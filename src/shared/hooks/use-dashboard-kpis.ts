@@ -57,7 +57,9 @@ function mapAhorroAccounts(rows: CuentaBancariaRow[]): AhorroAccount[] {
 
 export function useDashboardKpis() {
   const [ingTotal, setIngTotal] = React.useState<number | null>(null);
+  const [ingCount, setIngCount] = React.useState(0);
   const [gasTotal, setGasTotal] = React.useState<number | null>(null);
+  const [gasCount, setGasCount] = React.useState(0);
   const [suscTotal, setSuscTotal] = React.useState<number | null>(null);
   const [suscCount, setSuscCount] = React.useState(0);
   const [ingMonthly, setIngMonthly] = React.useState<number[]>([]);
@@ -76,20 +78,19 @@ export function useDashboardKpis() {
       notionPaymentsService.getCuentasBancarias(),
     ]).then(([ingresos, gastosUnicos, gastosDeudas, deudas, chart, cuentas]) => {
       const currentMonth = new Date();
-      const ingresosTotal = ingresos
-        .filter(row => isDateInMonth(row.fecha, currentMonth))
-        .reduce((sum, row) => sum + (row.ingreso ?? 0), 0);
-      const gastosUnicosTotal = gastosUnicos
-        .filter(row => isDateInMonth(row.fecha, currentMonth))
-        .reduce((sum, row) => sum + (row.monto ?? 0), 0);
-      const gastosDeudasTotal = gastosDeudas
-        .filter(row => isDateInMonth(row.fecha, currentMonth))
-        .reduce((sum, row) => sum + (row.montoGastado ?? 0), 0);
+      const ingresosFiltered = ingresos.filter(row => isDateInMonth(row.fecha, currentMonth));
+      const ingresosTotal = ingresosFiltered.reduce((sum, row) => sum + (row.ingreso ?? 0), 0);
+      const gastosUnicosFiltered = gastosUnicos.filter(row => isDateInMonth(row.fecha, currentMonth));
+      const gastosUnicosTotal = gastosUnicosFiltered.reduce((sum, row) => sum + (row.monto ?? 0), 0);
+      const gastosDeudasFiltered = gastosDeudas.filter(row => isDateInMonth(row.fecha, currentMonth));
+      const gastosDeudasTotal = gastosDeudasFiltered.reduce((sum, row) => sum + (row.montoGastado ?? 0), 0);
       const suscripciones = deudas.filter(row => row.tipoPago !== 'Deuda');
       const suscripcionesTotal = suscripciones.reduce((sum, row) => sum + (row.cantidad ?? 0), 0);
 
       setIngTotal(ingresosTotal);
+      setIngCount(ingresosFiltered.length);
       setGasTotal(gastosUnicosTotal + gastosDeudasTotal);
+      setGasCount(gastosUnicosFiltered.length + gastosDeudasFiltered.length);
       setSuscTotal(suscripcionesTotal);
       setSuscCount(suscripciones.length);
       setAhorroRows(mapAhorroAccounts(cuentas));
@@ -107,7 +108,9 @@ export function useDashboardKpis() {
       }
     }).catch(() => {
       setIngTotal(0);
+      setIngCount(0);
       setGasTotal(0);
+      setGasCount(0);
       setSuscTotal(0);
       setSuscCount(0);
       setAhorroRows([]);
@@ -127,15 +130,33 @@ export function useDashboardKpis() {
     ? `${ahorroDeltaNum >= 0 ? '+' : ''}${ahorroDeltaNum.toFixed(0)}%`
     : '-';
 
+  const ingCurrent = ingMonthly.at(-1) ?? 0;
+  const ingPrev    = ingMonthly.at(-2) ?? 0;
+  const ingDeltaNum = ingPrev > 0 ? ((ingCurrent - ingPrev) / ingPrev) * 100 : 0;
+  const ingDelta = ingMonthly.length > 1
+    ? `${ingDeltaNum >= 0 ? '+' : ''}${ingDeltaNum.toFixed(0)}%`
+    : '+0%';
+
+  const gasCurrent = gasMonthly.at(-1) ?? 0;
+  const gasPrev    = gasMonthly.at(-2) ?? 0;
+  const gasDeltaNum = gasPrev > 0 ? ((gasCurrent - gasPrev) / gasPrev) * 100 : 0;
+  const gasDelta = gasMonthly.length > 1
+    ? `${gasDeltaNum >= 0 ? '+' : ''}${gasDeltaNum.toFixed(0)}%`
+    : '+0%';
+
   return {
     refresh,
     ingresos: {
       total: ingTotal,
+      count: ingCount,
+      delta: ingDelta,
       monthly: ingMonthly,
       monthlyLabels: ingMonthlyLabels,
     },
     gastos: {
       total: gasTotal,
+      count: gasCount,
+      delta: gasDelta,
       monthly: gasMonthly,
       monthlyLabels: gasMonthlyLabels,
     },

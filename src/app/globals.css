@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Dark mode ripple: suprime el cross-fade por defecto para que solo corra nuestra animación de clip-path */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body {

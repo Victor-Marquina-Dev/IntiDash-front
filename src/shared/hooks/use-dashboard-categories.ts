@@ -1,16 +1,17 @@
 import React from 'react';
 import { useDataSyncedRefresh } from '@/shared/hooks/use-data-synced-refresh';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
+import { C } from '@/lib/colors';
 import type { CategoriaRow } from '@/shared/types/finance.types';
 
 // ── Escalas de color por tipo ────────────────────────────────────────────
 // Modo claro: empiezan en el token semántico (#DC2626 / #16A34A)
 // Modo oscuro: empiezan un paso más suave (#EF4444 / #22C55E) porque los
 // fondos oscuros amplifican la saturación y los tonos muy vívidos se ven duros.
-const EGRESO_LIGHT  = ['#A87878', '#BC9090', '#CFAAAA', '#E0BFBF', '#EDD5D5', '#F5EAEA'] as const;
-const EGRESO_DARK   = ['#A87878', '#BC9090', '#CFAAAA', '#E0BFBF', '#EDD5D5', '#F5EAEA'] as const;
-const INGRESO_LIGHT = ['#6B8B6B', '#7A9A7A', '#8FA88F', '#A8C0A8', '#BBD0BB', '#CCDCCC'] as const;
-const INGRESO_DARK  = ['#6B8B6B', '#7A9A7A', '#8FA88F', '#A8C0A8', '#BBD0BB', '#CCDCCC'] as const;
+const EGRESO_LIGHT  = [C.neg, '#A13E3E', '#C65A5A', '#D99090', '#E0BFBF', '#F5EAEA'] as const;
+const EGRESO_DARK   = [C.neg, '#A13E3E', '#C65A5A', '#D99090', '#E0BFBF', '#F5EAEA'] as const;
+const INGRESO_LIGHT = [C.pos, '#4F8D38', '#6EA35A', '#93BC82', '#B8D3AB', '#DCEAD6'] as const;
+const INGRESO_DARK  = [C.pos, '#4F8D38', '#6EA35A', '#93BC82', '#B8D3AB', '#DCEAD6'] as const;
 
 export type CategoryTab = 'egreso' | 'ingreso';
 

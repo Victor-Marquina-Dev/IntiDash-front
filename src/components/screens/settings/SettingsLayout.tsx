@@ -36,7 +36,7 @@ interface SettingsShellProps<TSection extends string> {
   theme: SettingsTheme;
 }
 
-export const SETTINGS_ACCENT = '#8FA88F';
+export const SETTINGS_ACCENT = '#3C7828';
 
 export const settingsLightTheme: SettingsTheme = {
   page: '#ffffff',

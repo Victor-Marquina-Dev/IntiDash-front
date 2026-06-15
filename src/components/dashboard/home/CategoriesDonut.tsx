@@ -6,6 +6,7 @@ import { CategoriasModal, NewCategoriaModal } from './CategoryModals';
 import { CardHeaderSection, type CardTab } from './CardHeaderSection';
 import { Icon } from '@/components/icons';
 import { formatCompactCurrency, formatIntegerCurrency } from '@/lib/format';
+import { RADIUS } from '@/lib/radius';
 
 const DARK_TOKENS = {
   cardBg: 'linear-gradient(145deg,#1A1D21,#16181C)',
@@ -29,23 +30,23 @@ const DARK_TOKENS = {
 };
 
 const LIGHT_TOKENS = {
-  cardBg: '#FFFFFF',
-  cardBrd: 'rgba(17,24,39,0.08)',
-  itemBrd: 'rgba(17,24,39,0.06)',
-  barBg: 'rgba(17,24,39,0.06)',
-  nameC: '#111827',
-  pctC: '#9CA3AF',
-  hiAmtC: '#111827',
-  normAmtC: '#111827',
-  boxShadow: '0 1px 2px rgba(17,24,39,.04)',
-  trackC: 'rgba(17,24,39,0.06)',
-  centerBg: '#FFFFFF',
-  centerAmtC: '#111827',
-  centerSubC: '#9CA3AF',
-  arrowBg: 'rgba(17,24,39,0.04)',
-  arrowBrd: 'rgba(17,24,39,0.10)',
-  arrowC: '#374151',
-  arrowHovBg: '#111827',
+  cardBg: 'rgba(234,224,213,0.97)',
+  cardBrd: 'rgba(198,172,143,0.60)',
+  itemBrd: 'rgba(94,80,63,0.12)',
+  barBg: 'rgba(94,80,63,0.08)',
+  nameC: '#2C1A0E',
+  pctC: 'rgba(94,80,63,0.55)',
+  hiAmtC: '#2C1A0E',
+  normAmtC: '#2C1A0E',
+  boxShadow: '0 1px 4px rgba(94,80,63,.08)',
+  trackC: 'rgba(94,80,63,0.10)',
+  centerBg: 'rgba(244,238,228,0.95)',
+  centerAmtC: '#2C1A0E',
+  centerSubC: 'rgba(94,80,63,0.55)',
+  arrowBg: 'rgba(94,80,63,0.06)',
+  arrowBrd: 'rgba(94,80,63,0.18)',
+  arrowC: '#5E503F',
+  arrowHovBg: '#7D5A38',
   arrowHovC: '#fff',
 };
 
@@ -206,7 +207,7 @@ function DonutView({ rows, tokens, tabs: _tabs, activeTab }: Readonly<DonutViewP
         })}
         <circle cx={CX} cy={CY} r={R - SW / 2 - 4} fill={tokens.centerBg} />
         <text x={CX} y={selSeg ? CY - 4 : CY + 9} textAnchor="middle" fontSize="28" fontWeight="900"
-          fill={selSeg ? selSeg.color : tokens.centerAmtC} fontFamily={FONT}
+          fill={tokens.centerAmtC} fontFamily={FONT}
           style={{ transition: 'all 0.25s ease' }}>
           {fmtTotal(animTotal)}
         </text>
@@ -275,7 +276,7 @@ export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMo
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-      borderRadius: 22, overflow: 'hidden',
+      borderRadius: RADIUS.dashboardCard, overflow: 'hidden',
       background: tokens.cardBg,
       border: `1px solid ${hovered ? (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : tokens.cardBrd}`,
       boxShadow: hovered ? (isDark ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : tokens.boxShadow,
@@ -328,9 +329,7 @@ export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMo
               {emptyMessage}
             </div>
           )}
-          {!loading && rows.map((row, index) => {
-            const amountColor = row.pct >= 50 ? tokens.hiAmtC : tokens.normAmtC;
-            return (
+          {!loading && rows.map((row, index) => (
               <div key={`${row.nombre}-${index}`} style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '7px 0', borderBottom: `1px solid ${tokens.itemBrd}`,
@@ -351,7 +350,7 @@ export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMo
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', minWidth: 68, flexShrink: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: -0.5, color: amountColor, fontVariantNumeric: 'tabular-nums' }}>
+                  <div style={{ fontSize: 13, fontWeight: 900, letterSpacing: -0.5, color: tokens.normAmtC, fontVariantNumeric: 'tabular-nums' }}>
                     {formatIntegerCurrency(row.value)}
                   </div>
                   <div style={{ fontSize: 10, color: tokens.pctC, fontWeight: 700, marginTop: 2 }}>
@@ -359,8 +358,7 @@ export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMo
                   </div>
                 </div>
               </div>
-            );
-          })}
+          ))}
         </div>
       )}
 

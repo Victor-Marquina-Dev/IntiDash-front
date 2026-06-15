@@ -9,10 +9,10 @@ function fmtK(v: number): string {
 }
 
 const M3_LIGHT = {
-  incLine:   '#8FA88F',                 // verde sage suave — tono de la card Ingresos
-  incFill:   'rgba(204,220,204,0.85)', // = #CCDCCC
-  expLine:   '#CF9C9C',
-  expFill:   'rgba(245,234,234,0.85)',  // = #F5EAEA con ligera transparencia (card Gastos bg)
+  incLine:   '#3C7828',
+  incFill:   'rgba(60,120,40,0.18)',
+  expLine:   '#B43232',
+  expFill:   'rgba(180,50,50,0.14)',
   debtLine:  '#D9A86C',                 // naranja suave — misma tonalidad pastel que inc/exp
   grid:      'rgba(17,24,39,.07)',
   axisLine:  'rgba(17,24,39,.14)',
@@ -20,10 +20,10 @@ const M3_LIGHT = {
   dotStroke: 'rgba(255,255,255,.92)',
 };
 const M3_DARK = {
-  incLine:   '#8FA88F',
-  incFill:   'rgba(143,168,143,.22)',
-  expLine:   '#CF9C9C',
-  expFill:   'rgba(207,156,156,.18)',
+  incLine:   '#3C7828',
+  incFill:   'rgba(60,120,40,.24)',
+  expLine:   '#B43232',
+  expFill:   'rgba(180,50,50,.20)',
   debtLine:  '#D9A86C',
   grid:      'rgba(255,255,255,.07)',
   axisLine:  'rgba(255,255,255,.12)',
@@ -583,6 +583,151 @@ export function EmptyLineChart({ months, height, darkMode = false, legendItems }
         fill={darkMode ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.18)'} fontFamily={FONT}>
         Sincroniza Notion para ver el historial
       </text>
+    </svg>
+  );
+}
+
+const M3_NET_LIGHT = {
+  posLine: '#3C7828',
+  negLine: '#B43232',
+  grid: 'rgba(17,24,39,.07)',
+  zeroLine: 'rgba(17,24,39,.22)',
+  axisLine: 'rgba(17,24,39,.14)',
+  axisText: '#9CA3AF',
+  dotStroke: 'rgba(255,255,255,.92)',
+};
+const M3_NET_DARK = {
+  posLine: '#3C7828',
+  negLine: '#B43232',
+  grid: 'rgba(255,255,255,.07)',
+  zeroLine: 'rgba(255,255,255,.20)',
+  axisLine: 'rgba(255,255,255,.12)',
+  axisText: 'rgba(255,255,255,0.30)',
+  dotStroke: 'rgba(13,15,18,.95)',
+};
+
+export function NetLineChart({ months, net, height, darkMode = false, todayIndex }: Readonly<{
+  months: string[]; net: (number|null)[]; height: number; darkMode?: boolean; todayIndex?: number;
+}>) {
+  const tk = darkMode ? M3_NET_DARK : M3_NET_LIGHT;
+  const W = 800, H = height;
+  const padL = 48, padR = 20, padT = 50, padB = 36;
+  const plotH = H - padT - padB;
+  const base = H - padB;
+  const [on, setOn] = React.useState(false);
+  const [hov, setHov] = React.useState<{ i: number; cx: number; cy: number; v: number } | null>(null);
+
+  React.useEffect(() => { const id = setTimeout(() => setOn(true), 80); return () => clearTimeout(id); }, []);
+
+  const valid = net.filter((v): v is number => v != null);
+  if (!valid.length) return null;
+
+  const rawMax = Math.max(...valid, 0);
+  const rawMin = Math.min(...valid, 0);
+  const absMax = Math.max(Math.abs(rawMax), Math.abs(rawMin), 1);
+  const roundedAbs = Math.ceil(absMax / 1000) * 1000 || 1;
+  const max = roundedAbs;
+  const min = -roundedAbs;
+  const range = max - min;
+  const xs = months.map((_, i) => padL + (i / Math.max(months.length - 1, 1)) * (W - padL - padR));
+  const y = (v: number) => padT + ((max - v) / range) * plotH;
+  const zeroY = y(0);
+  const cutoff = todayIndex !== undefined ? todayIndex : months.length - 1;
+  const pts = net
+    .map((v, i) => (v == null || i > cutoff) ? null : [xs[i], y(v), v] as [number, number, number])
+    .filter((p): p is [number, number, number] => p !== null);
+  const linePath = pts.length < 2 ? '' : `M ${pts[0][0]} ${pts[0][1]} ` + pts.slice(1).map(p => `L ${p[0]} ${p[1]}`).join(' ');
+  const currentNet = pts.length ? pts[pts.length - 1][2] : 0;
+  const lineColor = currentNet >= 0 ? tk.posLine : tk.negLine;
+  const tickVals = [max, max / 2, 0, min / 2, min].filter((v, i, arr) => i === 0 || v !== arr[i - 1]);
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }} onMouseLeave={() => setHov(null)}>
+      <g>
+        <circle cx={padL} cy={18} r="5" fill={tk.posLine} />
+        <text x={padL + 10} y={23} fontSize="11" fontWeight="700" fill={tk.posLine} fontFamily={FONT}>Neto positivo</text>
+        <circle cx={padL + 112} cy={18} r="5" fill={tk.negLine} />
+        <text x={padL + 122} y={23} fontSize="11" fontWeight="700" fill={tk.negLine} fontFamily={FONT}>Neto negativo</text>
+      </g>
+
+      {tickVals.map((val) => {
+        const yy = y(val);
+        const isZero = val === 0;
+        return (
+          <g key={val}>
+            <line x1={padL} x2={W - padR} y1={yy} y2={yy} stroke={isZero ? tk.zeroLine : tk.grid} strokeWidth={isZero ? '1.5' : '1'} strokeDasharray={isZero ? undefined : '3 5'} />
+            <text x={padL - 6} y={yy + 4} textAnchor="end" fontSize="9" fontWeight="500" fill={tk.axisText} fontFamily={FONT}>
+              {val < 0 ? '-' : ''}{formatCompactCurrency(Math.abs(val), 0)}
+            </text>
+          </g>
+        );
+      })}
+
+      <line x1={padL} x2={padL} y1={padT} y2={base} stroke={tk.axisLine} strokeWidth="1.5" />
+      <line x1={padL} x2={W - padR} y1={base} y2={base} stroke={tk.axisLine} strokeWidth="1.5" />
+
+      {months.map((m, i) => (
+        <text key={`xl${i}`} x={xs[i]} y={H - 10} textAnchor="middle" fontSize={months.length > 15 ? '8' : '9'} fontWeight="500" fill={tk.axisText} fontFamily={FONT} opacity={months.length > 15 && i % 5 !== 0 && i !== 0 ? 0.38 : 1}>
+          {m}
+        </text>
+      ))}
+      {xs.map((x, i) => (
+        <line key={`tx${i}`} x1={x} x2={x} y1={base} y2={base + 4} stroke={tk.axisLine} strokeWidth="1.5" />
+      ))}
+
+      {linePath && (
+        <path d={linePath} fill="none" stroke={lineColor} strokeWidth="2.6" strokeLinejoin="round" strokeLinecap="round"
+          strokeDasharray={2500} strokeDashoffset={on ? 0 : 2500}
+          style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)' }}
+        />
+      )}
+
+      {net.map((v, i) => {
+        if (v == null) return null;
+        const cx = xs[i], cy = y(v);
+        const isFuture = todayIndex !== undefined && i > todayIndex;
+        const isZero = v === 0;
+        const color = v >= 0 ? tk.posLine : tk.negLine;
+        const isHov = hov?.i === i;
+        const ly = cy - 16 < padT + 5 ? cy + 20 : cy - 16;
+        const delay = `${0.7 + i * 0.08}s`;
+        return (
+          <g key={`n${i}`} style={{ opacity: on ? (isFuture ? 0.42 : isZero ? 0.32 : 1) : 0, transition: `opacity 0.3s ease ${delay}` }} onMouseEnter={() => !isZero && !isFuture && setHov({ i, cx, cy, v })}>
+            <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '2' : '3.5'} fill={color} stroke={tk.dotStroke} strokeWidth="1.5"
+              style={{
+                transform: on ? (isHov ? 'scale(1.65)' : 'scale(1)') : 'scale(0)',
+                transformBox: 'fill-box',
+                transformOrigin: 'center',
+                transition: on ? 'transform 0.18s cubic-bezier(.4,0,.2,1)' : `transform 0.35s cubic-bezier(.4,0,.2,1) ${delay}`,
+                cursor: isZero || isFuture ? 'default' : 'pointer',
+              }}
+            />
+            {!isZero && !isHov && !isFuture && (
+              <text x={cx} y={ly} textAnchor="middle" fontSize="9" fontWeight="700" fill={color} fontFamily={FONT}>
+                {v < 0 ? '-' : ''}{fmtK(Math.abs(v))}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {hov && on && (() => {
+        const label = `${hov.v < 0 ? '-' : ''}${fmtK(Math.abs(hov.v))}`;
+        const tw = Math.max(label.length * 7 + 24, 58);
+        const th = 24;
+        const tx = Math.max(padL + tw / 2 + 4, Math.min(W - padR - tw / 2 - 4, hov.cx));
+        const above = hov.cy - th - 14 >= padT + 6;
+        const ty = above ? hov.cy - th / 2 - 14 : hov.cy + th / 2 + 14;
+        const color = hov.v >= 0 ? tk.posLine : tk.negLine;
+        return (
+          <g style={{ pointerEvents: 'none' }}>
+            <line x1={hov.cx} x2={hov.cx} y1={hov.cy} y2={zeroY} stroke={color} strokeWidth="1" strokeDasharray="3 3" opacity="0.35" />
+            <rect x={tx - tw / 2} y={ty - th / 2} width={tw} height={th} rx="7" fill="rgba(17,24,39,0.92)" />
+            <circle cx={tx - tw / 2 + 11} cy={ty} r="3" fill={color} />
+            <text x={tx - tw / 2 + 20} y={ty + 4} textAnchor="start" fontSize="10" fontWeight="700" fill={color} fontFamily={FONT}>{label}</text>
+          </g>
+        );
+      })()}
     </svg>
   );
 }

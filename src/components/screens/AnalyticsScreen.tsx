@@ -3,7 +3,7 @@
 import React from 'react';
 import { C } from '@/lib/colors';
 import { Icon } from '@/components/icons';
-import { AreaLineChart, EmptyLineChart } from '../dashboard/home/ChartVisuals';
+import { AreaLineChart, EmptyLineChart, NetLineChart } from '../dashboard/home/ChartVisuals';
 import { formatCompactCurrency, formatCurrency } from '@/lib/format';
 import { notionPaymentsService } from '@/shared/services/notion-payments.service';
 import { useDataSyncedRefresh } from '@/shared/hooks/use-data-synced-refresh';
@@ -23,15 +23,16 @@ const MONTHS      = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct'
 const MONTHS_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // Escalas de color semánticas (igual que el dashboard home)
-const GAS_COLORS  = ['#CF9C9C','#BC9090','#D4AAAA','#A87878','#E0BFBF','#B87070'];
-const ING_COLORS  = ['#CCDCCC','#BBD0BB','#A8C0A8','#8FA88F','#7A9A7A','#6B8B6B'];
-const CUENTA_COLORS = ['#8FA88F','#BC9090','#7A9A7A','#CF9C9C','#6B8B6B','#A87878','#A8C0A8','#E0BFBF'];
+const GAS_COLORS  = [C.neg,'#A13E3E','#C65A5A','#D99090','#E0BFBF','#F5EAEA'];
+const ING_COLORS  = [C.pos,'#4F8D38','#6EA35A','#93BC82','#B8D3AB','#DCEAD6'];
+const CUENTA_COLORS = [C.pos,'#A13E3E','#4F8D38',C.neg,'#6EA35A','#C65A5A','#93BC82','#D99090'];
 
-const OTROS_ING = '#B8CCBA';
-const OTROS_EG  = '#DDBFBF';
+const OTROS_ING = '#B8D3AB';
+const OTROS_EG  = '#E0BFBF';
 const FONT        = 'var(--font-ui),system-ui,sans-serif';
 
 type Period = 'year' | 'q1' | 'q2' | 'q3' | 'q4';
+type ChartTab = 'ig' | 'deudas' | 'neto';
 
 const QUARTER_MONTHS: Record<Period, number[]> = {
   year: [0,1,2,3,4,5,6,7,8,9,10,11],
@@ -458,7 +459,7 @@ export function AnalyticsScreen({ accent: _accent, darkMode = false }: Readonly<
   const [cuentas,      setCuentas]      = React.useState<CuentaBancariaRow[]>([]);
   const [chart,        setChart]        = React.useState<MonthlyChartData | null>(null);
   const [loading,      setLoading]      = React.useState(true);
-  const [chartTab,     setChartTab]     = React.useState<'ig' | 'deudas'>('ig');
+  const [chartTab,     setChartTab]     = React.useState<ChartTab>('ig');
 
   const loadData = React.useCallback(() => {
     setLoading(true);
@@ -602,9 +603,22 @@ export function AnalyticsScreen({ accent: _accent, darkMode = false }: Readonly<
   const activeChartIncome  = viewMode === 'month' && dailyChartData ? dailyChartData.income   : chartIncome;
   const activeChartExpense = viewMode === 'month' && dailyChartData ? dailyChartData.expense  : chartExpense;
   const activeChartDebt    = viewMode === 'month' && dailyChartData ? dailyChartData.debt     : chartDebtPeriod;
+  const activeChartNet = activeChartLabels.map((_, i) => {
+    const income = activeChartIncome[i];
+    const expense = activeChartExpense[i];
+    if (income == null && expense == null) return null;
+    return (income ?? 0) - (expense ?? 0);
+  });
   const hasChartData = activeChartIncome.some(v => v != null && (v as number) > 0)
                     || activeChartExpense.some(v => v != null && (v as number) > 0);
   const hasDebtData = activeChartDebt.some(v => v != null && (v as number) > 0);
+  const hasNetData = activeChartNet.some(v => v != null && v !== 0);
+  const chartHasData = chartTab === 'ig' ? hasChartData : chartTab === 'deudas' ? hasDebtData : hasNetData;
+  const chartTitle = chartTab === 'deudas'
+    ? 'Pagos de Deudas'
+    : chartTab === 'neto'
+      ? 'Neto por mes'
+      : 'Ingresos vs Gastos';
 
   // Tabla mensual: solo meses con actividad o pasados (no mostrar meses futuros)
   const tableData = React.useMemo(() => {
@@ -781,7 +795,7 @@ export function AnalyticsScreen({ accent: _accent, darkMode = false }: Readonly<
             <div style={{ padding: '18px 22px 10px', borderBottom: `1px solid ${D ? 'rgba(255,255,255,0.07)' : 'rgba(17,24,39,0.06)'}`, display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 10 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: D ? 'rgba(255,255,255,0.88)' : C.text }}>
-                  {chartTab === 'deudas' ? 'Pagos de Deudas' : 'Ingresos vs Gastos'}
+                  {chartTitle}
                 </div>
                 <div style={{ fontSize: 11.5, color: D ? 'rgba(255,255,255,0.38)' : C.textMute }}>
                   {year} · {viewMode === 'month' ? `${MONTHS_FULL[selectedMonth]} · por día` : period === 'year' ? '12 meses' : PERIOD_LABELS[period]}
@@ -790,32 +804,54 @@ export function AnalyticsScreen({ accent: _accent, darkMode = false }: Readonly<
               <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                 <Pill small active={chartTab === 'ig'} onClick={() => setChartTab('ig')}>Ingresos vs Gastos</Pill>
                 <Pill small active={chartTab === 'deudas'} current onClick={() => setChartTab('deudas')}>Deudas</Pill>
+                <Pill small active={chartTab === 'neto'} onClick={() => setChartTab('neto')}>Neto por mes</Pill>
               </div>
             </div>
             <div style={{ padding: '8px 14px 14px', width: '100%', boxSizing: 'border-box' }}>
-              {(chartTab === 'ig' ? hasChartData : hasDebtData) ? (
-                <AreaLineChart
-                  key={chartTab}
-                  months={activeChartLabels}
-                  income={chartTab === 'ig' ? activeChartIncome : []}
-                  expense={chartTab === 'ig' ? activeChartExpense : []}
-                  debt={chartTab === 'deudas' ? activeChartDebt : undefined}
-                  height={300}
-                  darkMode={D}
-                  todayIndex={
-                    viewMode === 'month' && year === currentYear && selectedMonth === currentMonth
-                      ? currentDay - 1
-                      : undefined
-                  }
-                  chartYear={viewMode === 'month' ? year : undefined}
-                  chartMonth={viewMode === 'month' ? selectedMonth : undefined}
-                />
+              {chartHasData ? (
+                chartTab === 'neto' ? (
+                  <NetLineChart
+                    key={chartTab}
+                    months={activeChartLabels}
+                    net={activeChartNet}
+                    height={300}
+                    darkMode={D}
+                    todayIndex={
+                      viewMode === 'month' && year === currentYear && selectedMonth === currentMonth
+                        ? currentDay - 1
+                        : undefined
+                    }
+                  />
+                ) : (
+                  <AreaLineChart
+                    key={chartTab}
+                    months={activeChartLabels}
+                    income={chartTab === 'ig' ? activeChartIncome : []}
+                    expense={chartTab === 'ig' ? activeChartExpense : []}
+                    debt={chartTab === 'deudas' ? activeChartDebt : undefined}
+                    height={300}
+                    darkMode={D}
+                    todayIndex={
+                      viewMode === 'month' && year === currentYear && selectedMonth === currentMonth
+                        ? currentDay - 1
+                        : undefined
+                    }
+                    chartYear={viewMode === 'month' ? year : undefined}
+                    chartMonth={viewMode === 'month' ? selectedMonth : undefined}
+                  />
+                )
               ) : (
                 <EmptyLineChart
-                  months={viewMode === 'year' ? MONTHS.filter((_, i) => QUARTER_MONTHS[period].includes(i)) : MONTHS}
+                  months={activeChartLabels}
                   height={300}
                   darkMode={D}
-                  legendItems={chartTab === 'deudas' ? [{ label: 'Deudas', color: '#D9A86C' }] : undefined}
+                  legendItems={
+                    chartTab === 'deudas'
+                      ? [{ label: 'Deudas', color: '#D9A86C' }]
+                      : chartTab === 'neto'
+                        ? [{ label: 'Neto positivo', color: C.pos }, { label: 'Neto negativo', color: C.neg }]
+                        : undefined
+                  }
                 />
               )}
             </div>

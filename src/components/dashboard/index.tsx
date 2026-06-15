@@ -68,9 +68,37 @@ export function Dashboard({
     navigateToNotionSync();
   }, [closeOnboarding, navigateToNotionSync]);
 
-  const toggleDarkMode = React.useCallback(() => {
-    setDarkMode(d => !d);
-  }, []);
+  const animatingRef = React.useRef(false);
+
+  const toggleDarkMode = React.useCallback((origin?: { x: number; y: number }) => {
+    if (animatingRef.current) return;
+    animatingRef.current = true;
+
+    const nextDark = !darkMode;
+    const done = () => { animatingRef.current = false; };
+
+    type VT = { ready: Promise<void>; finished: Promise<void> };
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => VT };
+
+    if (!doc.startViewTransition || !origin) {
+      setDarkMode(nextDark);
+      done();
+      return;
+    }
+
+    const { x, y } = origin;
+    const vt = doc.startViewTransition(() => { setDarkMode(nextDark); });
+
+    vt.ready.then(() => {
+      // Solo el círculo se expande — el tema anterior no se modifica
+      document.documentElement.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(200vmax at ${x}px ${y}px)`] },
+        { duration: 1600, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', pseudoElement: '::view-transition-new(root)' },
+      );
+    }).catch(() => {});
+
+    vt.finished.then(done).catch(done);
+  }, [darkMode]);
 
   const screens: Record<ScreenId, React.ReactNode> = {
     home: (

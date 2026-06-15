@@ -1,10 +1,13 @@
-﻿'use client';
+'use client';
 
 import Image from 'next/image';
 import React from 'react';
 import { Icon } from '@/components/icons';
 import { formatIntegerCurrency } from '@/lib/format';
 import { useDashboardAccounts } from '@/shared/hooks/use-dashboard-accounts';
+import { getKpiPalette } from './kpi-palette';
+import { CardTabsRow } from './CardHeaderSection';
+import { RADIUS } from '@/lib/radius';
 
 const BANK_LOGOS: Record<string, string> = {
   yape:       '/Yape.png',
@@ -29,245 +32,164 @@ function getBankInitial(banco?: string | null): string {
 
 export function TarjetasCard({ darkMode = false, canWrite: _canWrite = true, onNavigate }: Readonly<{ darkMode?: boolean; canWrite?: boolean; onNavigate?: (screen: string) => void }>) {
   const { rows, loading, tipos, activeTab, visibles, isCredito, selectTab } = useDashboardAccounts();
-  const tabsRef   = React.useRef<HTMLDivElement>(null);
-  const dragState = React.useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
-
-  React.useEffect(() => {
-    const el = tabsRef.current;
-    if (!el) return;
-
-    function onDown(e: MouseEvent) {
-      dragState.current = { dragging: true, startX: e.pageX, scrollLeft: el!.scrollLeft, moved: false };
-      el!.style.cursor = 'grabbing';
-    }
-    function onMove(e: MouseEvent) {
-      if (!dragState.current.dragging) return;
-      const walk = (e.pageX - dragState.current.startX) * 1.2;
-      if (Math.abs(walk) > 3) dragState.current.moved = true;
-      el!.scrollLeft = dragState.current.scrollLeft - walk;
-    }
-    function onUp() {
-      dragState.current.dragging = false;
-      el!.style.cursor = 'grab';
-    }
-
-    el.addEventListener('mousedown', onDown);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      el.removeEventListener('mousedown', onDown);
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, []);
-
-  function handleTabClick(tipo: string) {
-    selectTab(tipo);
-    const btn = tabsRef.current?.querySelector<HTMLElement>(`[data-tab="${tipo}"]`);
-    btn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }
-
-  const [btnHov, setBtnHov]     = React.useState<'detail' | 'create' | null>(null);
-  const [hovered, setHovered]   = React.useState(false);
+  const t = getKpiPalette(darkMode);
+  const [btnHovered, setBtnHovered] = React.useState(false);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
 
-  const D          = darkMode;
-  const cardBg     = D ? 'linear-gradient(145deg,#1A1D21,#16181C)' : 'rgba(204,220,204,0.13)';
-  const cardBorder = D ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.08)';
-  const labelC     = D ? 'rgba(255,255,255,0.38)' : '#6B7280';
-  const nameC      = D ? 'rgba(255,255,255,0.85)' : '#111827';
-  const bankC      = D ? 'rgba(255,255,255,0.35)' : '#9CA3AF';
-  const limitC     = D ? 'rgba(255,255,255,0.35)' : '#9CA3AF';
-  const trackBg    = D ? 'rgba(255,255,255,.05)'  : 'rgba(17,24,39,0.06)';
-  const btnBg      = D ? 'rgba(255,255,255,.06)'  : 'rgba(17,24,39,0.04)';
-  const btnBrd     = D ? 'rgba(255,255,255,.12)'  : 'rgba(17,24,39,0.10)';
-  const btnC       = D ? 'rgba(255,255,255,0.65)' : '#374151';
-  const btnHovBg   = D ? 'rgba(255,255,255,.14)'  : '#111827';
-  const btnHovC    = D ? '#fff'                   : '#fff';
-  const tabActiveBg    = D ? 'rgba(255,255,255,0.90)'   : '#111827';
-  const tabActiveC     = D ? '#111'                     : '#fff';
-  const tabInactiveBg  = D ? 'rgba(255,255,255,.03)'    : 'rgba(17,24,39,0.04)';
-  const tabInactiveC   = D ? 'rgba(255,255,255,0.38)'   : '#6B7280';
-  const tabInactiveBrd = D ? 'rgba(255,255,255,.08)'    : 'rgba(17,24,39,0.08)';
-  const itemBg     = D ? 'rgba(255,255,255,.04)'  : '#FAFAFA';
-  const itemBorder = D ? 'rgba(255,255,255,.08)'  : 'rgba(17,24,39,0.06)';
+  const accent = darkMode
+    ? { bg: 'rgba(198,172,143,0.12)', border: 'rgba(198,172,143,0.28)', color: '#C6AC8F' }
+    : { bg: 'rgba(140,111,78,0.10)',  border: 'rgba(140,111,78,0.26)',  color: '#8C6F4E' };
+
+  const D = darkMode;
+  const trackBg = D ? 'rgba(255,255,255,0.05)' : 'rgba(17,24,39,0.06)';
 
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-      background: cardBg, borderRadius: 22, overflow: 'hidden',
-      border: `1px solid ${hovered ? (D ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : cardBorder}`,
-      boxShadow: hovered
-        ? (D ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)')
-        : (D ? '0 4px 24px rgba(0,0,0,.5), 0 12px 40px rgba(0,0,0,.3)' : '0 1px 2px rgba(17,24,39,.04), 0 12px 32px rgba(17,24,39,.06)'),
-      transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-      transition: 'transform .25s, box-shadow .25s, border-color .25s',
-    }}>
+    <div style={{ background: t.outerBg, borderRadius: RADIUS.dashboardCard }} className="relative rounded-xl overflow-hidden">
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px 8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Icon.cards size={15} strokeWidth={2.2} />
-          <span style={{ fontSize: 12, fontWeight: 800, color: labelC, letterSpacing: 1.5, textTransform: 'uppercase' }}>Cuentas</span>
+      <div className="flex flex-col w-full h-full rounded-lg p-4" style={{ background: t.innerBg, borderRadius: RADIUS.dashboardCard }}>
+
+        {/* Header */}
+        <div className="flex items-center gap-2" style={{ marginBottom: 2 }}>
+          <span className="text-xs font-black tracking-[2px] uppercase shrink-0" style={{ color: t.label }}>
+            Cuentas
+          </span>
+          <div className="flex-1" />
+          <div
+            className="shrink-0 rounded-full flex items-center justify-center"
+            style={{
+              width: 34, height: 34,
+              background: darkMode ? 'rgba(156,128,94,0.28)' : 'rgba(125,99,71,0.18)',
+              flexShrink: 0,
+            }}
+          >
+            <button
+              onClick={() => onNavigate?.('cards')}
+              onMouseEnter={() => setBtnHovered(true)}
+              onMouseLeave={() => setBtnHovered(false)}
+              className="rounded-full flex items-center justify-center cursor-pointer active:scale-95"
+              style={{
+                width: 24, height: 24,
+                background: darkMode ? '#9C805E' : '#7D6347',
+                color: 'rgba(255,255,255,0.90)',
+                transform: btnHovered ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+              }}
+            >
+              <Icon.list size={10} strokeWidth={2} />
+            </button>
+          </div>
         </div>
-        <button
-          onMouseEnter={() => setBtnHov('detail')} onMouseLeave={() => setBtnHov(null)}
-          onClick={() => onNavigate?.('cards')}
-          aria-label="Ir a Cuentas"
-          title="Ir a Cuentas"
-          style={{ width: 28, height: 28, borderRadius: 8, background: btnHov === 'detail' ? btnHovBg : btnBg, border: `1px solid ${btnBrd}`, display: 'grid', placeItems: 'center', cursor: 'pointer', color: btnHov === 'detail' ? btnHovC : btnC, transition: 'all .2s', flexShrink: 0 }}
-        >
-          <Icon.list size={12} strokeWidth={1.7} />
-        </button>
-      </div>
 
-      {/* Tabs por tipo */}
-      {!loading && tipos.length > 1 && (
+        {/* Tabs estandarizados (solo nombre) + lista de cuentas */}
+        {!loading && tipos.length > 1 && (
+          <CardTabsRow
+            tabs={tipos.map(tipo => ({
+              id: tipo,
+              label: tipo.charAt(0) + tipo.slice(1).toLowerCase(),
+            }))}
+            activeTab={activeTab ?? tipos[0]}
+            onTabChange={selectTab}
+            darkMode={darkMode}
+            padX="0"
+            style={{ marginBottom: 6 }}
+          />
+        )}
+
         <div
-          ref={tabsRef}
-          className="fz-tabs-scroll"
-          style={{ display: 'flex', gap: 6, padding: '2px 16px 8px', overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', cursor: 'grab', userSelect: 'none' }}
+          key={activeTab ?? 'all'}
+          className="fz-tab-content"
+          style={{
+            display: 'flex', flexDirection: 'column', gap: 6,
+            overflowY: 'auto', maxHeight: 208,
+            marginRight: -4, paddingRight: 4,
+            scrollbarWidth: 'thin',
+            scrollbarColor: `${accent.color}55 transparent`,
+          }}
         >
-          {tipos.map(tipo => {
-            const isActive = activeTab === tipo;
-            const count = rows.filter(r => (r.tipo ?? '').toUpperCase().normalize('NFD').replace(/\p{Diacritic}/gu, '') === tipo).length;
-            const label = tipo.charAt(0) + tipo.slice(1).toLowerCase();
-            return (
-              <button
-                key={tipo}
-                data-tab={tipo}
-                onClick={() => { if (!dragState.current.moved) handleTabClick(tipo); }}
-                style={{
-                  padding: '6px 16px', borderRadius: 20, cursor: 'pointer',
-                  border: `1px solid ${isActive ? tabActiveBg : tabInactiveBrd}`,
-                  background: isActive ? tabActiveBg : tabInactiveBg,
-                  color: isActive ? tabActiveC : tabInactiveC,
-                  fontFamily: 'var(--font-ui), system-ui, sans-serif',
-                  fontSize: 12, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  transition: 'all .2s', whiteSpace: 'nowrap', flexShrink: 0,
-                  boxShadow: isActive && D ? '0 2px 12px rgba(139,92,246,.3)' : 'none',
-                }}
-              >
-                {label}
-                <span style={{
-                  fontSize: 10, fontWeight: 900, padding: '1px 5px', borderRadius: 8,
-                  background: 'rgba(255,255,255,.2)',
-                }}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+          {loading && [1, 2, 3].map(i => (
+            <div key={i} style={{ height: 48, borderRadius: 10, background: t.border, opacity: 0.5 }} />
+          ))}
 
-      {/* Body */}
-      <div key={activeTab} className="fz-tab-content" style={{ padding: '10px 16px 16px' }}>
+          {!loading && rows.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '20px 0', color: t.label, fontSize: 12 }}>
+              Sin cuentas registradas.
+            </div>
+          )}
 
-        {loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[1,2,3].map(i => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 15px', borderRadius: 14, background: itemBg }}>
-                <div className={D ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }} />
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <div className={D ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: `${60 + i * 10}%`, borderRadius: 6 }} />
-                  <div className={D ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 10, width: '40%', borderRadius: 6 }} />
-                </div>
-                <div className={D ? 'fz-skeleton--dark' : 'fz-skeleton'} style={{ height: 13, width: 60, borderRadius: 6 }} />
-              </div>
-            ))}
-          </div>
-        )}
-        {!loading && rows.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '24px 0', color: bankC, fontSize: 12 }}>
-            Sin cuentas registradas.
-          </div>
-        )}
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', maxHeight: 208, marginRight: -4, paddingRight: 4, scrollbarWidth: 'thin', scrollbarColor: 'rgba(143,168,143,0.5) transparent' }}>
-          {[...visibles].sort((a, b) => (b.balance ?? 0) - (a.balance ?? 0)).map((t, i) => {
-            const saldo      = t.balance ?? 0;
-            const limite     = t.credito ?? 0;
+          {[...visibles].sort((x, y) => (y.balance ?? 0) - (x.balance ?? 0)).map((cuenta, i) => {
+            const saldo      = cuenta.balance ?? 0;
+            const limite     = cuenta.credito ?? 0;
             const disponible = limite - saldo;
             const utilPct    = isCredito && limite > 0 ? Math.min(100, Math.round((saldo / limite) * 100)) : 0;
             const utilColor  = utilPct > 80 ? (D ? '#f87171' : '#dc2626')
               : utilPct > 50 ? (D ? '#fbbf24' : '#d97706')
               : (D ? '#34d399' : '#16a34a');
-            const itemAlert  = isCredito && utilPct >= 100;
-            const isSelected = selectedId === (t.id ?? String(i));
-            const rowBg = itemAlert
-              ? (D ? 'rgba(239,68,68,.04)' : 'rgba(239,68,68,.04)')
-              : isSelected
-                ? (D ? 'rgba(143,168,143,0.22)' : 'rgba(143,168,143,0.28)')
-                : itemBg;
-            const rowBorder = itemAlert
-              ? (D ? 'rgba(239,68,68,.2)' : 'rgba(239,68,68,.25)')
-              : isSelected
-                ? (D ? 'rgba(143,168,143,0.5)' : 'rgba(143,168,143,0.6)')
-                : itemBorder;
+            const logoSrc    = getBankLogo(cuenta.banco);
+            const isSelected = selectedId === (cuenta.id ?? String(i));
+
             return (
               <div
-                key={t.id ?? i}
-                onClick={() => setSelectedId(prev => prev === (t.id ?? String(i)) ? null : (t.id ?? String(i)))}
+                key={cuenta.id ?? i}
+                onClick={() => setSelectedId(prev =>
+                  prev === (cuenta.id ?? String(i)) ? null : (cuenta.id ?? String(i))
+                )}
                 style={{
-                  padding: '13px 15px', borderRadius: 14,
-                  background: rowBg,
-                  border: `1px solid ${rowBorder}`,
+                  padding: '10px 12px', borderRadius: 10,
+                  background: isSelected ? `${accent.color}18` : 'transparent',
+                  border: `1px solid ${isSelected ? accent.border : t.border}`,
                   cursor: 'pointer',
-                  transition: 'background .2s, border-color .2s',
-                }}>
-                {/* Nombre + monto */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: isCredito && limite > 0 ? 10 : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
-                    {(() => {
-                      const logoSrc = getBankLogo(t.banco);
-                      return (
-                        <div style={{
-                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                          background: logoSrc ? '#fff' : (D ? '#0A402A' : '#8FA88F'),
-                          color: '#fff',
-                          display: 'grid', placeItems: 'center',
-                          fontSize: 10, fontWeight: 900, letterSpacing: 0.3,
-                          overflow: 'hidden',
-                        }}>
-                          {logoSrc
-                            ? <Image src={logoSrc} alt={t.banco ?? ''} width={36} height={36} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                            : getBankInitial(t.banco)
-                          }
-                        </div>
-                      );
-                    })()}
+                  transition: 'background .15s, border-color .15s',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isCredito && limite > 0 ? 8 : 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+                    <div style={{
+                      width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                      background: logoSrc ? '#fff' : accent.bg,
+                      color: accent.color,
+                      display: 'grid', placeItems: 'center',
+                      fontSize: 9, fontWeight: 900, overflow: 'hidden',
+                    }}>
+                      {logoSrc
+                        ? <Image src={logoSrc} alt={cuenta.banco ?? ''} width={30} height={30} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : getBankInitial(cuenta.banco)
+                      }
+                    </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: nameC, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.nombre}</div>
-                      <div style={{ fontSize: 10, color: bankC, fontWeight: 600, marginTop: 2 }}>{t.banco}</div>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: D ? 'rgba(255,255,255,0.88)' : '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {cuenta.nombre}
+                      </div>
+                      <div style={{ fontSize: 10, color: t.subtitle, fontWeight: 600, marginTop: 1 }}>
+                        {cuenta.banco}
+                      </div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
-                    <div style={{ fontSize: 13, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: isCredito ? (D ? '#e07878' : '#dc2626') : (D ? '#c8d0c8' : '#111827') }}>
+                    <div style={{ fontSize: 12, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: isCredito ? (D ? '#e07878' : '#dc2626') : (D ? 'rgba(255,255,255,0.88)' : '#111827') }}>
                       {isCredito
                         ? (saldo > 0 ? `−${formatIntegerCurrency(saldo)}` : formatIntegerCurrency(0))
                         : formatIntegerCurrency(saldo)}
                     </div>
                     {isCredito && limite > 0 && (
-                      <div style={{ fontSize: 10, color: limitC, fontWeight: 600, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
+                      <div style={{ fontSize: 9, color: t.subtitle, fontWeight: 600, marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>
                         lím. {formatIntegerCurrency(limite)}
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Barra de utilización — solo crédito con límite */}
                 {isCredito && limite > 0 && (
                   <>
-                    <div style={{ height: 5, borderRadius: 10, background: trackBg, overflow: 'hidden', marginBottom: 8 }}>
-                      <div style={{ height: '100%', width: `${utilPct}%`, borderRadius: 10, background: utilPct > 80 ? `linear-gradient(90deg,${utilColor}99,${utilColor})` : `linear-gradient(90deg,#16a34a,#22c55e)`, transition: 'width .4s' }} />
+                    <div style={{ height: 4, borderRadius: 10, background: trackBg, overflow: 'hidden', marginBottom: 5 }}>
+                      <div style={{
+                        height: '100%', width: `${utilPct}%`, borderRadius: 10,
+                        background: utilPct > 80 ? `linear-gradient(90deg,${utilColor}99,${utilColor})` : 'linear-gradient(90deg,#16a34a,#22c55e)',
+                        transition: 'width .4s',
+                      }} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, fontWeight: 800, color: utilColor }}>{utilPct}% usado{utilPct >= 100 ? ' ⚠' : ''}</span>
-                      <span style={{ fontSize: 11, color: bankC, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: utilColor }}>{utilPct}%{utilPct >= 100 ? ' ⚠' : ''}</span>
+                      <span style={{ fontSize: 10, color: t.subtitle, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                         disponible {formatIntegerCurrency(disponible)}
                       </span>
                     </div>
@@ -281,5 +203,3 @@ export function TarjetasCard({ darkMode = false, canWrite: _canWrite = true, onN
     </div>
   );
 }
-
-// ── DashboardHome ─────────────────────────────────────────────────────────

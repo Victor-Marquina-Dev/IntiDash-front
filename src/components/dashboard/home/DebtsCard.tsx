@@ -10,6 +10,7 @@ import { NewPrestamoModal, PrestamosModal } from './PrestamosModals';
 import { CardHeaderSection } from './CardHeaderSection';
 import { Icon } from '@/components/icons';
 import type { DeudaRow, PrestamoRow } from '@/shared/types/finance.types';
+import { RADIUS } from '@/lib/radius';
 
 // ── Tokens de color por tema ──────────────────────────────────────────────
 const DARK = {
@@ -35,32 +36,32 @@ const DARK = {
   scrollBg:   'rgba(255,255,255,0.06)',
 };
 const LIGHT = {
-  cardBg:     '#FFFFFF',
-  cardBrd:    'rgba(17,24,39,0.08)',
-  boxShadow:  '0 1px 2px rgba(17,24,39,.04)',
-  metricInt:  '#111827',
-  metricSym:  '#6B7280',
-  metricDec:  'rgba(17,24,39,0.30)',
-  metricSub:  '#9CA3AF',
-  itemBg:     '#FAFAFA',
-  itemBrd:    'rgba(17,24,39,0.07)',
-  nameC:      '#111827',
-  subC:       '#9CA3AF',
-  amtC:       '#111827',
-  barBg:      'rgba(17,24,39,0.07)',
-  pillActBg:  '#111827',
+  cardBg:     'rgba(234,224,213,0.97)',
+  cardBrd:    'rgba(198,172,143,0.60)',
+  boxShadow:  '0 1px 4px rgba(94,80,63,.08)',
+  metricInt:  '#2C1A0E',
+  metricSym:  'rgba(94,80,63,0.65)',
+  metricDec:  'rgba(94,80,63,0.35)',
+  metricSub:  'rgba(94,80,63,0.55)',
+  itemBg:     'rgba(255,255,255,0.35)',
+  itemBrd:    'rgba(94,80,63,0.14)',
+  nameC:      '#2C1A0E',
+  subC:       'rgba(94,80,63,0.55)',
+  amtC:       '#2C1A0E',
+  barBg:      'rgba(94,80,63,0.08)',
+  pillActBg:  '#7D5A38',
   pillActC:   '#fff',
   pillInBg:   'transparent',
-  pillInC:    '#6B7280',
-  pillInBrd:  'rgba(17,24,39,0.10)',
-  emptyC:     '#9CA3AF',
-  scrollBg:   'rgba(17,24,39,0.04)',
+  pillInC:    'rgba(60,32,8,0.38)',
+  pillInBrd:  'rgba(94,80,63,0.20)',
+  emptyC:     'rgba(94,80,63,0.45)',
+  scrollBg:   'rgba(94,80,63,0.06)',
 };
 
 // ── Colores por tipo de item ──────────────────────────────────────────────
 const DEBT_CUOTA = C.warn;       // ámbar
 const DEBT_PAGO  = C.neg;        // rojo
-const PREST_COLORS = [C.neg, C.warn];
+const PREST_COLOR = C.neg;
 
 // ── Mini item (2 col grid, tamaño fijo) ───────────────────────────────────
 interface MiniItemProps {
@@ -78,7 +79,6 @@ function MiniItem({ color, initial, name, sub, amount, amountPre = 'S/', pct, tk
   const { integer: intPart, decimal: decPart } = formatCurrencyParts(amount);
 
   const dc      = color;
-  const dcText  = color;
   const dcBadge = color;
 
   return (
@@ -132,7 +132,7 @@ function MiniItem({ color, initial, name, sub, amount, amountPre = 'S/', pct, tk
 
         {/* Monto */}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: dcText, fontVariantNumeric: 'tabular-nums', lineHeight: 1.2, letterSpacing: -0.3 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: tk.metricInt, fontVariantNumeric: 'tabular-nums', lineHeight: 1.2, letterSpacing: -0.3 }}>
             {amountPre}{intPart}
             <span style={{ fontSize: 9.5, fontWeight: 600, opacity: 0.72 }}>{decPart}</span>
           </div>
@@ -145,7 +145,7 @@ function MiniItem({ color, initial, name, sub, amount, amountPre = 'S/', pct, tk
           <div style={{ flex: 1, height: 3.5, borderRadius: 6, background: `${color}20`, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${Math.min(100, pct)}%`, borderRadius: 6, background: dc }} />
           </div>
-          <span style={{ fontSize: 9, fontWeight: 800, color: dcText, flexShrink: 0, fontVariantNumeric: 'tabular-nums', letterSpacing: 0.2 }}>
+          <span style={{ fontSize: 9, fontWeight: 800, color, flexShrink: 0, fontVariantNumeric: 'tabular-nums', letterSpacing: 0.2 }}>
             {pct}%
           </span>
         </div>
@@ -276,7 +276,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
   // Color del scrollbar según tab activo
   const scrollThumb = isDebts
     ? (debtFilter === 'cuotas' ? `${DEBT_CUOTA}90` : `${DEBT_PAGO}90`)
-    : `${PREST_COLORS[0]}90`;
+    : `${PREST_COLOR}90`;
 
   // Resumen por tab
   const summaryAmount   = isPrestamos ? totals.faltante : totals.debt;
@@ -293,7 +293,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRadius: 22, overflow: 'hidden',
+        borderRadius: RADIUS.dashboardCard, overflow: 'hidden',
         background: tk.cardBg,
         border: `1px solid ${hovered ? (isDark ? 'rgba(255,255,255,0.18)' : 'rgba(17,24,39,0.16)') : tk.cardBrd}`,
         boxShadow: hovered ? (isDark ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : tk.boxShadow,
@@ -313,7 +313,13 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
           { id: 'prestamos', label: 'Préstamos',   badge: loading ? '…' : prestamosRows.length },
         ]}
         activeTab={tab}
-        onTabChange={id => setTab(id as 'debts' | 'prestamos')}
+        onTabChange={id => { setTab(id as 'debts' | 'prestamos'); }}
+        subTabs={isDebts && !loading ? [
+          { id: 'un_pago', label: 'Un pago',  badge: debtsUnPago.length },
+          { id: 'cuotas',  label: 'A cuotas', badge: debtsCuotas.length },
+        ] : undefined}
+        activeSubTab={debtFilter}
+        onSubTabChange={f => setDebtFilter(f as 'cuotas' | 'un_pago')}
         darkMode={isDark}
       />
 
@@ -325,37 +331,11 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
           subtitle={summarySubtitle}
           tk={tk}
           isDark={isDark}
-          color={isDebts ? DEBT_PAGO : PREST_COLORS[0]}
+          color={isDebts ? DEBT_PAGO : PREST_COLOR}
           onClick={() => setShowTable(true)}
         />
       )}
 
-      {/* ── Sub-filtro deudas ── */}
-      {!loading && isDebts && (
-        <div style={{ display: 'flex', gap: 6, padding: '0 16px 8px', flexShrink: 0 }}>
-          {(['un_pago', 'cuotas'] as const).map(f => {
-            const active = debtFilter === f;
-            const count  = f === 'cuotas' ? debtsCuotas.length : debtsUnPago.length;
-            return (
-              <button key={f} onClick={() => setDebtFilter(f)} style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '4px 10px', borderRadius: 20,
-                fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
-                border: `1px solid ${active ? tk.pillActBg : tk.pillInBrd}`,
-                background: active ? tk.pillActBg : tk.pillInBg,
-                color: active ? tk.pillActC : tk.pillInC,
-                fontFamily: 'var(--font-ui), system-ui, sans-serif',
-                transition: 'all .18s',
-              }}>
-                {f === 'cuotas' ? 'A cuotas' : 'Un pago'}
-                <span style={{ fontSize: 9, fontWeight: 900, padding: '1px 5px', borderRadius: 6, background: active ? 'rgba(255,255,255,.22)' : 'rgba(17,24,39,0.08)', color: active ? tk.pillActC : tk.pillInC }}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      )}
 
       {/* ── Lista con scroll interno ── */}
       <div style={{
@@ -402,8 +382,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
         {/* Grid de ítems — Préstamos */}
         {!loading && isPrestamos && !anyEmpty && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-            {prestamoItems.map((p: PrestamoRow, i) => {
-              const color    = PREST_COLORS[i % 2];
+            {prestamoItems.map((p: PrestamoRow) => {
               const faltante = p.cantidadFaltante ?? Math.max(0, (p.montoPrestamo ?? 0) - (p.montoPagado ?? 0));
               const pct      = p.montoPrestamo && p.montoPrestamo > 0
                 ? Math.min(100, Math.round(((p.montoPagado ?? 0) / p.montoPrestamo) * 100))
@@ -412,7 +391,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
                 <MiniItem
                   key={p.id}
                   tk={tk}
-                  color={color}
+                  color={PREST_COLOR}
                   initial={(p.nombre?.[0] ?? '?').toUpperCase()}
                   name={p.nombre}
                   sub={p.cuentaBancaria || 'Sin cuenta'}

@@ -45,7 +45,7 @@ export function WorkspaceSelector({ darkMode, user }: Readonly<{ darkMode: boole
           cursor: 'pointer', fontFamily: 'var(--font-ui)',
         }}
       >
-        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#8FA88F', flexShrink: 0 }} />
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#3C7828', flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 600, color: fg, whiteSpace: 'nowrap', lineHeight: 1 }}>
           Espacio de {firstName(user)}
         </span>
@@ -78,16 +78,16 @@ export function WorkspaceSelector({ darkMode, user }: Readonly<{ darkMode: boole
                   fontFamily: 'var(--font-ui)',
                 }}
               >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#8FA88F' : (darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(17,24,39,0.2)'), flexShrink: 0 }} />
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? '#3C7828' : (darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(17,24,39,0.2)'), flexShrink: 0 }} />
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? '#8FA88F' : fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ display: 'block', fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? '#3C7828' : fg, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     Espacio de {firstName(user)}
                   </span>
                   <span style={{ display: 'block', fontSize: 11, color: subC }}>{ROLE_LABEL[w.role] ?? w.role}</span>
                 </span>
                 {isActive && (
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6 L5 9 L10 3" stroke="#8FA88F" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M2 6 L5 9 L10 3" stroke="#3C7828" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 )}
               </button>

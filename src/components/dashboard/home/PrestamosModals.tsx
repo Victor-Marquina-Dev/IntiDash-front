@@ -9,6 +9,7 @@ import type { PrestamoRow } from '@/shared/types/finance.types';
 
 const FONT  = 'var(--font-ui),system-ui,sans-serif';
 const COLOR = C.neg;
+const AMOUNT_COLOR = C.amount;
 
 const fmtAmt = (n: number | null | undefined) =>
   formatNullableCurrency(n, '—');
@@ -131,9 +132,9 @@ function RowCard({ row, color, onUpdated }: Readonly<{
           {/* Progreso de pago */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
             <div style={{ flex: 1, height: 4, borderRadius: 6, background: 'rgba(17,24,39,.08)', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${pct}%`, borderRadius: 6, background: pct >= 100 ? C.pos : color, transition: 'width .3s' }} />
+              <div style={{ height: '100%', width: `${pct}%`, borderRadius: 6, background: color, transition: 'width .3s' }} />
             </div>
-            <span style={{ fontSize: 9.5, fontWeight: 800, color: pct >= 100 ? C.pos : C.textMute, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+            <span style={{ fontSize: 9.5, fontWeight: 800, color, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
               {pct}%
             </span>
             {row.fecha && (
@@ -146,7 +147,7 @@ function RowCard({ row, color, onUpdated }: Readonly<{
 
         {/* Por cobrar */}
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.3 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: AMOUNT_COLOR, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.3 }}>
             {fmtAmt(faltante)}
           </div>
           {row.montoPrestamo != null && (
@@ -288,7 +289,6 @@ export function PrestamosModal({ onClose, canWrite = true }: Readonly<{ onClose:
   }, [onClose]);
 
   const totalFaltante = rows.reduce((s, r) => s + (r.cantidadFaltante ?? Math.max(0, (r.montoPrestamo ?? 0) - (r.montoPagado ?? 0))), 0);
-  const COLORS = [COLOR, C.warn];
 
   const handleUpdated = (upd: PrestamoRow) => setRows(rs => rs.map(r => r.id === upd.id ? upd : r));
   const handleCreated = () => { setShowCreate(false); load(); };
@@ -319,7 +319,7 @@ export function PrestamosModal({ onClose, canWrite = true }: Readonly<{ onClose:
           {!loading && rows.length > 0 && (
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <div style={{ fontSize: 9.5, color: C.textMute, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: 700 }}>Por cobrar</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: COLOR, letterSpacing: -0.8, fontVariantNumeric: 'tabular-nums' }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: AMOUNT_COLOR, letterSpacing: -0.8, fontVariantNumeric: 'tabular-nums' }}>
                 {formatCurrency(totalFaltante)}
               </div>
             </div>
@@ -369,8 +369,8 @@ export function PrestamosModal({ onClose, canWrite = true }: Readonly<{ onClose:
               Sin préstamos registrados.
             </div>
           )}
-          {!loading && !hasError && rows.map((row, i) => (
-            <RowCard key={row.id} row={row} color={COLORS[i % COLORS.length]} onUpdated={handleUpdated} />
+          {!loading && !hasError && rows.map(row => (
+            <RowCard key={row.id} row={row} color={COLOR} onUpdated={handleUpdated} />
           ))}
         </div>
       </div>

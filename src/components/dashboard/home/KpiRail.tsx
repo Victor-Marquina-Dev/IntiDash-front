@@ -41,16 +41,16 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
       <IngresosKpiCard
         darkMode={isDark}
         amount={kpis.ingresos.total}
+        delta={kpis.ingresos.delta}
         monthlyData={kpis.ingresos.monthly}
-        monthlyLabels={kpis.ingresos.monthlyLabels}
         onCardClick={() => onNavigate?.('cards')}
         onCreate={canWrite ? () => setShowNewIngModal(true) : undefined}
       />
       <GastosKpiCard
         darkMode={isDark}
         amount={kpis.gastos.total}
+        delta={kpis.gastos.delta}
         monthlyData={kpis.gastos.monthly}
-        monthlyLabels={kpis.gastos.monthlyLabels}
         onCardClick={() => onNavigate?.('cards')}
         onCreate={canWrite ? () => setShowNewGasModal(true) : undefined}
       />

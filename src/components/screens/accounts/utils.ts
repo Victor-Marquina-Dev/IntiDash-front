@@ -7,7 +7,7 @@ export function getBankMeta(banco: string) {
   for (const [key, meta] of Object.entries(BANK_META)) {
     if (b.includes(key)) return meta;
   }
-  return { color: '#fff', bg: '#8FA88F' };
+  return { color: '#fff', bg: '#3C7828' };
 }
 
 export function fmt(v: number) {

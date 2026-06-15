@@ -1,5 +1,6 @@
 import React from 'react';
 import { C } from '@/lib/colors';
+import { RADIUS } from '@/lib/radius';
 
 interface DashboardScreenFrameProps {
   darkMode: boolean;
@@ -10,7 +11,7 @@ export function DashboardScreenFrame({ darkMode, children }: Readonly<DashboardS
   return (
     <div style={{
       margin: '8px 64px 16px',
-      borderRadius: 32,
+      borderRadius: RADIUS.dashboardCard,
       overflow: 'hidden',
       background: darkMode ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
       border: `1px solid ${darkMode ? 'rgba(255,255,255,0.07)' : 'rgba(17,24,39,0.07)'}`,
