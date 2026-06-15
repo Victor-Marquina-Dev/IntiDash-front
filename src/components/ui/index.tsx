@@ -3,6 +3,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { C } from '@/lib/colors';
+import { useBreakpoint } from '@/lib/breakpoints';
 import { Icon } from '@/components/icons';
 import { RADIUS } from '@/lib/radius';
 
@@ -284,6 +285,8 @@ interface ModalShellProps {
 
 export function ModalShell({ onClose, children, maxWidth = 480, zIndex = 300 }: Readonly<ModalShellProps>) {
   const [visible, setVisible] = React.useState(false);
+  const bp = useBreakpoint();
+  const pad = bp === 'mobile' ? 10 : 24;
 
   React.useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
@@ -301,7 +304,7 @@ export function ModalShell({ onClose, children, maxWidth = 480, zIndex = 300 }: 
         backdropFilter: visible ? 'blur(8px)' : 'none',
         WebkitBackdropFilter: visible ? 'blur(8px)' : 'none',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24, boxSizing: 'border-box',
+        padding: pad, boxSizing: 'border-box',
         transition: 'background 0.25s ease, backdrop-filter 0.25s ease',
       }}
     >

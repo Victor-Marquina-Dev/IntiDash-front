@@ -12,9 +12,9 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
   const D = darkMode ?? false;
   const isMobile = bp === 'mobile';
   const isDesktop = bp === 'desktop';
-  const numSize  = bp === 'desktop' ? 58 : isMobile ? 38 : 44;
-  const prefSize = bp === 'desktop' ? 22 : isMobile ? 16 : 18;
-  const decSize  = bp === 'desktop' ? 28 : isMobile ? 18 : 20;
+  const numSize  = bp === 'desktop' ? 58 : isMobile ? 44 : 44;
+  const prefSize = bp === 'desktop' ? 22 : isMobile ? 17 : 18;
+  const decSize  = bp === 'desktop' ? 28 : isMobile ? 20 : 20;
   const balance = useDashboardBalance();
   const [hovered, setHovered] = React.useState(false);
 
@@ -77,7 +77,7 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
         justifyContent: 'center',
         alignItems: 'center',
         width: '100%',
-        padding: isMobile ? '22px 18px' : '28px 32px 26px',
+        padding: isMobile ? '24px 18px 20px' : '28px 32px 26px',
         boxSizing: 'border-box',
         textAlign: 'center',
       }}>
@@ -94,7 +94,7 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
         flexDirection: isMobile ? 'column' : 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: isMobile ? '22px 0 14px' : '24px 0 18px',
+        padding: isMobile ? '18px 0 14px' : '24px 0 18px',
         gap: isMobile ? 14 : 16,
       }}>
 
@@ -123,40 +123,40 @@ export function HeroBalance({ bp, darkMode, onNavigate: _onNavigate }: Readonly<
       {/* MÉTRICAS: 3 columnas inline */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
-        gap: isMobile ? 12 : 0,
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gap: 0,
         padding: isMobile ? '12px 0 0' : '16px 0 0',
         width: '100%',
       }}>
 
         {/* Cambio mensual */}
-        <div style={{ position: 'relative', textAlign: 'center', paddingRight: isMobile ? 0 : 16, paddingBottom: isMobile ? 12 : 0, borderBottom: isMobile ? `1px solid ${sepC}` : 'none' }}>
-          {!isMobile && <div style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 1, background: sepC }} />}
+        <div style={{ position: 'relative', textAlign: 'center', paddingRight: isMobile ? 8 : 16 }}>
+          <div style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 1, background: sepC }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: metricLblC, letterSpacing: 1.4, textTransform: 'uppercase' }}>Cambio mensual</span>
+            <span style={{ fontSize: isMobile ? 8 : 9, fontWeight: 800, color: metricLblC, letterSpacing: isMobile ? 1 : 1.4, textTransform: 'uppercase' }}>Cambio mensual</span>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: balance.isPositiveChange ? C.pos : C.neg, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: balance.isPositiveChange ? C.pos : C.neg, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
             {balance.summary ? `${balance.isPositiveChange ? '+' : ''}${balance.pctAbs}%` : '—'}
           </div>
         </div>
 
         {/* Flujo neto */}
-        <div style={{ position: 'relative', textAlign: 'center', padding: isMobile ? '0 0 12px' : '0 16px', borderBottom: isMobile ? `1px solid ${sepC}` : 'none' }}>
-          {!isMobile && <div style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 1, background: sepC }} />}
+        <div style={{ position: 'relative', textAlign: 'center', padding: isMobile ? '0 8px' : '0 16px' }}>
+          <div style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 1, background: sepC }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: metricLblC, letterSpacing: 1.4, textTransform: 'uppercase' }}>Flujo neto</span>
+            <span style={{ fontSize: isMobile ? 8 : 9, fontWeight: 800, color: metricLblC, letterSpacing: isMobile ? 1 : 1.4, textTransform: 'uppercase' }}>Flujo neto</span>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: balance.flujoPos ? C.pos : C.neg, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: balance.flujoPos ? C.pos : C.neg, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
             {balance.flujoNeto !== null ? `${balance.flujoPos ? '+' : ''}${formatIntegerCurrency(Math.abs(balance.flujoNeto))}` : '—'}
           </div>
         </div>
 
         {/* Patrimonio neto */}
-        <div style={{ textAlign: 'center', paddingLeft: isMobile ? 0 : 16 }}>
+        <div style={{ textAlign: 'center', paddingLeft: isMobile ? 8 : 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 6 }}>
-            <span style={{ fontSize: 9, fontWeight: 800, color: metricLblC, letterSpacing: 1.4, textTransform: 'uppercase' }}>Patrimonio neto</span>
+            <span style={{ fontSize: isMobile ? 8 : 9, fontWeight: 800, color: metricLblC, letterSpacing: isMobile ? 1 : 1.4, textTransform: 'uppercase' }}>Patrimonio neto</span>
           </div>
-          <div style={{ fontSize: 20, fontWeight: 900, color: D ? '#c8d0c8' : C.text, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          <div style={{ fontSize: isMobile ? 17 : 20, fontWeight: 900, color: D ? '#c8d0c8' : C.text, letterSpacing: -0.8, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
             {balance.patrimonio !== null ? formatIntegerCurrency(balance.patrimonio) : '—'}
           </div>
         </div>

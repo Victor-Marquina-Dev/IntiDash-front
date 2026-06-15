@@ -1,6 +1,9 @@
+'use client';
+
 import React from 'react';
 import { C } from '@/lib/colors';
 import { RADIUS } from '@/lib/radius';
+import { useBreakpoint } from '@/lib/breakpoints';
 
 interface DashboardScreenFrameProps {
   darkMode: boolean;
@@ -8,9 +11,14 @@ interface DashboardScreenFrameProps {
 }
 
 export function DashboardScreenFrame({ darkMode, children }: Readonly<DashboardScreenFrameProps>) {
+  const bp = useBreakpoint();
+  let sideMargin = 64;
+  if (bp === 'mobile') sideMargin = 12;
+  else if (bp === 'tablet') sideMargin = 24;
+
   return (
     <div style={{
-      margin: '8px 64px 16px',
+      margin: `8px ${sideMargin}px 16px`,
       borderRadius: RADIUS.dashboardCard,
       overflow: 'hidden',
       background: darkMode ? 'rgba(255,255,255,0.04)' : '#FFFFFF',

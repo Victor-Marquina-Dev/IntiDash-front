@@ -3,10 +3,12 @@
 import React from 'react';
 import type { BP } from '@/lib/breakpoints';
 import { useDashboardChart } from '@/shared/hooks/use-dashboard-chart';
-import { AreaLineChart, DebtLineChart, EmptyLineChart, NetLineChart } from './ChartVisuals';
+import { AreaLineChart, EmptyLineChart, NetLineChart } from './ChartVisuals';
 import { CardHeaderSection } from './CardHeaderSection';
 import { Icon } from '@/components/icons';
+import { DASHBOARD_CARD } from '@/lib/dashboard-spacing';
 import { RADIUS } from '@/lib/radius';
+import { useElementSize } from '@/lib/use-element-size';
 
 const CARD_BG = {
   dark:  { bg: 'linear-gradient(145deg,#1A1D21,#16181C)', brd: 'rgba(255,255,255,0.08)', sh: '0 4px 24px rgba(0,0,0,.5)' },
@@ -23,6 +25,12 @@ export function ChartCard({ bp, darkMode, onNavigate }: Readonly<{ accent?: stri
   const card = isDark ? CARD_BG.dark : CARD_BG.light;
   const span = bp === 'desktop' ? '1 / span 2' : 'span 12';
   const chartHeight = bp === 'mobile' ? 200 : 320;
+  // Mide el área real del gráfico para que el SVG use ese tamaño como viewBox
+  // (responsive sin deformar). Fallback a chartHeight/ancho intrínseco al inicio.
+  const [chartBodyRef, chartBodySize] = useElementSize<HTMLDivElement>();
+  const cw = chartBodySize.width > 0 ? chartBodySize.width : undefined;
+  const ch = chartBodySize.height > 0 ? chartBodySize.height : chartHeight;
+  const hasDebtData = chart.deuda.remaining.some(value => value != null && value > 0);
 
   const tabs = [
     { id: 'comparativa', label: 'Comparativa', badge: chart.comparativa.badge },
@@ -55,46 +63,66 @@ export function ChartCard({ bp, darkMode, onNavigate }: Readonly<{ accent?: stri
         tabs={tabs}
         activeTab={section}
         onTabChange={id => setSection(id as ChartSection)}
-        onDetail={onNavigate ? () => onNavigate('analytics') : undefined}
+        onDetail={onNavigate ? () => onNavigate('charts') : undefined}
+        detailIcon={<Icon.arrowRight size={13} strokeWidth={2} />}
         detailTitle="Ir a Análisis"
         darkMode={isDark}
       />
 
-      <div style={{ padding: bp === 'mobile' ? '0 10px 10px' : '0 16px 12px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div ref={chartBodyRef} style={{ padding: bp === 'mobile' ? `0 ${DASHBOARD_CARD.padXCss} 10px` : `0 ${DASHBOARD_CARD.padXCss} 12px`, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {section === 'comparativa' && (
           chart.comparativa.hasData
             ? <AreaLineChart
+                key="comparativa-line-chart"
                 months={chart.comparativa.months}
                 income={chart.comparativa.income}
                 expense={chart.comparativa.expense}
-                height={chartHeight}
+                width={cw}
+                height={ch}
                 darkMode={isDark}
               />
             : <EmptyLineChart
                 months={chart.comparativa.months.length > 0 ? chart.comparativa.months : ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']}
-                height={chartHeight}
+                width={cw}
+                height={ch}
                 darkMode={isDark}
               />
         )}
         {section === 'deuda' && (
-          <DebtLineChart
-            months={chart.deuda.months}
-            remaining={chart.deuda.remaining}
-            height={chartHeight}
-            darkMode={isDark}
-          />
+          hasDebtData
+            ? <AreaLineChart
+                key="deuda-line-chart"
+                months={chart.deuda.months}
+                income={chart.deuda.months.map(() => null)}
+                expense={chart.deuda.months.map(() => null)}
+                debt={chart.deuda.remaining}
+                width={cw}
+                height={ch}
+                darkMode={isDark}
+              />
+            : <EmptyLineChart
+                months={chart.deuda.months.length > 0 ? chart.deuda.months : ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']}
+                width={cw}
+                height={ch}
+                darkMode={isDark}
+                legendItems={[
+                  { label: 'Deudas', color: '#D9A86C' },
+                ]}
+              />
         )}
         {section === 'neto' && (
           chart.neto.hasData
             ? <NetLineChart
                 months={chart.neto.months}
                 net={chart.neto.net}
-                height={chartHeight}
+                width={cw}
+                height={ch}
                 darkMode={isDark}
               />
             : <EmptyLineChart
                 months={chart.neto.months.length > 0 ? chart.neto.months : ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']}
-                height={chartHeight}
+                width={cw}
+                height={ch}
                 darkMode={isDark}
                 legendItems={[
                   { label: 'Neto positivo', color: '#3C7828' },

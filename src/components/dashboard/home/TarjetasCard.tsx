@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import React from 'react';
 import { Icon } from '@/components/icons';
+import { DASHBOARD_CARD } from '@/lib/dashboard-spacing';
 import { formatIntegerCurrency } from '@/lib/format';
 import { useDashboardAccounts } from '@/shared/hooks/use-dashboard-accounts';
 import { getKpiPalette } from './kpi-palette';
@@ -46,7 +47,10 @@ export function TarjetasCard({ darkMode = false, canWrite: _canWrite = true, onN
   return (
     <div style={{ background: t.outerBg, borderRadius: RADIUS.dashboardCard }} className="relative rounded-xl overflow-hidden">
 
-      <div className="flex flex-col w-full h-full rounded-lg p-4" style={{ background: t.innerBg, borderRadius: RADIUS.dashboardCard }}>
+      <div
+        className="flex flex-col w-full h-full rounded-lg"
+        style={{ background: t.innerBg, borderRadius: RADIUS.dashboardCard, padding: DASHBOARD_CARD.padding }}
+      >
 
         {/* Header */}
         <div className="flex items-center gap-2" style={{ marginBottom: 2 }}>
@@ -75,7 +79,7 @@ export function TarjetasCard({ darkMode = false, canWrite: _canWrite = true, onN
                 transition: 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)',
               }}
             >
-              <Icon.list size={10} strokeWidth={2} />
+              <Icon.arrowRight size={12} strokeWidth={2.2} />
             </button>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import React from 'react';
 import { C } from '@/lib/colors';
 import type { BP } from '@/lib/breakpoints';
+import { DASHBOARD_CARD } from '@/lib/dashboard-spacing';
 import { formatCurrencyParts } from '@/lib/format';
 import { useDashboardDebts, widgetPct } from '@/shared/hooks/use-dashboard-debts';
 import { DeudasModal, NewDeudaModal } from './KpiRail';
@@ -12,7 +13,7 @@ import { Icon } from '@/components/icons';
 import type { DeudaRow, PrestamoRow } from '@/shared/types/finance.types';
 import { RADIUS } from '@/lib/radius';
 
-// ── Tokens de color por tema ──────────────────────────────────────────────
+// Color tokens by theme
 const DARK = {
   cardBg:     'linear-gradient(145deg,#1A1D21,#16181C)',
   cardBrd:    'rgba(255,255,255,0.08)',
@@ -58,12 +59,12 @@ const LIGHT = {
   scrollBg:   'rgba(94,80,63,0.06)',
 };
 
-// ── Colores por tipo de item ──────────────────────────────────────────────
-const DEBT_CUOTA = C.warn;       // ámbar
+// Item colors by type
+const DEBT_CUOTA = C.warn;       // amber
 const DEBT_PAGO  = C.neg;        // rojo
 const PREST_COLOR = C.neg;
 
-// ── Mini item (2 col grid, tamaño fijo) ───────────────────────────────────
+// Mini item
 interface MiniItemProps {
   color:      string;
   initial:    string;
@@ -101,7 +102,7 @@ function MiniItem({ color, initial, name, sub, amount, amountPre = 'S/', pct, tk
       {/* Fila principal */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
 
-        {/* Icono con color sólido */}
+        {/* Icono con color solido */}
         <div style={{
           width: 34, height: 34, borderRadius: 10, flexShrink: 0,
           background: dcBadge,
@@ -113,14 +114,14 @@ function MiniItem({ color, initial, name, sub, amount, amountPre = 'S/', pct, tk
           {initial}
         </div>
 
-        {/* Nombre + subtítulo */}
+        {/* Nombre + subtitulo */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             fontSize: 12.5, fontWeight: 700, color: tk.nameC,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             lineHeight: 1.25,
           }}>
-            {name || '—'}
+            {name || '-'}
           </div>
           <div style={{
             fontSize: 10, color: tk.subC, marginTop: 2,
@@ -154,7 +155,7 @@ function MiniItem({ color, initial, name, sub, amount, amountPre = 'S/', pct, tk
   );
 }
 
-// ── Skeleton item ─────────────────────────────────────────────────────────
+// Skeleton item
 function SkeletonItem({ isDark }: { isDark: boolean }) {
   const cls = isDark ? 'fz-skeleton--dark' : 'fz-skeleton';
   return (
@@ -172,7 +173,7 @@ function SkeletonItem({ isDark }: { isDark: boolean }) {
   );
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────
+// Empty state
 function EmptyState({ message, tk }: { message: string; tk: typeof LIGHT }) {
   return (
     <div style={{ padding: '20px 0', textAlign: 'center', fontSize: 11.5, color: tk.emptyC }}>
@@ -181,16 +182,16 @@ function EmptyState({ message, tk }: { message: string; tk: typeof LIGHT }) {
   );
 }
 
-// ── Resumen de tab (card clickeable) ─────────────────────────────────────
-function AmountCard({ amount, subtitle, tk, isDark, color, onClick, onNew, newLine1, newLine2 }: {
-  amount: number; subtitle: string; tk: typeof LIGHT; isDark: boolean; color: string;
+// Tab summary
+function AmountCard({ amount, tk, isDark: _isDark, color, onClick, onNew, newLine1, newLine2 }: {
+  amount: number; tk: typeof LIGHT; isDark: boolean; color: string;
   onClick: () => void; onNew?: () => void; newLine1?: string; newLine2?: string;
 }) {
   const [hov,     setHov]     = React.useState(false);
   const [pressed, setPressed] = React.useState(false);
   const { integer: intPart, decimal: decPart } = formatCurrencyParts(amount);
   return (
-    <div style={{ padding: '8px 14px 10px', display: 'flex', gap: 8, flexShrink: 0 }}>
+    <div style={{ padding: `18px ${DASHBOARD_CARD.padXCss} 16px`, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
 
       {/* Bloque de monto clickeable */}
       <button
@@ -200,32 +201,26 @@ function AmountCard({ amount, subtitle, tk, isDark, color, onClick, onNew, newLi
         onMouseDown={() => setPressed(true)}
         onMouseUp={() => setPressed(false)}
         style={{
-          flex: 1, padding: '14px 16px 12px',
-          borderRadius: 16, cursor: 'pointer', textAlign: 'center',
+          width: '100%',
+          padding: '4px 16px',
+          cursor: 'pointer',
+          textAlign: 'center',
           fontFamily: 'var(--font-ui),system-ui,sans-serif',
-          border: `1.5px solid ${pressed ? `${color}55` : hov ? `${color}35` : (isDark ? 'rgba(255,255,255,.10)' : 'rgba(17,24,39,.09)')}`,
-          background: pressed
-            ? `${color}18`
-            : hov
-            ? `${color}0D`
-            : (isDark ? 'rgba(255,255,255,.04)' : 'rgba(17,24,39,.025)'),
-          boxShadow: pressed
-            ? `0 0 0 4px ${color}1A, 0 2px 8px ${color}22`
-            : hov
-            ? `0 4px 16px ${color}18`
-            : 'none',
+          border: 'none',
+          background: 'transparent',
+          boxShadow: 'none',
           transform: pressed ? 'scale(0.985)' : hov ? 'translateY(-1px)' : 'none',
-          transition: 'all .15s',
+          transition: 'transform .15s, opacity .15s',
+          opacity: pressed ? 0.82 : 1,
         }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, justifyContent: 'center', lineHeight: 1 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: tk.metricSym }}>S/</span>
-          <span style={{ fontSize: 34, fontWeight: 900, color: tk.metricInt, letterSpacing: -1.5, fontVariantNumeric: 'tabular-nums' }}>{intPart}</span>
-          <span style={{ fontSize: 18, fontWeight: 600, color: tk.metricDec }}>{decPart}</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, justifyContent: 'center', lineHeight: 1, whiteSpace: 'nowrap', minWidth: 0 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: tk.metricSym, flexShrink: 0 }}>S/</span>
+          <span style={{ fontSize: 'clamp(26px, 5vw, 34px)', fontWeight: 900, color: tk.metricInt, letterSpacing: -1.5, fontVariantNumeric: 'tabular-nums', flexShrink: 1, minWidth: 0 }}>{intPart}</span>
+          <span style={{ fontSize: 18, fontWeight: 600, color: tk.metricDec, flexShrink: 0 }}>{decPart}</span>
         </div>
-        <div style={{ fontSize: 11, color: tk.metricSub, fontWeight: 500, marginTop: 4 }}>{subtitle}</div>
       </button>
 
-      {/* Botón Nueva deuda / Nuevo préstamo */}
+      {/* Boton Nueva deuda / Nuevo prestamo */}
       {onNew && (
         <button
           onClick={onNew}
@@ -251,7 +246,7 @@ function AmountCard({ amount, subtitle, tk, isDark, color, onClick, onNew, newLi
   );
 }
 
-// ── Componente principal ──────────────────────────────────────────────────
+// Main component
 export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; darkMode?: boolean; canWrite?: boolean }>) {
   const isDark    = darkMode ?? false;
   const tk        = isDark ? DARK : LIGHT;
@@ -262,6 +257,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
   const [showTable,   setShowTable]   = React.useState(false);
   const [showNew,     setShowNew]     = React.useState(false);
   const [hovered,     setHovered]     = React.useState(false);
+  const [detailHovered, setDetailHovered] = React.useState(false);
 
   const {
     loading, fetchDeudas, fetchPrestamos,
@@ -273,16 +269,15 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
   const isPrestamos = tab === 'prestamos';
   const emptyMsg    = canWrite ? 'Sin datos · Sincroniza desde Ajustes' : 'Sin datos disponibles';
 
-  // Color del scrollbar según tab activo
+  // Color del scrollbar segun tab activo
   const scrollThumb = isDebts
     ? (debtFilter === 'cuotas' ? `${DEBT_CUOTA}90` : `${DEBT_PAGO}90`)
     : `${PREST_COLOR}90`;
 
   // Resumen por tab
   const summaryAmount   = isPrestamos ? totals.faltante : totals.debt;
-  const summarySubtitle = isPrestamos ? 'total pendiente en préstamos' : 'total pendiente en deudas';
 
-  // Items a renderizar según el tab activo
+  // Items a renderizar segun el tab activo
   const deudaItems    = [...visibleDebts].sort((a, b) => (b.cantidad ?? 0) - (a.cantidad ?? 0));
   const prestamoItems = [...prestamosRows].sort((a, b) => (b.montoPrestamo ?? 0) - (a.montoPrestamo ?? 0));
 
@@ -299,18 +294,55 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
         boxShadow: hovered ? (isDark ? '0 12px 32px rgba(0,0,0,.45)' : '0 12px 32px rgba(17,24,39,.10)') : tk.boxShadow,
         fontFamily: 'var(--font-ui),system-ui,sans-serif',
         display: 'flex', flexDirection: 'column',
+        position: 'relative',
         transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
         transition: 'transform .25s, box-shadow .25s, border-color .25s',
         ...(isDesktop ? { flex: 1, minHeight: 0 } : {}),
       }}>
 
-      {/* ── Header con tabs ── */}
+      <div style={{
+        position: 'absolute',
+        top: DASHBOARD_CARD.headerTop,
+        right: DASHBOARD_CARD.padX,
+        width: 34,
+        height: 34,
+        borderRadius: '50%',
+        background: isDark ? 'rgba(156,128,94,0.28)' : 'rgba(125,99,71,0.18)',
+        display: 'grid',
+        placeItems: 'center',
+        zIndex: 2,
+      }}>
+        <button
+          onClick={() => setShowTable(true)}
+          onMouseEnter={() => setDetailHovered(true)}
+          onMouseLeave={() => setDetailHovered(false)}
+          aria-label={isPrestamos ? 'Ver préstamos' : 'Ver deudas'}
+          title={isPrestamos ? 'Ver préstamos' : 'Ver deudas'}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            border: 'none',
+            background: isDark ? '#9C805E' : '#7D6347',
+            color: 'rgba(255,255,255,0.90)',
+            cursor: 'pointer',
+            display: 'grid',
+            placeItems: 'center',
+            transform: detailHovered ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+          }}
+        >
+          <Icon.list size={10} strokeWidth={2} />
+        </button>
+      </div>
+
+      {/* Header con tabs */}
       <CardHeaderSection
         icon={<Icon.list size={16} strokeWidth={2.2} />}
         label="Otras Secciones"
         tabs={[
-          { id: 'debts',     label: 'Deudas',     badge: loading ? '…' : debts.length },
-          { id: 'prestamos', label: 'Préstamos',   badge: loading ? '…' : prestamosRows.length },
+          { id: 'debts',     label: 'Deudas',     badge: loading ? '...' : debts.length },
+          { id: 'prestamos', label: 'Préstamos',   badge: loading ? '...' : prestamosRows.length },
         ]}
         activeTab={tab}
         onTabChange={id => { setTab(id as 'debts' | 'prestamos'); }}
@@ -323,12 +355,11 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
         darkMode={isDark}
       />
 
-      {/* ── Resumen central clickeable ── */}
+      {/* Resumen central clickeable */}
       {!loading && (
         <AmountCard
           key={tab}
           amount={summaryAmount}
-          subtitle={summarySubtitle}
           tk={tk}
           isDark={isDark}
           color={isDebts ? DEBT_PAGO : PREST_COLOR}
@@ -337,11 +368,11 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
       )}
 
 
-      {/* ── Lista con scroll interno ── */}
+      {/* Lista con scroll interno */}
       <div style={{
         flex: 1, minHeight: 0,
         overflowY: 'auto',
-        padding: loading ? '8px 14px 12px' : '0 14px 12px',
+        padding: loading ? `8px ${DASHBOARD_CARD.padXCss} 12px` : `0 ${DASHBOARD_CARD.padXCss} 12px`,
         scrollbarWidth: 'thin',
         scrollbarColor: `${scrollThumb} transparent`,
       }}>
@@ -356,7 +387,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
         {/* Empty state */}
         {!loading && anyEmpty && <EmptyState message={emptyMsg} tk={tk} />}
 
-        {/* Grid de ítems — Deudas */}
+        {/* Grid de items - Deudas */}
         {!loading && isDebts && !anyEmpty && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
             {deudaItems.map((d: DeudaRow) => {
@@ -379,7 +410,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
           </div>
         )}
 
-        {/* Grid de ítems — Préstamos */}
+        {/* Grid de items - Prestamos */}
         {!loading && isPrestamos && !anyEmpty && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
             {prestamoItems.map((p: PrestamoRow) => {
@@ -404,7 +435,7 @@ export function Debts({ bp, darkMode, canWrite = true }: Readonly<{ bp: BP; dark
         )}
       </div>
 
-      {/* ── Modales ── */}
+      {/* Modales */}
       {showTable && isDebts     && <DeudasModal onClose={() => setShowTable(false)} />}
       {showTable && isPrestamos && <PrestamosModal onClose={() => setShowTable(false)} canWrite={canWrite} />}
       {canWrite && showNew && isDebts && (

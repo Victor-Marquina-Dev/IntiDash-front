@@ -15,9 +15,10 @@ interface AhorroKpiCardProps {
   delta: string;
   accounts: { nombre: string; banco: string; balance: number | null }[];
   onDetail?: () => void;
+  compact?: boolean;
 }
 
-export function AhorroKpiCard({ darkMode, amount, delta, accounts, onDetail }: Readonly<AhorroKpiCardProps>) {
+export function AhorroKpiCard({ darkMode, amount, delta, accounts, onDetail, compact = false }: Readonly<AhorroKpiCardProps>) {
   const t = getKpiPalette(darkMode);
   const [btnHovered, setBtnHovered] = React.useState(false);
 
@@ -34,8 +35,13 @@ export function AhorroKpiCard({ darkMode, amount, delta, accounts, onDetail }: R
   const accentColor = darkMode ? '#9C805E' : '#7D6347';
 
   const renderBody = (a: boolean) => (
-    <div className="flex flex-col w-full h-full rounded-lg p-4"
-      style={{ background: a ? accentColor : t.innerBg, borderRadius: RADIUS.dashboardCard }}>
+    <div className="flex flex-col w-full h-full rounded-lg"
+      style={{
+        background: a ? accentColor : t.innerBg,
+        borderRadius: RADIUS.dashboardCard,
+        padding: compact ? '14px 16px 12px' : 16,
+        minHeight: compact ? 150 : undefined,
+      }}>
 
       <div className="flex items-center gap-2">
         <span className="text-xs font-black tracking-[2px] uppercase shrink-0"
@@ -60,10 +66,10 @@ export function AhorroKpiCard({ darkMode, amount, delta, accounts, onDetail }: R
         onMouseEnter={a ? undefined : () => setBtnHovered(true)}
       >
         <div
-          className="text-3xl font-extrabold tabular-nums tracking-tight"
+          className="font-extrabold tabular-nums tracking-tight"
           style={a
-            ? { color: 'white' }
-            : { color: C.amount }}
+            ? { color: 'white', fontSize: compact ? 34 : 36, lineHeight: 1 }
+            : { color: C.amount, fontSize: compact ? 34 : 36, lineHeight: 1 }}
         >
           {fmtValue}
         </div>

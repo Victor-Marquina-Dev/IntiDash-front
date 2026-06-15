@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { useDashboardCategories, type CategoryTab } from '@/shared/hooks/use-dashboard-categories';
-import { CategoriasModal, NewCategoriaModal } from './CategoryModals';
+import { NewCategoriaModal } from './CategoryModals';
 import { CardHeaderSection, type CardTab } from './CardHeaderSection';
 import { Icon } from '@/components/icons';
+import { DASHBOARD_CARD } from '@/lib/dashboard-spacing';
 import { formatCompactCurrency, formatIntegerCurrency } from '@/lib/format';
 import { RADIUS } from '@/lib/radius';
 
@@ -257,7 +258,6 @@ function DonutView({ rows, tokens, tabs: _tabs, activeTab }: Readonly<DonutViewP
 
 export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMode?: boolean; canWrite?: boolean }>) {
   const [tab, setTab]             = React.useState<CategoryTab>('ingreso');
-  const [showTable, setShowTable] = React.useState(false);
   const [showNew, setShowNew]     = React.useState(false);
   const [showDonut, setShowDonut] = React.useState(true);
   const [hovered, setHovered]     = React.useState(false);
@@ -294,22 +294,21 @@ export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMo
         tabs={tabs}
         activeTab={tab}
         onTabChange={id => setTab(id as CategoryTab)}
-        onDetail={() => setShowTable(true)}
         onChart={() => setShowDonut(d => !d)}
         chartActive={showDonut}
         chartTitle={showDonut ? 'Ver lista' : 'Ver gráfico'}
+        chartIcon={showDonut ? <Icon.list size={12} strokeWidth={2} /> : <Icon.target size={12} strokeWidth={1.9} />}
         onCreate={canWrite ? () => setShowNew(true) : undefined}
-        detailTitle="Ver tabla"
         createTitle="Nueva categoría"
         darkMode={isDark}
       />
 
       {showDonut ? (
-        <div key={tab} className="fz-tab-content" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 8px' }}>
+        <div key={tab} className="fz-tab-content" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: `0 ${DASHBOARD_CARD.padXCss}` }}>
           <DonutView rows={rows} tokens={tokens} tabs={tabs} activeTab={tab} />
         </div>
       ) : (
-        <div key={tab} className="fz-tab-content" style={{ maxHeight: 374, overflowY: 'auto', padding: '0 16px 8px' }}>
+        <div key={tab} className="fz-tab-content" style={{ maxHeight: 374, overflowY: 'auto', padding: `0 ${DASHBOARD_CARD.padXCss} 8px` }}>
           {loading && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0' }}>
               {[1,2,3,4].map(i => (
@@ -362,7 +361,6 @@ export function CategoriesDonut({ darkMode, canWrite = true }: Readonly<{ darkMo
         </div>
       )}
 
-      {showTable && <CategoriasModal onClose={() => setShowTable(false)} canWrite={canWrite} />}
       {canWrite && showNew && <NewCategoriaModal defaultTab={tab} onClose={() => setShowNew(false)} onSuccess={() => { setShowNew(false); refresh(); }} />}
     </div>
   );

@@ -24,6 +24,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
 
   const kpis = useDashboardKpis();
   const isDark = darkMode ?? false;
+  const isMobile = bp === 'mobile';
   const gridStyle: React.CSSProperties = bp === 'desktop'
     ? { gridColumn: '2 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 12 }
     : {
@@ -31,7 +32,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
         display: 'grid',
         gridTemplateColumns: bp === 'mobile' ? '1fr' : '1fr 1fr',
         gridTemplateRows: 'auto',
-        gap: 12,
+        gap: isMobile ? 10 : 12,
         alignContent: 'start',
         alignItems: 'start',
       };
@@ -45,6 +46,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
         monthlyData={kpis.ingresos.monthly}
         onCardClick={() => onNavigate?.('cards')}
         onCreate={canWrite ? () => setShowNewIngModal(true) : undefined}
+        compact={isMobile}
       />
       <GastosKpiCard
         darkMode={isDark}
@@ -53,6 +55,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
         monthlyData={kpis.gastos.monthly}
         onCardClick={() => onNavigate?.('cards')}
         onCreate={canWrite ? () => setShowNewGasModal(true) : undefined}
+        compact={isMobile}
       />
       <AhorroKpiCard
         darkMode={isDark}
@@ -63,6 +66,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
           try { localStorage.setItem('florin:pending-group', 'AHORRO'); } catch {}
           onNavigate?.('cards');
         }}
+        compact={isMobile}
       />
       <SuscripcionesKpiCard
         darkMode={isDark}
@@ -70,6 +74,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
         count={kpis.suscripciones.count}
         onDetail={() => setShowSuscModal(true)}
         onCreate={undefined}
+        compact={isMobile}
       />
     </div>
   );

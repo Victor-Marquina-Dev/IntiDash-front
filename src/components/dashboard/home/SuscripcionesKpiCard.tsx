@@ -15,9 +15,10 @@ interface SuscripcionesKpiCardProps {
   count: number;
   onDetail?: () => void;
   onCreate?: (() => void) | undefined;
+  compact?: boolean;
 }
 
-export function SuscripcionesKpiCard({ darkMode, amount, count, onDetail, onCreate: _onCreate }: Readonly<SuscripcionesKpiCardProps>) {
+export function SuscripcionesKpiCard({ darkMode, amount, count, onDetail, onCreate: _onCreate, compact = false }: Readonly<SuscripcionesKpiCardProps>) {
   const t = getKpiPalette(darkMode);
   const [hovered, setHovered] = React.useState(false);
 
@@ -27,8 +28,13 @@ export function SuscripcionesKpiCard({ darkMode, amount, count, onDetail, onCrea
   const accentColor = darkMode ? '#9C805E' : '#7D6347';
 
   const renderBody = (a: boolean) => (
-    <div className="flex flex-col w-full h-full rounded-lg p-4"
-      style={{ background: a ? accentColor : t.innerBg, borderRadius: RADIUS.dashboardCard }}>
+    <div className="flex flex-col w-full h-full rounded-lg"
+      style={{
+        background: a ? accentColor : t.innerBg,
+        borderRadius: RADIUS.dashboardCard,
+        padding: compact ? '14px 16px 12px' : 16,
+        minHeight: compact ? 150 : undefined,
+      }}>
 
       <div className="flex items-center gap-2">
         <span className="text-xs font-black tracking-[2px] uppercase shrink-0"
@@ -51,10 +57,10 @@ export function SuscripcionesKpiCard({ darkMode, amount, count, onDetail, onCrea
         onMouseEnter={a ? undefined : () => setHovered(true)}
       >
         <div
-          className="text-3xl font-extrabold tabular-nums tracking-tight"
+          className="font-extrabold tabular-nums tracking-tight"
           style={a
-            ? { color: 'white' }
-            : { color: C.amount }}
+            ? { color: 'white', fontSize: compact ? 34 : 36, lineHeight: 1 }
+            : { color: C.amount, fontSize: compact ? 34 : 36, lineHeight: 1 }}
         >
           {fmtValue}
         </div>

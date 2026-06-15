@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { useBreakpoint } from '@/lib/breakpoints';
+import { useDashboardScale } from './use-dashboard-scale';
 import type { Tweaks } from '@/components/tweaks';
 import { ChartCard } from './home/ChartCard';
 import { CategoriesDonut } from './home/CategoriesDonut';
@@ -17,11 +17,20 @@ interface DashboardHomeProps {
   canWrite?: boolean;
 }
 
+
 export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }: Readonly<DashboardHomeProps>) {
-  const bp = useBreakpoint();
+  const {
+    breakpoint: bp,
+    scale,
+    viewportHeight,
+    isDesktop,
+    isScaled,
+    availableHeight,
+    logicalAvailableHeight,
+    logicalWidth,
+  } = useDashboardScale();
   const accent = tweaks.accent;
   const isMobile = bp === 'mobile';
-  const isDesktop = bp === 'desktop';
 
   const gap = isMobile ? 10 : tweaks.density === 'compact' ? 12 : 14;
   const padX = 'clamp(24px, 3.2vw, 75px)';
@@ -35,16 +44,26 @@ export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }:
   if (isDesktop) mainColumns = '3fr 1fr';
   if (isMobile) mainColumns = '1fr';
 
+  // Alto del home en desktop. Si está escalado, el lienzo lógico mide el alto
+  // disponible ÷ factor (y luego transform: scale lo amplía a pantalla completa).
+  let desktopHeight = 'auto';
+  if (isDesktop) {
+    if (isScaled) desktopHeight = `${logicalAvailableHeight}px`;
+    else if (viewportHeight > 0) desktopHeight = `${availableHeight}px`;
+    else desktopHeight = 'calc(100vh - 68px)';
+  }
+
   const dashboardStyle: CSSProperties = {
     padding,
     display: 'grid',
     gridTemplateColumns: mainColumns,
     gridTemplateRows: isDesktop ? '100%' : undefined,
     gap,
-    height: isDesktop ? 'calc(100vh - 68px)' : 'auto',
+    height: desktopHeight,
     overflow: isDesktop ? 'hidden' : 'visible',
     boxSizing: 'border-box',
-    width: '100%',
+    width: isScaled ? `${logicalWidth}px` : '100%',
+    ...(isScaled ? { transform: `scale(${scale})`, transformOrigin: 'top left' } : {}),
   };
 
   const contentGridStyle: CSSProperties = {
@@ -64,7 +83,7 @@ export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }:
     ...(isDesktop ? { height: '100%' } : {}),
   };
 
-  return (
+  const content = (
     <div style={dashboardStyle}>
       <div style={contentGridStyle}>
         <HeroBalance bp={bp} darkMode={darkMode} onNavigate={onNavigate} />
@@ -83,4 +102,16 @@ export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }:
       </div>
     </div>
   );
+
+  // En monitores grandes, el lienzo lógico (content) se amplía con transform y
+  // se contiene en un wrapper del tamaño físico real para que llene la pantalla.
+  if (isScaled) {
+    return (
+      <div style={{ width: '100%', height: `${availableHeight}px`, overflow: 'hidden' }}>
+        {content}
+      </div>
+    );
+  }
+
+  return content;
 }

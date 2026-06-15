@@ -2,13 +2,14 @@
 
 import React from 'react';
 import { Icon } from '@/components/icons';
+import { DASHBOARD_CARD } from '@/lib/dashboard-spacing';
 import { RADIUS } from '@/lib/radius';
 
-const TITLE_ROW_HEIGHT = 42;
+const TITLE_ROW_HEIGHT = 34;
 const TABS_ROW_HEIGHT  = 34;
-const ROW_PAD_X = '0 16px';
-const ACTION_BTN_SIZE = 28;
-const ACTION_BTN_RADIUS = 8;
+const ROW_PAD_X = `0 ${DASHBOARD_CARD.padXCss}`;
+const ACTION_OUTER = 34;
+const ACTION_INNER = 24;
 const TAB_HEIGHT = 26;
 const TAB_GAP = 6;
 
@@ -60,6 +61,8 @@ interface CardHeaderSectionProps {
   onDetail?: () => void;
   onCreate?: () => void;
   onChart?: () => void;
+  detailIcon?: React.ReactNode;
+  chartIcon?: React.ReactNode;
   detailTitle?: string;
   createTitle?: string;
   chartTitle?: string;
@@ -138,6 +141,8 @@ export function CardHeaderSection({
   onDetail,
   onCreate,
   onChart,
+  detailIcon,
+  chartIcon,
   detailTitle = 'Ver tabla',
   createTitle = 'Nuevo',
   chartTitle = 'Ver grafico',
@@ -147,28 +152,44 @@ export function CardHeaderSection({
   const tokens = darkMode ? DARK : LIGHT;
   const [btnHov, setBtnHov] = React.useState<'detail' | 'create' | 'chart' | null>(null);
 
-  const btnStyle = (key: 'detail' | 'create' | 'chart', active = false): React.CSSProperties => ({
-    width: ACTION_BTN_SIZE,
-    height: ACTION_BTN_SIZE,
-    borderRadius: ACTION_BTN_RADIUS,
-    background: active
-      ? (darkMode ? 'rgba(255,255,255,.90)' : '#111827')
-      : (btnHov === key ? tokens.btnHovBg : tokens.btnBg),
-    border: `1px solid ${active ? (darkMode ? 'rgba(255,255,255,0.90)' : '#111827') : tokens.btnBrd}`,
-    color: active
-      ? (darkMode ? '#111' : '#fff')
-      : (btnHov === key ? tokens.btnHovC : tokens.btnC),
-    cursor: 'pointer',
-    display: 'grid',
-    placeItems: 'center',
-    transition: 'all .2s',
-    flexShrink: 0,
-  });
+  // Botón de acción estandarizado al estilo de la card de Cuentas:
+  // círculo exterior translúcido + círculo interior sólido café con icono blanco.
+  const renderAction = (
+    key: 'detail' | 'create' | 'chart',
+    onClick: () => void,
+    title: string,
+    icon: React.ReactNode,
+    _active = false,
+  ) => (
+    <div style={{
+      width: ACTION_OUTER, height: ACTION_OUTER, borderRadius: '50%',
+      background: darkMode ? 'rgba(156,128,94,0.28)' : 'rgba(125,99,71,0.18)',
+      display: 'grid', placeItems: 'center', flexShrink: 0,
+    }}>
+      <button
+        onClick={onClick}
+        aria-label={title}
+        title={title}
+        onMouseEnter={() => setBtnHov(key)}
+        onMouseLeave={() => setBtnHov(null)}
+        style={{
+          width: ACTION_INNER, height: ACTION_INNER, borderRadius: '50%', border: 'none',
+          background: darkMode ? '#9C805E' : '#7D6347',
+          color: 'rgba(255,255,255,0.92)',
+          cursor: 'pointer', display: 'grid', placeItems: 'center',
+          transform: btnHov === key ? 'scale(1.12)' : 'scale(1)',
+          transition: 'transform .2s cubic-bezier(0.34,1.56,0.64,1), background .2s',
+        }}
+      >
+        {icon}
+      </button>
+    </div>
+  );
 
   const hasSubTabs = subTabs && subTabs.length > 0;
 
   return (
-    <div style={{ flexShrink: 0 }}>
+    <div style={{ flexShrink: 0, paddingTop: DASHBOARD_CARD.headerTop }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -194,43 +215,10 @@ export function CardHeaderSection({
         </div>
 
         {(onDetail || onChart || onCreate) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-            {onDetail && (
-              <button
-                onClick={onDetail}
-                aria-label={detailTitle}
-                title={detailTitle}
-                onMouseEnter={() => setBtnHov('detail')}
-                onMouseLeave={() => setBtnHov(null)}
-                style={btnStyle('detail')}
-              >
-                <Icon.chart size={12} strokeWidth={1.7} />
-              </button>
-            )}
-            {onChart && (
-              <button
-                onClick={onChart}
-                aria-label={chartTitle}
-                title={chartTitle}
-                onMouseEnter={() => setBtnHov('chart')}
-                onMouseLeave={() => setBtnHov(null)}
-                style={btnStyle('chart', chartActive)}
-              >
-                <Icon.target size={12} strokeWidth={1.7} />
-              </button>
-            )}
-            {onCreate && (
-              <button
-                onClick={onCreate}
-                aria-label={createTitle}
-                title={createTitle}
-                onMouseEnter={() => setBtnHov('create')}
-                onMouseLeave={() => setBtnHov(null)}
-                style={btnStyle('create')}
-              >
-                <Icon.plus size={12} strokeWidth={2} />
-              </button>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {onDetail && renderAction('detail', onDetail, detailTitle, detailIcon ?? <Icon.chart size={12} strokeWidth={1.9} />)}
+            {onChart && renderAction('chart', onChart, chartTitle, chartIcon ?? <Icon.target size={12} strokeWidth={1.9} />, chartActive)}
+            {onCreate && renderAction('create', onCreate, createTitle, <Icon.plus size={13} strokeWidth={2.2} />)}
           </div>
         )}
       </div>

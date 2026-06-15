@@ -8,16 +8,24 @@ function fmtK(v: number): string {
   return formatCompactCurrency(v);
 }
 
+/** Polilínea recta entre puntos ordenados por x. */
+function seriesPath(points: [number, number][]): string {
+  if (points.length === 0) return '';
+  return `M ${points[0][0]} ${points[0][1]}` + points.slice(1).map(p => ` L ${p[0]} ${p[1]}`).join('');
+}
+
 const M3_LIGHT = {
   incLine:   '#3C7828',
   incFill:   'rgba(60,120,40,0.18)',
   expLine:   '#B43232',
   expFill:   'rgba(180,50,50,0.14)',
-  debtLine:  '#D9A86C',                 // naranja suave — misma tonalidad pastel que inc/exp
+  debtLine:  '#D9A86C',
+  incDotStroke: '#2F641F',
+  expDotStroke: '#8F2727',
+  debtDotStroke: '#A87332',
   grid:      'rgba(17,24,39,.07)',
-  axisLine:  'rgba(17,24,39,.14)',
-  axisText:  '#9CA3AF',
-  dotStroke: 'rgba(255,255,255,.92)',
+  axisLine:  'rgba(17,24,39,0.55)',
+  axisText:  '#6B7280',
 };
 const M3_DARK = {
   incLine:   '#3C7828',
@@ -25,10 +33,12 @@ const M3_DARK = {
   expLine:   '#B43232',
   expFill:   'rgba(180,50,50,.20)',
   debtLine:  '#D9A86C',
+  incDotStroke: '#8FA88F',
+  expDotStroke: '#CF9C9C',
+  debtDotStroke: '#F0C285',
   grid:      'rgba(255,255,255,.07)',
   axisLine:  'rgba(255,255,255,.12)',
   axisText:  'rgba(255,255,255,0.30)',
-  dotStroke: 'rgba(13,15,18,.95)',
 };
 
 const FONT = 'var(--font-ui),system-ui,sans-serif';
@@ -36,12 +46,12 @@ const FONT = 'var(--font-ui),system-ui,sans-serif';
 const WE_NAMES: Record<number, string> = { 5: 'Viernes', 6: 'Sábado', 0: 'Domingo' };
 const WE_COLOR = '#d97706';
 
-export function AreaLineChart({ months, income, expense, debt, height, darkMode = false, todayIndex, chartYear, chartMonth }: Readonly<{
-  months: string[]; income: (number|null)[]; expense: (number|null)[]; debt?: (number|null)[]; height: number; darkMode?: boolean; todayIndex?: number;
+export function AreaLineChart({ months, income, expense, debt, width, height, darkMode = false, todayIndex, chartYear, chartMonth }: Readonly<{
+  months: string[]; income: (number|null)[]; expense: (number|null)[]; debt?: (number|null)[]; width?: number; height: number; darkMode?: boolean; todayIndex?: number;
   chartYear?: number; chartMonth?: number;
 }>) {
   const tk = darkMode ? M3_DARK : M3_LIGHT;
-  const W = 800, H = height;
+  const W = width && width > 0 ? width : 800, H = height;
   const padL = 48, padR = 20, padT = 50, padB = 36;
   const plotH = H - padT - padB;
   const base  = H - padB;
@@ -72,17 +82,42 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
   const xs = months.map((_, i) => padL + (i / Math.max(months.length - 1, 1)) * (W - padL - padR));
   const y  = (v: number) => padT + (1 - v / max) * plotH;
   const cutoff = todayIndex !== undefined ? todayIndex : months.length - 1;
-  const seg = (pts: [number,number][]) => pts.length < 2 ? '' : `M ${pts[0][0]} ${pts[0][1]} ` + pts.slice(1).map(p => `L ${p[0]} ${p[1]}`).join(' ');
   // Línea y área solo hasta el cutoff (hoy); puntos futuros se renderizan sin línea
   const ptIncLine = income.map( (v, i) => (v == null || i > cutoff) ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
   const ptExpLine = expense.map((v, i) => (v == null || i > cutoff) ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
   const ptDebtLine = debtArr.map((v, i) => (v == null || i > cutoff) ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
-  const incPath = seg(ptIncLine);
-  const expPath = seg(ptExpLine);
-  const debtPath = seg(ptDebtLine);
+  const incPath = seriesPath(ptIncLine);
+  const expPath = seriesPath(ptExpLine);
+  const debtPath = seriesPath(ptDebtLine);
   const incArea = incPath && ptIncLine.length > 1 ? `${incPath} L ${ptIncLine[ptIncLine.length-1][0]} ${base} L ${ptIncLine[0][0]} ${base} Z` : '';
   const expArea = expPath && ptExpLine.length > 1 ? `${expPath} L ${ptExpLine[ptExpLine.length-1][0]} ${base} L ${ptExpLine[0][0]} ${base} Z` : '';
   const debtArea = debtPath && ptDebtLine.length > 1 ? `${debtPath} L ${ptDebtLine[ptDebtLine.length-1][0]} ${base} L ${ptDebtLine[0][0]} ${base} Z` : '';
+
+  const setHoverFromPoint = (i: number) => {
+    const candidates = [
+      { type: 'inc' as const, v: income[i] },
+      { type: 'exp' as const, v: expense[i] },
+      { type: 'debt' as const, v: debtArr[i] },
+    ].filter((item): item is { type: 'inc' | 'exp' | 'debt'; v: number } => item.v != null && item.v > 0);
+    if (!candidates.length) { setHov(null); return; }
+    const top = candidates.reduce((best, item) => item.v > best.v ? item : best);
+    setHov({ type: top.type, i, cx: xs[i], cy: y(top.v), v: top.v });
+  };
+
+  const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const mx = ((event.clientX - rect.left) / Math.max(rect.width, 1)) * W;
+    const my = ((event.clientY - rect.top) / Math.max(rect.height, 1)) * H;
+    if (mx < padL || mx > W - padR || my < padT || my > base) {
+      setHov(null);
+      return;
+    }
+    const nearest = xs.reduce((best, x, i) => {
+      const distance = Math.abs(x - mx);
+      return distance < best.distance ? { i, distance } : best;
+    }, { i: 0, distance: Number.POSITIVE_INFINITY });
+    setHoverFromPoint(nearest.i);
+  };
 
   // Leyenda dinámica según series con datos
   const legendEntries = [
@@ -92,9 +127,20 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
   ].filter((e): e is { label: string; color: string } => e !== null);
 
   const svgEl = (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}
+    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}
+      onMouseMove={handleMouseMove}
       onMouseLeave={() => setHov(null)}>
       <defs>
+        <style>{`
+          @keyframes fzGuideIn {
+            from { transform: scaleY(0); opacity: 0; }
+            to { transform: scaleY(1); opacity: 0.5; }
+          }
+          @keyframes fzTooltipIn {
+            from { transform: translateY(3px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+        `}</style>
         <linearGradient id={`ig-${uid}`} x1="0" y1={padT} x2="0" y2={base} gradientUnits="userSpaceOnUse">
           <stop offset="0%"   stopColor={tk.incLine} stopOpacity="0.32" />
           <stop offset="100%" stopColor={tk.incLine} stopOpacity="0.01" />
@@ -189,7 +235,7 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
         const delay   = `${0.7 + i * 0.1}s`;
         const isZero  = v === 0;
         const isFuture = todayIndex !== undefined && i > todayIndex;
-        const isHov   = hov?.type === 'inc' && hov.i === i;
+        const isHov   = hov?.i === i;
         const opacity = on ? (isFuture ? 0.42 : isZero ? 0.28 : 1) : 0;
         return (
           <g key={`i${i}`}
@@ -197,7 +243,7 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
             onMouseEnter={() => !isZero && setHov({ type: 'inc', i, cx, cy, v })}
           >
             <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '1.8' : '3'}
-              fill={tk.incLine} stroke={tk.dotStroke} strokeWidth="1.5"
+              fill={tk.incLine} stroke={tk.incDotStroke} strokeWidth="1.5"
               style={{
                 transform: on ? (isHov ? 'scale(1.65)' : 'scale(1)') : 'scale(0)',
                 transformBox: 'fill-box', transformOrigin: 'center',
@@ -219,7 +265,7 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
         const delay   = `${0.75 + i * 0.1}s`;
         const isZero  = v === 0;
         const isFuture = todayIndex !== undefined && i > todayIndex;
-        const isHov   = hov?.type === 'exp' && hov.i === i;
+        const isHov   = hov?.i === i;
         const opacity = on ? (isFuture ? 0.42 : isZero ? 0.28 : 1) : 0;
         return (
           <g key={`e${i}`}
@@ -227,7 +273,7 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
             onMouseEnter={() => !isZero && setHov({ type: 'exp', i, cx, cy, v })}
           >
             <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '1.8' : '3'}
-              fill={tk.expLine} stroke={tk.dotStroke} strokeWidth="1.5"
+              fill={tk.expLine} stroke={tk.expDotStroke} strokeWidth="1.5"
               style={{
                 transform: on ? (isHov ? 'scale(1.65)' : 'scale(1)') : 'scale(0)',
                 transformBox: 'fill-box', transformOrigin: 'center',
@@ -249,7 +295,7 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
         const delay   = `${0.75 + i * 0.1}s`;
         const isZero  = v === 0;
         const isFuture = todayIndex !== undefined && i > todayIndex;
-        const isHov   = hov?.type === 'debt' && hov.i === i;
+        const isHov   = hov?.i === i;
         const opacity = on ? (isFuture ? 0.42 : isZero ? 0.28 : 1) : 0;
         return (
           <g key={`d${i}`}
@@ -257,7 +303,7 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
             onMouseEnter={() => !isZero && setHov({ type: 'debt', i, cx, cy, v })}
           >
             <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '1.8' : '3'}
-              fill={tk.debtLine} stroke={tk.dotStroke} strokeWidth="1.5"
+              fill={tk.debtLine} stroke={tk.debtDotStroke} strokeWidth="1.5"
               style={{
                 transform: on ? (isHov ? 'scale(1.65)' : 'scale(1)') : 'scale(0)',
                 transformBox: 'fill-box', transformOrigin: 'center',
@@ -317,6 +363,19 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
         );
       })()}
 
+      {/* Hit-areas verticales: el tooltip aparece al pasar por la columna del punto */}
+      {on && months.map((_, i) => {
+        const slotW = (W - padL - padR) / Math.max(months.length - 1, 1);
+        const x0 = i === 0 ? padL : xs[i] - slotW / 2;
+        const x1 = i === months.length - 1 ? W - padR : xs[i] + slotW / 2;
+        return (
+          <rect key={`hit${i}`} x={x0} y={padT} width={Math.max(x1 - x0, 0)} height={base - padT}
+            fill="transparent"
+            onMouseEnter={() => setHoverFromPoint(i)}
+          />
+        );
+      })}
+
       {/* Tooltip al hover — muestra las series con valor del mismo punto */}
       {hov && on && (() => {
         const rows = ([
@@ -338,11 +397,20 @@ export function AreaLineChart({ months, income, expense, debt, height, darkMode 
         const guideColor = hov.type === 'inc' ? tk.incLine : hov.type === 'exp' ? tk.expLine : tk.debtLine;
 
         return (
-          <g style={{ pointerEvents: 'none' }}>
-            <line x1={hov.cx} x2={hov.cx} y1={hov.cy} y2={base}
-              stroke={guideColor} strokeWidth="1" strokeDasharray="3 3" opacity="0.35" />
+          <g key={`${hov.type}-${hov.i}`} style={{ pointerEvents: 'none' }}>
+            <line x1={hov.cx} x2={hov.cx} y1={padT} y2={base}
+              stroke={guideColor} strokeWidth="1.2" strokeDasharray="3 3" opacity="0.5"
+              style={{
+                transform: 'scaleY(1)',
+                transformBox: 'fill-box',
+                transformOrigin: 'bottom',
+                animation: 'fzGuideIn 0.18s ease-out both',
+              }}
+            />
             <rect x={tx - tw / 2} y={ty - th / 2} width={tw} height={th} rx="7"
-              fill="rgba(17,24,39,0.92)" />
+              fill="rgba(17,24,39,0.92)"
+              style={{ animation: 'fzTooltipIn 0.16s ease-out both' }}
+            />
             {rows.map((r, k) => {
               const ly = ty - ((rows.length - 1) * 18) / 2 + k * 18;
               return (
@@ -512,11 +580,11 @@ export function MinimalBarsChart({ months, income, height, darkMode = false }: R
 }
 
 // ── Gráfico vacío: solo ejes X/Y sin datos ───────────────────────────────
-export function EmptyLineChart({ months, height, darkMode = false, legendItems }: Readonly<{
-  months: string[]; height: number; darkMode?: boolean; legendItems?: { label: string; color: string }[];
+export function EmptyLineChart({ months, width, height, darkMode = false, legendItems }: Readonly<{
+  months: string[]; width?: number; height: number; darkMode?: boolean; legendItems?: { label: string; color: string }[];
 }>) {
   const tk = darkMode ? M3_DARK : M3_LIGHT;
-  const W = 800, H = height;
+  const W = width && width > 0 ? width : 800, H = height;
   const padL = 48, padR = 20, padT = 50, padB = 36;
   const plotH = H - padT - padB;
   const base  = H - padB;
@@ -532,9 +600,9 @@ export function EmptyLineChart({ months, height, darkMode = false, legendItems }
   return (
     <svg
       width="100%"
-      height={H}
+      height="100%"
       viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="xMidYMid meet"
+      preserveAspectRatio="none"
       style={{ display: 'block' }}
     >
       {/* Leyenda */}
@@ -590,27 +658,29 @@ export function EmptyLineChart({ months, height, darkMode = false, legendItems }
 const M3_NET_LIGHT = {
   posLine: '#3C7828',
   negLine: '#B43232',
+  posDotStroke: '#2F641F',
+  negDotStroke: '#8F2727',
   grid: 'rgba(17,24,39,.07)',
-  zeroLine: 'rgba(17,24,39,.22)',
-  axisLine: 'rgba(17,24,39,.14)',
-  axisText: '#9CA3AF',
-  dotStroke: 'rgba(255,255,255,.92)',
+  zeroLine: 'rgba(17,24,39,.40)',
+  axisLine: 'rgba(17,24,39,0.55)',
+  axisText: '#6B7280',
 };
 const M3_NET_DARK = {
   posLine: '#3C7828',
   negLine: '#B43232',
+  posDotStroke: '#8FA88F',
+  negDotStroke: '#CF9C9C',
   grid: 'rgba(255,255,255,.07)',
   zeroLine: 'rgba(255,255,255,.20)',
   axisLine: 'rgba(255,255,255,.12)',
   axisText: 'rgba(255,255,255,0.30)',
-  dotStroke: 'rgba(13,15,18,.95)',
 };
 
-export function NetLineChart({ months, net, height, darkMode = false, todayIndex }: Readonly<{
-  months: string[]; net: (number|null)[]; height: number; darkMode?: boolean; todayIndex?: number;
+export function NetLineChart({ months, net, width, height, darkMode = false, todayIndex }: Readonly<{
+  months: string[]; net: (number|null)[]; width?: number; height: number; darkMode?: boolean; todayIndex?: number;
 }>) {
   const tk = darkMode ? M3_NET_DARK : M3_NET_LIGHT;
-  const W = 800, H = height;
+  const W = width && width > 0 ? width : 800, H = height;
   const padL = 48, padR = 20, padT = 50, padB = 36;
   const plotH = H - padT - padB;
   const base = H - padB;
@@ -631,18 +701,17 @@ export function NetLineChart({ months, net, height, darkMode = false, todayIndex
   const range = max - min;
   const xs = months.map((_, i) => padL + (i / Math.max(months.length - 1, 1)) * (W - padL - padR));
   const y = (v: number) => padT + ((max - v) / range) * plotH;
-  const zeroY = y(0);
   const cutoff = todayIndex !== undefined ? todayIndex : months.length - 1;
   const pts = net
     .map((v, i) => (v == null || i > cutoff) ? null : [xs[i], y(v), v] as [number, number, number])
     .filter((p): p is [number, number, number] => p !== null);
-  const linePath = pts.length < 2 ? '' : `M ${pts[0][0]} ${pts[0][1]} ` + pts.slice(1).map(p => `L ${p[0]} ${p[1]}`).join(' ');
+  const linePath = seriesPath(pts.map(p => [p[0], p[1]] as [number, number]));
   const currentNet = pts.length ? pts[pts.length - 1][2] : 0;
   const lineColor = currentNet >= 0 ? tk.posLine : tk.negLine;
   const tickVals = [max, max / 2, 0, min / 2, min].filter((v, i, arr) => i === 0 || v !== arr[i - 1]);
 
   return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }} onMouseLeave={() => setHov(null)}>
+    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }} onMouseLeave={() => setHov(null)}>
       <g>
         <circle cx={padL} cy={18} r="5" fill={tk.posLine} />
         <text x={padL + 10} y={23} fontSize="11" fontWeight="700" fill={tk.posLine} fontFamily={FONT}>Neto positivo</text>
@@ -688,12 +757,13 @@ export function NetLineChart({ months, net, height, darkMode = false, todayIndex
         const isFuture = todayIndex !== undefined && i > todayIndex;
         const isZero = v === 0;
         const color = v >= 0 ? tk.posLine : tk.negLine;
+        const dotStroke = v >= 0 ? tk.posDotStroke : tk.negDotStroke;
         const isHov = hov?.i === i;
         const ly = cy - 16 < padT + 5 ? cy + 20 : cy - 16;
         const delay = `${0.7 + i * 0.08}s`;
         return (
           <g key={`n${i}`} style={{ opacity: on ? (isFuture ? 0.42 : isZero ? 0.32 : 1) : 0, transition: `opacity 0.3s ease ${delay}` }} onMouseEnter={() => !isZero && !isFuture && setHov({ i, cx, cy, v })}>
-            <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '2' : '3.5'} fill={color} stroke={tk.dotStroke} strokeWidth="1.5"
+            <circle cx={cx} cy={cy} r={isFuture ? '2.5' : isZero ? '2' : '3.5'} fill={color} stroke={dotStroke} strokeWidth="1.5"
               style={{
                 transform: on ? (isHov ? 'scale(1.65)' : 'scale(1)') : 'scale(0)',
                 transformBox: 'fill-box',
@@ -711,6 +781,21 @@ export function NetLineChart({ months, net, height, darkMode = false, todayIndex
         );
       })}
 
+      {/* Hit-areas verticales: el tooltip aparece al pasar por la columna del punto */}
+      {on && months.map((_, i) => {
+        const v = net[i];
+        if (v == null) return null;
+        const slotW = (W - padL - padR) / Math.max(months.length - 1, 1);
+        const x0 = i === 0 ? padL : xs[i] - slotW / 2;
+        const x1 = i === months.length - 1 ? W - padR : xs[i] + slotW / 2;
+        return (
+          <rect key={`hit${i}`} x={x0} y={padT} width={Math.max(x1 - x0, 0)} height={base - padT}
+            fill="transparent"
+            onMouseEnter={() => setHov({ i, cx: xs[i], cy: y(v), v })}
+          />
+        );
+      })}
+
       {hov && on && (() => {
         const label = `${hov.v < 0 ? '-' : ''}${fmtK(Math.abs(hov.v))}`;
         const tw = Math.max(label.length * 7 + 24, 58);
@@ -721,7 +806,7 @@ export function NetLineChart({ months, net, height, darkMode = false, todayIndex
         const color = hov.v >= 0 ? tk.posLine : tk.negLine;
         return (
           <g style={{ pointerEvents: 'none' }}>
-            <line x1={hov.cx} x2={hov.cx} y1={hov.cy} y2={zeroY} stroke={color} strokeWidth="1" strokeDasharray="3 3" opacity="0.35" />
+            <line x1={hov.cx} x2={hov.cx} y1={padT} y2={base} stroke={color} strokeWidth="1.2" strokeDasharray="3 3" opacity="0.5" />
             <rect x={tx - tw / 2} y={ty - th / 2} width={tw} height={th} rx="7" fill="rgba(17,24,39,0.92)" />
             <circle cx={tx - tw / 2 + 11} cy={ty} r="3" fill={color} />
             <text x={tx - tw / 2 + 20} y={ty + 4} textAnchor="start" fontSize="10" fontWeight="700" fill={color} fontFamily={FONT}>{label}</text>
@@ -732,14 +817,14 @@ export function NetLineChart({ months, net, height, darkMode = false, todayIndex
   );
 }
 
-const M3_DEBT_LIGHT = { line: '#d97706', fill: 'rgba(217,119,6,.11)', grid: 'rgba(220,200,160,.80)', axisLine: 'rgba(217,119,6,.30)', axisText: '#c4a96a', dotStroke: 'rgba(255,255,255,.92)' };
+const M3_DEBT_LIGHT = { line: '#d97706', fill: 'rgba(217,119,6,.11)', grid: 'rgba(220,200,160,.80)', axisLine: 'rgba(17,24,39,0.5)', axisText: '#6B7280', dotStroke: 'rgba(255,255,255,.92)' };
 const M3_DEBT_DARK  = { line: '#d97706', fill: 'rgba(217,119,6,.14)', grid: 'rgba(255,255,255,.07)', axisLine: 'rgba(217,119,6,.30)', axisText: '#c4a96a', dotStroke: 'rgba(13,15,18,.95)' };
 
-export function DebtLineChart({ months, remaining, height, darkMode = false }: Readonly<{
-  months: string[]; remaining: (number|null)[]; height: number; darkMode?: boolean;
+export function DebtLineChart({ months, remaining, width, height, darkMode = false }: Readonly<{
+  months: string[]; remaining: (number|null)[]; width?: number; height: number; darkMode?: boolean;
 }>) {
   const tk = darkMode ? M3_DEBT_DARK : M3_DEBT_LIGHT;
-  const W = 800, H = height;
+  const W = width && width > 0 ? width : 800, H = height;
   const padL = 48, padR = 20, padT = 50, padB = 36;
   const plotH = H - padT - padB;
   const base  = H - padB;
@@ -761,10 +846,10 @@ export function DebtLineChart({ months, remaining, height, darkMode = false }: R
   const xs  = months.map((_, i) => padL + (i / Math.max(months.length - 1, 1)) * (W - padL - padR));
   const y   = (v: number) => padT + (1 - v / max) * plotH;
   const pts: [number,number][] = remaining.map((v, i) => v == null ? null : [xs[i], y(v)] as [number,number]).filter((p): p is [number,number] => p !== null);
-  const linePath = pts.length < 2 ? '' : `M ${pts[0][0]} ${pts[0][1]} ` + pts.slice(1).map(p => `L ${p[0]} ${p[1]}`).join(' ');
-  const areaPath = linePath ? `${linePath} L ${pts[pts.length-1][0]} ${base} L ${pts[0][0]} ${base} Z` : '';
+  const linePath = seriesPath(pts);
+  const areaPath = linePath && pts.length > 1 ? `${linePath} L ${pts[pts.length-1][0]} ${base} L ${pts[0][0]} ${base} Z` : '';
   return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+    <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ display: 'block' }}>
 
       {/* Leyenda superior-izquierda */}
       <circle cx={padL} cy={18} r="5" fill={tk.line} />

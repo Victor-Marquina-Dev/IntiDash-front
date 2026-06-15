@@ -13,6 +13,7 @@ import type { ScreenId } from './navigation';
 import type { SettingsSection } from '@/components/screens/NotionScreen';
 import { useDashboardNavigation } from './use-dashboard-navigation';
 import { OnboardingFlow } from './onboarding/OnboardingFlow';
+import { useDashboardScale } from './use-dashboard-scale';
 
 interface DashboardProps {
   tweaks: Tweaks;
@@ -40,6 +41,7 @@ export function Dashboard({
   const { canWrite, wsVersion } = useWorkspaces(Boolean(user));
   const { screen, dir, navigateTo } = useDashboardNavigation();
   const accent = tweaks.accent;
+  const { scale, isScaled, physicalHeaderHeight, logicalWidth } = useDashboardScale();
 
   const navigateToNotionSync = React.useCallback(() => {
     setNotionSection('notionSync');
@@ -126,6 +128,19 @@ export function Dashboard({
       : <DashboardStub label="Ajustes" />,
   };
 
+  const topBar = (
+    <TopBar
+      screen={screen}
+      setActive={navigateTo}
+      onNavigateToNotionSync={navigateToNotionSync}
+      darkMode={darkMode}
+      onToggleDark={toggleDarkMode}
+      user={user}
+      onLogout={onLogout}
+      canWrite={canWrite}
+    />
+  );
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -135,16 +150,13 @@ export function Dashboard({
       fontFamily: 'var(--font-ui), system-ui, sans-serif', letterSpacing: -0.1,
       transition: 'background 0.25s ease',
     }}>
-      <TopBar
-        screen={screen}
-        setActive={navigateTo}
-        onNavigateToNotionSync={navigateToNotionSync}
-        darkMode={darkMode}
-        onToggleDark={toggleDarkMode}
-        user={user}
-        onLogout={onLogout}
-        canWrite={canWrite}
-      />
+      {isScaled ? (
+        <div style={{ height: physicalHeaderHeight, flexShrink: 0, overflow: 'hidden' }}>
+          <div style={{ width: logicalWidth, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+            {topBar}
+          </div>
+        </div>
+      ) : topBar}
       <main style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div key={`${screen}-${wsVersion}`} className={dir === 'left' ? 'fz-screen-left' : 'fz-screen-right'} style={{ flex: 1, minHeight: 0 }}>
           {screen === 'home' ? screens[screen] : (

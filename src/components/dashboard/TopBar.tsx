@@ -14,6 +14,7 @@ import { getActiveWorkspace } from '@/shared/services/workspace.service';
 import { DASHBOARD_NAV_ITEMS, getDashboardNavItem, type DashboardNavItem, type ScreenId } from './navigation';
 import { WorkspaceSelector } from './WorkspaceSelector';
 import { NotificationBell } from './NotificationBell';
+import { MobileNavDrawer } from './MobileNavDrawer';
 
 const lsSyncKey = () => `notion_last_sync_${getActiveWorkspace() ?? 'default'}`;
 
@@ -21,6 +22,7 @@ const GearIcon     = Icon.gear;
 const MoonIcon     = Icon.moon;
 const SunIcon      = Icon.sun;
 const TrashIcon    = Icon.trash;
+const MenuIcon     = Icon.menu;
 const NAV_GROUP_RADIUS = RADIUS.dashboardHeader;
 const NAV_ACTIVE_RADIUS = RADIUS.dashboardHeader;
 const NAV_IDLE_RADIUS = RADIUS.dashboardHeader;
@@ -61,9 +63,9 @@ function NavTab({
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '9px 18px',
           borderRadius: NAV_ACTIVE_RADIUS,
-          background: dark ? '#f0f0ee' : '#111827',
+          background: dark ? '#9C805E' : '#7D6347',
           border: 'none',
-          color: dark ? '#0d1f0d' : '#ffffff',
+          color: '#ffffff',
           cursor: 'pointer',
           fontFamily: 'var(--font-ui), system-ui, sans-serif',
           fontSize: 13, fontWeight: 650,
@@ -156,6 +158,7 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
   const isTablet  = bp === 'tablet';
 
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const [scrolled, setScrolled]       = React.useState(false);
   const [syncLabel,   setSyncLabel]   = React.useState<string | null>(null);
   const [syncing,     setSyncing]     = React.useState(false);
@@ -287,15 +290,31 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
         boxSizing: 'border-box',
       }}>
 
-        {/* Mobile: icono y label activo */}
+        {/* Mobile: hamburguesa + icono y label activo */}
         {isMobile && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Abrir menú de navegación"
+              aria-haspopup="dialog"
+              aria-expanded={mobileNavOpen}
+              style={{
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: 'transparent',
+                border: `1px solid ${darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'}`,
+                color: darkMode ? 'rgba(255,255,255,0.7)' : C.text,
+                cursor: 'pointer', display: 'grid', placeItems: 'center',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <MenuIcon size={18} strokeWidth={2} />
+            </button>
             {ActiveIcon && (
-              <span style={{ color: C.olive, display: 'flex' }}>
+              <span style={{ color: C.olive, display: 'flex', flexShrink: 0 }}>
                 <ActiveIcon size={16} strokeWidth={2} />
               </span>
             )}
-            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? '#f0f0ee' : C.text, letterSpacing: -0.5 }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: darkMode ? '#f0f0ee' : C.text, letterSpacing: -0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {activeLabel}
             </span>
           </div>
@@ -552,6 +571,18 @@ export function TopBar({ screen = 'home', setActive, onNavigateToNotionSync, dar
           </div>
         </div>
       </div>
+
+      {isMobile && (
+        <MobileNavDrawer
+          open={mobileNavOpen}
+          onClose={() => setMobileNavOpen(false)}
+          active={screen}
+          onSelect={(id) => setActive?.(id)}
+          userName={user?.name}
+          userEmail={user?.email}
+          initials={initials}
+        />
+      )}
     </header>
   );
 }
