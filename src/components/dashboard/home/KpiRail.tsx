@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { BP } from '@/lib/breakpoints';
+import { useMobileParallax } from '../use-mobile-parallax';
 import { useDashboardKpis } from '@/shared/hooks/use-dashboard-kpis';
 import {
   AhorroKpiCard,
@@ -16,6 +17,8 @@ import {
 
 export { DeudasModal, NewDeudaModal } from './KpiRailParts';
 
+const KPI_MOBILE_PARALLAX_DEPTHS = [24, 36, 30, 42] as const;
+
 export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, canWrite = true }: Readonly<{ showCharts: boolean; bp: BP; darkMode?: boolean; onNavigate?: (screen: string) => void; canWrite?: boolean }>) {
   const [showSuscModal, setShowSuscModal] = React.useState(false);
   const [showNewIngModal, setShowNewIngModal] = React.useState(false);
@@ -25,6 +28,7 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
   const kpis = useDashboardKpis();
   const isDark = darkMode ?? false;
   const isMobile = bp === 'mobile';
+  const parallaxRefs = useMobileParallax(isMobile, KPI_MOBILE_PARALLAX_DEPTHS);
   const gridStyle: React.CSSProperties = bp === 'desktop'
     ? { gridColumn: '2 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: 'auto auto', gap: 12 }
     : {
@@ -37,45 +41,66 @@ export function KpiRail({ showCharts: _showCharts, bp, darkMode, onNavigate, can
         alignItems: 'start',
       };
 
+  const parallaxItemStyle: React.CSSProperties = {
+    willChange: 'transform',
+    transition: 'transform 80ms linear',
+  };
+
+  const setParallaxRef = (index: number) => (el: HTMLDivElement | null) => {
+    parallaxRefs.current[index] = el;
+  };
+
+  const wrapKpi = (index: number, node: React.ReactNode) => isMobile
+    ? <div ref={setParallaxRef(index)} style={parallaxItemStyle}>{node}</div>
+    : node;
+
   const cards = (
     <div style={gridStyle}>
-      <IngresosKpiCard
-        darkMode={isDark}
-        amount={kpis.ingresos.total}
-        delta={kpis.ingresos.delta}
-        monthlyData={kpis.ingresos.monthly}
-        onCardClick={() => onNavigate?.('cards')}
-        onCreate={canWrite ? () => setShowNewIngModal(true) : undefined}
-        compact={isMobile}
-      />
-      <GastosKpiCard
-        darkMode={isDark}
-        amount={kpis.gastos.total}
-        delta={kpis.gastos.delta}
-        monthlyData={kpis.gastos.monthly}
-        onCardClick={() => onNavigate?.('cards')}
-        onCreate={canWrite ? () => setShowNewGasModal(true) : undefined}
-        compact={isMobile}
-      />
-      <AhorroKpiCard
-        darkMode={isDark}
-        amount={kpis.ahorro.total}
-        delta={kpis.ahorro.delta}
-        accounts={kpis.ahorro.accounts}
-        onDetail={() => {
-          try { localStorage.setItem('florin:pending-group', 'AHORRO'); } catch {}
-          onNavigate?.('cards');
-        }}
-        compact={isMobile}
-      />
-      <SuscripcionesKpiCard
-        darkMode={isDark}
-        amount={kpis.suscripciones.total}
-        count={kpis.suscripciones.count}
-        onDetail={() => setShowSuscModal(true)}
-        onCreate={undefined}
-        compact={isMobile}
-      />
+      {wrapKpi(0, (
+        <IngresosKpiCard
+          darkMode={isDark}
+          amount={kpis.ingresos.total}
+          delta={kpis.ingresos.delta}
+          monthlyData={kpis.ingresos.monthly}
+          onCardClick={() => onNavigate?.('cards')}
+          onCreate={canWrite ? () => setShowNewIngModal(true) : undefined}
+          compact={isMobile}
+        />
+      ))}
+      {wrapKpi(1, (
+        <GastosKpiCard
+          darkMode={isDark}
+          amount={kpis.gastos.total}
+          delta={kpis.gastos.delta}
+          monthlyData={kpis.gastos.monthly}
+          onCardClick={() => onNavigate?.('cards')}
+          onCreate={canWrite ? () => setShowNewGasModal(true) : undefined}
+          compact={isMobile}
+        />
+      ))}
+      {wrapKpi(2, (
+        <AhorroKpiCard
+          darkMode={isDark}
+          amount={kpis.ahorro.total}
+          delta={kpis.ahorro.delta}
+          accounts={kpis.ahorro.accounts}
+          onDetail={() => {
+            try { localStorage.setItem('florin:pending-group', 'AHORRO'); } catch {}
+            onNavigate?.('cards');
+          }}
+          compact={isMobile}
+        />
+      ))}
+      {wrapKpi(3, (
+        <SuscripcionesKpiCard
+          darkMode={isDark}
+          amount={kpis.suscripciones.total}
+          count={kpis.suscripciones.count}
+          onDetail={() => setShowSuscModal(true)}
+          onCreate={undefined}
+          compact={isMobile}
+        />
+      ))}
     </div>
   );
 

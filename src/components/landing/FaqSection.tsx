@@ -1,5 +1,5 @@
 import { SectionHeading } from './SectionHeading';
-import { landingColors } from './theme';
+import { cardShadow, landingColors, landingRadius, sectionPadding } from './theme';
 
 const faqs = [
   {
@@ -32,8 +32,7 @@ export function FaqSection() {
   return (
     <section
       id="faq"
-      className="py-[112px]"
-      style={{ background: landingColors.paper, scrollMarginTop: '64px' }}
+      style={{ background: landingColors.paper, paddingBlock: sectionPadding, scrollMarginTop: '64px' }}
     >
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="flex justify-center mb-16">
@@ -44,19 +43,21 @@ export function FaqSection() {
           {faqs.map((f) => (
             <details
               key={f.q}
-              className="group bg-white rounded-[14px] border overflow-hidden"
+              className="group bg-white border overflow-hidden"
               style={{
-                borderColor: 'rgba(10,46,34,0.06)',
-                boxShadow: '0 1px 2px rgba(10,46,34,0.04)',
+                borderColor: 'rgba(23,25,28,0.07)',
+                borderRadius: landingRadius.input,
+                boxShadow: cardShadow,
               }}
             >
               <summary
-                className="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer text-[16px] font-semibold text-[#171C1A] select-none list-none"
-                style={{ fontFamily: 'var(--font-ui)' }}
+                className="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer text-[16px] font-semibold select-none list-none"
+                style={{ color: landingColors.ink, fontFamily: 'var(--font-ui)' }}
               >
                 {f.q}
                 <svg
-                  className="flex-shrink-0 w-4 h-4 text-[#8B9690] transition-transform duration-200 group-open:rotate-180"
+                  className="flex-shrink-0 w-4 h-4 transition-transform duration-200 group-open:rotate-180"
+                  style={{ color: landingColors.softText }}
                   viewBox="0 0 16 16"
                   fill="none"
                   aria-hidden="true"
@@ -64,7 +65,7 @@ export function FaqSection() {
                   <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </summary>
-              <p className="px-6 pb-5 text-[15px] text-[#5A6661] leading-[1.65] border-t border-[rgba(10,46,34,0.05)] pt-4">
+              <p className="px-6 pb-5 text-[15px] leading-[1.65] border-t border-[rgba(23,25,28,0.06)] pt-4" style={{ color: landingColors.muted }}>
                 {f.a}
               </p>
             </details>

@@ -18,20 +18,23 @@ interface CtaButtonProps {
 }
 
 const base =
-  'inline-flex items-center justify-center gap-2 font-semibold rounded-[12px] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8FA88F] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  'inline-flex items-center justify-center gap-2 rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a3a6af] focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
 const variants: Record<Variant, string> = {
+  // CTA sólido único: Ink, pill, texto blanco (peso medio, no bold)
   primary:
-    'bg-[#171C1A] text-white hover:bg-[#27302B] active:bg-[#0F1512] shadow-[0_1px_3px_rgba(23,28,26,0.22)] hover:shadow-[0_8px_24px_rgba(23,28,26,0.22)]',
+    'bg-[#17191c] text-white font-medium hover:bg-[#000000] active:bg-[#000000] shadow-[0_1px_2px_rgba(23,28,26,0.18)] hover:shadow-[0_10px_28px_rgba(23,28,26,0.20)]',
+  // Secundario: text-link, para mantener un solo CTA sólido por bloque.
   secondary:
-    'bg-white/70 text-[#171C1A] border border-[rgba(23,28,26,0.16)] hover:bg-white hover:border-[#8FA88F]',
+    'bg-transparent text-[#17191c] font-medium hover:bg-[#f7f7f8]',
+  // Terciario: text-link sin fondo
   ghost:
-    'bg-transparent text-[#171C1A] hover:bg-[#EEF4EE]',
+    'bg-transparent text-[#17191c] font-medium hover:opacity-70',
 };
 
 const sizes: Record<Size, string> = {
-  md: 'h-10 px-5 text-sm',
-  lg: 'h-12 px-7 text-base',
+  md: 'h-10 px-5 text-[15px] tracking-[-0.009em]',
+  lg: 'h-12 px-6 text-[15px] tracking-[-0.009em]',
 };
 
 export function CtaButton({

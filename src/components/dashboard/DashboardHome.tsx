@@ -9,6 +9,7 @@ import { HeroBalance } from './home/HeroBalance';
 import { KpiRail } from './home/KpiRail';
 import { TarjetasCard } from './home/TarjetasCard';
 import { Debts } from './home/DebtsCard';
+import { useMobileParallax } from './use-mobile-parallax';
 
 interface DashboardHomeProps {
   tweaks: Tweaks;
@@ -17,6 +18,7 @@ interface DashboardHomeProps {
   canWrite?: boolean;
 }
 
+const MOBILE_PARALLAX_DEPTHS = [20, 34, 28, 40, 32] as const;
 
 export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }: Readonly<DashboardHomeProps>) {
   const {
@@ -31,6 +33,7 @@ export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }:
   } = useDashboardScale();
   const accent = tweaks.accent;
   const isMobile = bp === 'mobile';
+  const parallaxRefs = useMobileParallax(isMobile, MOBILE_PARALLAX_DEPTHS);
 
   const gap = isMobile ? 10 : tweaks.density === 'compact' ? 12 : 14;
   const padX = 'clamp(24px, 3.2vw, 75px)';
@@ -83,22 +86,57 @@ export function DashboardHome({ tweaks, onNavigate, darkMode, canWrite = true }:
     ...(isDesktop ? { height: '100%' } : {}),
   };
 
+  const mobileParallaxGridItemStyle: CSSProperties = {
+    gridColumn: 'span 12',
+    willChange: 'transform',
+    transition: 'transform 80ms linear',
+  };
+
+  const mobileParallaxStackItemStyle: CSSProperties = {
+    willChange: 'transform',
+    transition: 'transform 80ms linear',
+  };
+
+  const setParallaxRef = (index: number) => (el: HTMLDivElement | null) => {
+    parallaxRefs.current[index] = el;
+  };
+
+  const heroBalance = <HeroBalance bp={bp} darkMode={darkMode} onNavigate={onNavigate} />;
+  const chartCard = <ChartCard accent={accent} bp={bp} darkMode={darkMode} onNavigate={onNavigate} />;
+  const categoriesCard = (
+    <div style={{ gridColumn: isDesktop ? '3' : 'span 12', display: 'flex', flexDirection: 'column', alignSelf: isDesktop ? 'stretch' : undefined }}>
+      <CategoriesDonut darkMode={darkMode} canWrite={canWrite} />
+    </div>
+  );
+  const accountsCard = <TarjetasCard darkMode={darkMode} canWrite={canWrite} onNavigate={onNavigate} />;
+  const debtsCard = (
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <Debts bp={bp} darkMode={darkMode} canWrite={canWrite} />
+    </div>
+  );
+
   const content = (
     <div style={dashboardStyle}>
       <div style={contentGridStyle}>
-        <HeroBalance bp={bp} darkMode={darkMode} onNavigate={onNavigate} />
+        {isMobile ? (
+          <div ref={setParallaxRef(0)} style={mobileParallaxGridItemStyle}>{heroBalance}</div>
+        ) : heroBalance}
         <KpiRail showCharts={tweaks.microCharts} bp={bp} darkMode={darkMode} onNavigate={onNavigate} canWrite={canWrite} />
-        <ChartCard accent={accent} bp={bp} darkMode={darkMode} onNavigate={onNavigate} />
-        <div style={{ gridColumn: isDesktop ? '3' : 'span 12', display: 'flex', flexDirection: 'column', alignSelf: isDesktop ? 'stretch' : undefined }}>
-          <CategoriesDonut darkMode={darkMode} canWrite={canWrite} />
-        </div>
+        {isMobile ? (
+          <div ref={setParallaxRef(1)} style={mobileParallaxGridItemStyle}>{chartCard}</div>
+        ) : chartCard}
+        {isMobile ? (
+          <div ref={setParallaxRef(2)} style={mobileParallaxGridItemStyle}>{categoriesCard}</div>
+        ) : categoriesCard}
       </div>
 
       <div style={railStyle}>
-        <TarjetasCard darkMode={darkMode} canWrite={canWrite} onNavigate={onNavigate} />
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <Debts bp={bp} darkMode={darkMode} canWrite={canWrite} />
-        </div>
+        {isMobile ? (
+          <div ref={setParallaxRef(3)} style={mobileParallaxStackItemStyle}>{accountsCard}</div>
+        ) : accountsCard}
+        {isMobile ? (
+          <div ref={setParallaxRef(4)} style={mobileParallaxStackItemStyle}>{debtsCard}</div>
+        ) : debtsCard}
       </div>
     </div>
   );

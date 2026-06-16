@@ -1,5 +1,5 @@
 import { SectionHeading } from './SectionHeading';
-import { landingColors } from './theme';
+import { cardShadow, landingColors, landingRadius, sectionPadding } from './theme';
 
 const benefits = [
   {
@@ -50,8 +50,7 @@ export function BenefitsGrid() {
   return (
     <section
       id="caracteristicas"
-      className="py-[112px]"
-      style={{ background: landingColors.band, scrollMarginTop: '64px' }}
+      style={{ background: landingColors.band, paddingBlock: sectionPadding, scrollMarginTop: '64px' }}
     >
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="flex justify-center mb-16">
@@ -65,28 +64,29 @@ export function BenefitsGrid() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {benefits.map((b) => (
-            <div
+            <article
               key={b.title}
-              className="bg-white rounded-[18px] p-7 border transition-all duration-200 hover:shadow-[0_12px_32px_-12px_rgba(10,46,34,0.14)] hover:-translate-y-[2px]"
+              className="bg-white p-7 border transition-all duration-200 hover:-translate-y-[3px]"
               style={{
-                borderColor: 'rgba(10,46,34,0.06)',
-                boxShadow: '0 1px 2px rgba(10,46,34,0.05)',
+                borderColor: 'rgba(23,25,28,0.07)',
+                borderRadius: landingRadius.card,
+                boxShadow: cardShadow,
               }}
             >
               <div
-                className="inline-flex items-center justify-center w-11 h-11 rounded-[12px] text-[15px] font-black mb-5"
-                style={{ background: b.soft, color: b.color }}
+                className="inline-flex items-center justify-center w-11 h-11 text-[15px] font-black mb-5"
+                style={{ background: b.soft, borderRadius: landingRadius.media, color: b.color }}
               >
                 {b.mark}
               </div>
               <h3
-                className="text-[18px] font-semibold text-[#171C1A] mb-2 leading-[1.3]"
-                style={{ fontFamily: 'var(--font-ui)' }}
+                className="text-[18px] font-semibold mb-2 leading-[1.3]"
+                style={{ color: landingColors.ink, fontFamily: 'var(--font-ui)' }}
               >
                 {b.title}
               </h3>
-              <p className="text-[15px] leading-[1.65] text-[#5A6661]">{b.desc}</p>
-            </div>
+              <p className="text-[15px] leading-[1.65]" style={{ color: landingColors.muted }}>{b.desc}</p>
+            </article>
           ))}
         </div>
       </div>

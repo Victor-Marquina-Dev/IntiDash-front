@@ -1,5 +1,5 @@
 import { SectionHeading } from './SectionHeading';
-import { landingColors } from './theme';
+import { cardShadow, landingColors, landingRadius, sectionPadding } from './theme';
 
 const testimonials = [
   {
@@ -27,7 +27,7 @@ const testimonials = [
 
 export function Testimonials() {
   return (
-    <section className="py-[112px]" style={{ background: landingColors.band }}>
+    <section style={{ background: landingColors.band, paddingBlock: sectionPadding }}>
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="flex justify-center mb-16">
           <SectionHeading
@@ -42,10 +42,11 @@ export function Testimonials() {
             return (
               <div
                 key={t.name}
-                className="bg-white rounded-[18px] p-8 flex flex-col gap-6"
+                className="bg-white p-8 flex flex-col gap-6"
                 style={{
-                  border: '1px solid rgba(10,46,34,0.06)',
-                  boxShadow: '0 1px 2px rgba(10,46,34,0.04)',
+                  border: '1px solid rgba(23,25,28,0.07)',
+                  borderRadius: landingRadius.card,
+                  boxShadow: cardShadow,
                 }}
               >
                 <span
@@ -61,8 +62,8 @@ export function Testimonials() {
                   &ldquo;
                 </span>
                 <p
-                  className="text-[17px] leading-[1.65] text-[#171C1A] flex-1"
-                  style={{ fontFamily: 'var(--font-display)', fontWeight: 400 }}
+                  className="text-[17px] leading-[1.65] flex-1"
+                  style={{ color: landingColors.ink, fontFamily: 'var(--font-display)', fontWeight: 400 }}
                 >
                   {t.quote}
                 </p>
@@ -74,8 +75,8 @@ export function Testimonials() {
                     {t.initials}
                   </div>
                   <div>
-                    <p className="text-[14px] font-semibold text-[#171C1A]">{t.name}</p>
-                    <p className="text-[12px] text-[#8B9690]">{t.role}</p>
+                    <p className="text-[14px] font-semibold" style={{ color: landingColors.ink }}>{t.name}</p>
+                    <p className="text-[12px]" style={{ color: landingColors.softText }}>{t.role}</p>
                   </div>
                 </div>
               </div>

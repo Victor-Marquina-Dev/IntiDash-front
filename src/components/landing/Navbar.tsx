@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { LogoMark } from './LogoMark';
 import { CtaButton } from './CtaButton';
+import { landingColors } from './theme';
 
 const links = [
   { label: 'Características', href: '#caracteristicas' },
@@ -29,7 +30,7 @@ export function Navbar() {
   }, [menuOpen]);
 
   const navBase = 'fixed top-0 left-0 right-0 z-50 transition-all duration-200';
-  const navScrolled = 'bg-[#FAF8F4]/90 backdrop-blur-md border-b border-[rgba(10,46,34,0.08)]';
+  const navScrolled = 'bg-white/88 backdrop-blur-md border-b border-[rgba(23,25,28,0.08)] shadow-[0_1px_0_rgba(23,25,28,0.02)]';
 
   return (
     <>
@@ -48,7 +49,7 @@ export function Navbar() {
               <li key={l.href}>
                 <a
                   href={l.href}
-                  className="text-[15px] text-[#5A6661] hover:text-[#171C1A] transition-colors duration-150 no-underline"
+                  className="text-[15px] text-[#777b86] hover:text-[#17191c] transition-colors duration-150 no-underline"
                 >
                   {l.label}
                 </a>
@@ -59,7 +60,7 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <Link
               href="/login"
-              className="text-[15px] font-medium text-[#5A6661] hover:text-[#171C1A] transition-colors no-underline"
+              className="text-[15px] font-medium text-[#777b86] hover:text-[#17191c] transition-colors no-underline"
             >
               Iniciar sesión
             </Link>
@@ -69,21 +70,21 @@ export function Navbar() {
           </div>
 
           <button
-            className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-[5px] rounded-lg hover:bg-[rgba(10,46,34,0.06)] transition-colors"
+            className="md:hidden flex flex-col justify-center items-center w-10 h-10 gap-[5px] rounded-full hover:bg-[#f7f7f8] transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
             aria-expanded={menuOpen}
           >
             <span
-              className="block w-5 h-0.5 bg-[#171C1A] transition-all duration-200"
+              className="block w-5 h-0.5 bg-[#17191c] transition-all duration-200"
               style={{ transform: menuOpen ? 'translateY(5.5px) rotate(45deg)' : 'none' }}
             />
             <span
-              className="block w-5 h-0.5 bg-[#171C1A] transition-all duration-200"
+              className="block w-5 h-0.5 bg-[#17191c] transition-all duration-200"
               style={{ opacity: menuOpen ? 0 : 1 }}
             />
             <span
-              className="block w-5 h-0.5 bg-[#171C1A] transition-all duration-200"
+              className="block w-5 h-0.5 bg-[#17191c] transition-all duration-200"
               style={{ transform: menuOpen ? 'translateY(-5.5px) rotate(-45deg)' : 'none' }}
             />
           </button>
@@ -91,8 +92,10 @@ export function Navbar() {
       </nav>
 
       <div
-        className="fixed inset-0 z-40 bg-[#FAF8F4] flex flex-col pt-20 px-6 pb-8 md:hidden transition-all duration-300"
+        className="fixed inset-0 z-40 flex flex-col pt-20 px-6 pb-8 md:hidden transition-all duration-300"
         style={{
+          background:
+            `radial-gradient(ellipse 720px 360px at 50% -12%, ${landingColors.apricot}, transparent 68%), ${landingColors.paper}`,
           opacity: menuOpen ? 1 : 0,
           pointerEvents: menuOpen ? 'auto' : 'none',
           transform: menuOpen ? 'translateX(0)' : 'translateX(100%)',
@@ -106,7 +109,7 @@ export function Navbar() {
             <li key={l.href}>
               <a
                 href={l.href}
-                className="block py-4 text-[20px] font-medium text-[#171C1A] no-underline border-b border-[rgba(10,46,34,0.06)]"
+                className="block py-4 text-[20px] font-medium text-[#17191c] no-underline border-b border-[rgba(23,25,28,0.08)]"
                 onClick={() => setMenuOpen(false)}
               >
                 {l.label}

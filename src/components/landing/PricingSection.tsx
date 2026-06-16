@@ -1,6 +1,6 @@
 import { CtaButton } from './CtaButton';
 import { SectionHeading } from './SectionHeading';
-import { landingColors } from './theme';
+import { cardShadow, landingColors, landingRadius, sectionPadding } from './theme';
 
 const features = [
   'Dashboard de ingresos, gastos y deudas',
@@ -17,8 +17,7 @@ export function PricingSection() {
   return (
     <section
       id="precios"
-      className="py-[112px]"
-      style={{ background: landingColors.paper, scrollMarginTop: '64px' }}
+      style={{ background: landingColors.paper, paddingBlock: sectionPadding, scrollMarginTop: '64px' }}
     >
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="flex justify-center mb-16">
@@ -32,14 +31,15 @@ export function PricingSection() {
 
         <div className="max-w-[460px] mx-auto">
           <div
-            className="rounded-[22px] p-10 text-center"
+            className="p-10 text-center"
             style={{
               background: '#fff',
-              border: '1px solid rgba(10,46,34,0.08)',
-              boxShadow: '0 12px 40px -12px rgba(10,46,34,0.12)',
+              border: '1px solid rgba(23,25,28,0.07)',
+              borderRadius: landingRadius.card,
+              boxShadow: cardShadow,
             }}
           >
-            <p className="text-[13px] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: landingColors.income }}>
+            <p className="text-[13px] font-semibold tracking-[0.1em] uppercase mb-2" style={{ color: landingColors.rust }}>
               Plan Personal
             </p>
             <div className="flex items-baseline justify-center gap-1 my-4">
@@ -55,7 +55,7 @@ export function PricingSection() {
                 Gratis
               </span>
             </div>
-            <p className="text-[14px] text-[#8B9690] mb-8">Ideal para validar tu sistema financiero personal</p>
+            <p className="text-[14px] mb-8" style={{ color: landingColors.softText }}>Ideal para validar tu sistema financiero personal</p>
 
             <CtaButton href="/registro" variant="primary" size="lg" className="w-full justify-center mb-8">
               Crear cuenta gratis
@@ -66,7 +66,7 @@ export function PricingSection() {
                 const color = [landingColors.income, landingColors.expense, landingColors.debt][i % 3];
                 const soft = [landingColors.incomeSoft, landingColors.expenseSoft, landingColors.debtSoft][i % 3];
                 return (
-                  <li key={f} className="flex items-center gap-3 text-[15px] text-[#5A6661]">
+                  <li key={f} className="flex items-center gap-3 text-[15px]" style={{ color: landingColors.muted }}>
                     <span
                       className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] flex-shrink-0 font-black"
                       style={{ background: soft, color }}

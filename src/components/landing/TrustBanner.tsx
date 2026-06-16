@@ -1,4 +1,4 @@
-import { landingColors } from './theme';
+import { landingColors, landingRadius } from './theme';
 
 const items = [
   { label: 'AES', text: 'Tokens sensibles cifrados' },
@@ -10,17 +10,25 @@ const items = [
 export function TrustBanner() {
   return (
     <div
-      className="py-6 border-y"
+      className="py-7 border-y"
       style={{
-        background: landingColors.paper,
-        borderColor: 'rgba(10,46,34,0.06)',
+        background: landingColors.fog,
+        borderColor: 'rgba(23,25,28,0.07)',
       }}
     >
       <div className="max-w-[1200px] mx-auto px-6">
-        <ul className="flex flex-wrap items-center justify-center gap-5 list-none m-0 p-0">
+        <ul className="flex flex-wrap items-center justify-center gap-3 list-none m-0 p-0">
           {items.map((item) => (
-            <li key={item.text} className="flex items-center gap-2.5 text-[14px] text-[#5A6661]">
-              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-black text-[#171C1A]">
+            <li
+              key={item.text}
+              className="flex items-center gap-2.5 border bg-white px-3 py-2 text-[14px]"
+              style={{
+                borderColor: 'rgba(23,25,28,0.07)',
+                borderRadius: landingRadius.pill,
+                color: landingColors.muted,
+              }}
+            >
+              <span className="px-2 py-1 text-[10px] font-black" style={{ borderRadius: landingRadius.pill, background: landingColors.sky, color: landingColors.ink }}>
                 {item.label}
               </span>
               {item.text}

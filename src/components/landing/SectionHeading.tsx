@@ -1,3 +1,5 @@
+import { landingColors, serifFont } from './theme';
+
 interface SectionHeadingProps {
   eyebrow?: string;
   title: string;
@@ -8,24 +10,32 @@ interface SectionHeadingProps {
 
 export function SectionHeading({ eyebrow, title, lead, align = 'center', light = false }: SectionHeadingProps) {
   const alignClass = align === 'center' ? 'text-center mx-auto' : 'text-left';
-  const leadColor = light ? 'text-[#C6D4C7]' : 'text-[#5A6661]';
-  const titleColor = light ? 'text-white' : 'text-[#171C1A]';
+  const leadColor = light ? 'rgba(255,255,255,0.72)' : landingColors.muted;
+  const titleColor = light ? '#ffffff' : landingColors.ink;
+  const eyebrowColor = light ? 'rgba(255,255,255,0.6)' : landingColors.rust;
 
   return (
     <div className={`max-w-[680px] ${alignClass}`}>
       {eyebrow && (
-        <p className="text-[13px] font-semibold tracking-[0.12em] uppercase text-[#8FA88F] mb-3">
+        <p
+          className="mb-3"
+          style={{ fontSize: 13, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', color: eyebrowColor }}
+        >
           {eyebrow}
         </p>
       )}
       <h2
-        className={`font-bold leading-[1.1] tracking-tight ${titleColor} mb-4`}
-        style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontFamily: 'var(--font-ui)' }}
+        className="mb-4"
+        style={{
+          fontFamily: serifFont, fontWeight: 400,
+          fontSize: 'clamp(30px, 4vw, 44px)', lineHeight: 1.1, letterSpacing: '-0.02em',
+          color: titleColor,
+        }}
       >
         {title}
       </h2>
       {lead && (
-        <p className={`text-[18px] leading-[1.6] ${leadColor}`}>
+        <p style={{ fontSize: 18, lineHeight: 1.5, letterSpacing: '-0.009em', color: leadColor }}>
           {lead}
         </p>
       )}

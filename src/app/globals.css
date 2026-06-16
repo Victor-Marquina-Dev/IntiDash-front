@@ -1,5 +1,39 @@
 @import "tailwindcss";
 
+/* ── Sistema de diseño "Steep" (light, editorial) — tokens centralizados ── */
+@theme {
+  --color-ink: #17191c;
+  --color-pure-white: #ffffff;
+  --color-fog: #f7f7f8;
+  --color-ash: #4c4c4c;
+  --color-graphite: #777b86;
+  --color-dove: #a3a6af;
+  --color-slate: #8b8c8d;
+  --color-obsidian: #000000;
+  --color-rust: #5d2a1a;
+  --color-apricot-wash: #fbe1d1;
+  --color-sky-wash: #d3e3fc;
+
+  --font-signifier: 'Signifier', Georgia, 'Times New Roman', serif;
+  --font-sohne: var(--font-ui), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --text-caption: 14px;
+  --text-body: 16px;
+  --text-body-lg: 18px;
+  --text-subheading: 22px;
+  --text-heading-sm: 26px;
+  --text-heading: 44px;
+  --text-heading-lg: 64px;
+  --text-display: 90px;
+
+  --radius-steep-img: 12px;
+  --radius-steep-input: 16px;
+  --radius-steep-inner: 20px;
+  --radius-steep-card: 24px;
+
+  --shadow-steep: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+}
+
 /* Dark mode ripple: suprime el cross-fade por defecto para que solo corra nuestra animación de clip-path */
 ::view-transition-old(root),
 ::view-transition-new(root) {
@@ -106,6 +140,94 @@ body::before {
 @keyframes fzDrawerIn {
   from { transform: translateX(-100%); }
   to   { transform: translateX(0); }
+}
+
+/* Panel del asistente IA: deslizamiento desde la derecha */
+@keyframes fzPanelInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* FAB del asistente IA: halo giratorio, anillo ping y destello del icono */
+@keyframes fzAiSpin {
+  to { transform: rotate(360deg); }
+}
+@keyframes fzAiPing {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.75); opacity: 0; }
+}
+@keyframes fzAiTwinkle {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(0.9); }
+}
+@keyframes fzAiBreath {
+  0%, 100% { transform: scale(1);    opacity: 0.65; }
+  50%      { transform: scale(1.15); opacity: 1; }
+}
+@keyframes fzCaretBlink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+.fz-caret { animation: fzCaretBlink 1s step-end infinite; }
+@keyframes fzFloatIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fzFloatLoop {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fz-float-loop { animation: none !important; }
+}
+
+/* ColorOrb — orbe de colores giratorio del asistente IA (MorphPanel) */
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.color-orb {
+  display: grid;
+  grid-template-areas: "stack";
+  overflow: hidden;
+  border-radius: 50%;
+  position: relative;
+  transform: scale(1.1);
+}
+.color-orb::before,
+.color-orb::after {
+  content: "";
+  display: block;
+  grid-area: stack;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  transform: translateZ(0);
+}
+.color-orb::before {
+  background:
+    conic-gradient(from calc(var(--angle) * 2) at 25% 70%, var(--accent3), transparent 20% 80%, var(--accent3)),
+    conic-gradient(from calc(var(--angle) * 2) at 45% 75%, var(--accent2), transparent 30% 60%, var(--accent2)),
+    conic-gradient(from calc(var(--angle) * -3) at 80% 20%, var(--accent1), transparent 40% 60%, var(--accent1)),
+    conic-gradient(from calc(var(--angle) * 2) at 15% 5%, var(--accent2), transparent 10% 90%, var(--accent2)),
+    conic-gradient(from calc(var(--angle) * 1) at 20% 80%, var(--accent1), transparent 10% 90%, var(--accent1)),
+    conic-gradient(from calc(var(--angle) * -2) at 85% 10%, var(--accent3), transparent 20% 80%, var(--accent3));
+  box-shadow: inset var(--base) 0 0 var(--shadow) calc(var(--shadow) * 0.2);
+  filter: blur(var(--blur)) contrast(var(--contrast));
+  animation: fzOrbSpin var(--spin-duration) linear infinite;
+}
+.color-orb::after {
+  background-image: radial-gradient(circle at center, var(--base) var(--dot), transparent var(--dot));
+  background-size: calc(var(--dot) * 2) calc(var(--dot) * 2);
+  backdrop-filter: blur(calc(var(--blur) * 2)) contrast(calc(var(--contrast) * 2));
+  mix-blend-mode: overlay;
+}
+.color-orb[style*="--mask: 0%"]::after { mask-image: none; }
+.color-orb:not([style*="--mask: 0%"])::after { mask-image: radial-gradient(black var(--mask), transparent 75%); }
+@keyframes fzOrbSpin { to { --angle: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .color-orb::before { animation: none; }
 }
 .fz-skeleton {
   background: rgba(17,24,39,0.08);

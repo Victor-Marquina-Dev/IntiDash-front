@@ -1,5 +1,5 @@
 import { SectionHeading } from './SectionHeading';
-import { landingColors } from './theme';
+import { cardShadow, landingColors, landingRadius, sectionPadding } from './theme';
 
 const insights = [
   { tone: landingColors.income, text: 'Este mes tus ingresos crecieron <strong>8.2%</strong> frente al mes anterior.' },
@@ -10,24 +10,25 @@ const insights = [
 
 export function InsightsSection() {
   return (
-    <section className="py-[112px]" style={{ background: landingColors.paper }}>
+    <section style={{ background: landingColors.paper, paddingBlock: sectionPadding }}>
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="relative flex flex-col gap-4 py-8">
             {insights.map((ins, i) => (
               <div
                 key={i}
-                className="flex items-start gap-4 bg-white rounded-[16px] p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-8px_rgba(10,46,34,0.12)]"
+                className="flex items-start gap-4 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5"
                 style={{
-                  border: '1px solid rgba(10,46,34,0.08)',
-                  boxShadow: '0 1px 3px rgba(10,46,34,0.05)',
-                  transform: `rotate(${i % 2 === 0 ? '-0.7' : '0.5'}deg)`,
+                  border: '1px solid rgba(23,25,28,0.07)',
+                  borderRadius: landingRadius.card,
+                  boxShadow: cardShadow,
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease',
                 }}
               >
                 <span className="mt-1 h-3 w-3 rounded-full flex-shrink-0" style={{ background: ins.tone }} />
                 <p
                   className="text-[15px] text-[#171C1A] leading-[1.6]"
+                  style={{ color: landingColors.ink }}
                   dangerouslySetInnerHTML={{ __html: ins.text }}
                 />
               </div>

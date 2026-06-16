@@ -417,8 +417,8 @@ export function KpiCard({
           </div>
         </div>
 
-        <div style={{ fontSize: 28, fontWeight: 800, color: t.amtC, letterSpacing: -1.2, lineHeight: 1, marginBottom: 3, fontVariantNumeric: 'tabular-nums', textAlign: centerAmount ? 'center' : 'left' }}>
-          {fmtMain}<span style={{ fontSize: 17, color: t.decC, fontWeight: 600 }}>{fmtDec}</span>
+        <div style={{ fontSize: 22, fontWeight: 800, color: t.amtC, letterSpacing: -1, lineHeight: 1, marginBottom: 3, fontVariantNumeric: 'tabular-nums', textAlign: centerAmount ? 'center' : 'left' }}>
+          {fmtMain}<span style={{ fontSize: 14, color: t.decC, fontWeight: 600 }}>{fmtDec}</span>
         </div>
 
         <div style={{ fontSize: 11, color: t.subC, fontWeight: 500, textAlign: centerAmount ? 'center' : 'left' }}>

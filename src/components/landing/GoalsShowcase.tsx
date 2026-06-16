@@ -1,5 +1,5 @@
 import { SectionHeading } from './SectionHeading';
-import { landingColors } from './theme';
+import { cardShadow, landingColors, landingRadius, sectionPadding } from './theme';
 
 const goals = [
   { tag: 'FE', name: 'Fondo de emergencia', current: 6800, total: 10000 },
@@ -17,8 +17,7 @@ export function GoalsShowcase() {
   return (
     <section
       id="metas"
-      className="py-[112px]"
-      style={{ background: landingColors.band, scrollMarginTop: '64px' }}
+      style={{ background: landingColors.band, paddingBlock: sectionPadding, scrollMarginTop: '64px' }}
     >
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="flex justify-center mb-16">
@@ -41,24 +40,25 @@ export function GoalsShowcase() {
             return (
               <div
                 key={g.name}
-                className="snap-start flex-shrink-0 w-[220px] md:w-auto bg-white rounded-[18px] p-5 flex flex-col gap-4"
+                className="snap-start flex-shrink-0 w-[220px] md:w-auto bg-white p-5 flex flex-col gap-4"
                 style={{
-                  border: '1px solid rgba(10,46,34,0.06)',
-                  boxShadow: '0 1px 2px rgba(10,46,34,0.04)',
+                  border: '1px solid rgba(23,25,28,0.07)',
+                  borderRadius: landingRadius.card,
+                  boxShadow: cardShadow,
                 }}
               >
-                <div className="w-11 h-11 rounded-[12px] grid place-items-center text-[13px] font-black" style={{ background: soft, color }}>
+                <div className="w-11 h-11 grid place-items-center text-[13px] font-black" style={{ background: soft, borderRadius: landingRadius.media, color }}>
                   {g.tag}
                 </div>
                 <div>
-                  <p className="text-[14px] font-semibold text-[#171C1A] leading-[1.3] mb-1">{g.name}</p>
-                  <p className="text-[12px] text-[#8B9690]">
+                  <p className="text-[14px] font-semibold leading-[1.3] mb-1" style={{ color: landingColors.ink }}>{g.name}</p>
+                  <p className="text-[12px]" style={{ color: landingColors.softText }}>
                     {fmt(g.current)} de {fmt(g.total)}
                   </p>
                 </div>
                 <div>
                   <div className="flex justify-between mb-1.5">
-                    <span className="text-[11px] text-[#5A6661]">Progreso</span>
+                    <span className="text-[11px]" style={{ color: landingColors.muted }}>Progreso</span>
                     <span className="text-[11px] font-semibold" style={{ color }}>{pct}%</span>
                   </div>
                   <div className="h-2 rounded-full overflow-hidden" style={{ background: soft }}>

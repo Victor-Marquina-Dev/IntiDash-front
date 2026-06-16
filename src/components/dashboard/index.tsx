@@ -14,6 +14,7 @@ import type { SettingsSection } from '@/components/screens/NotionScreen';
 import { useDashboardNavigation } from './use-dashboard-navigation';
 import { OnboardingFlow } from './onboarding/OnboardingFlow';
 import { useDashboardScale } from './use-dashboard-scale';
+import { MorphPanel } from '@/components/ui/MorphPanel';
 
 interface DashboardProps {
   tweaks: Tweaks;
@@ -174,6 +175,9 @@ export function Dashboard({
           onGoToNotion={onboardingToNotion}
         />
       )}
+
+      {/* Asistente IA */}
+      {!showOnboarding && <MorphPanel darkMode={darkMode} userName={user?.name ?? undefined} />}
     </div>
   );
 }

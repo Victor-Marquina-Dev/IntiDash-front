@@ -1,48 +1,24 @@
 'use client';
 
-import Image from 'next/image';
 import React from 'react';
 import { Icon } from '@/components/icons';
 import { DASHBOARD_CARD } from '@/lib/dashboard-spacing';
-import { formatIntegerCurrency } from '@/lib/format';
 import { useDashboardAccounts } from '@/shared/hooks/use-dashboard-accounts';
 import { getKpiPalette } from './kpi-palette';
 import { CardTabsRow } from './CardHeaderSection';
+import { AccountsBarChart } from '@/components/ui/AccountsBarChart';
 import { RADIUS } from '@/lib/radius';
 
-const BANK_LOGOS: Record<string, string> = {
-  yape:       '/Yape.png',
-  falabella:  '/Falabella.png',
-  interbank:  '/Interbank.png',
-  bbva:       '/BBVA.png',
-  bcp:        '/BCP.jpg',
-};
-
-function getBankLogo(banco?: string | null): string | null {
-  if (!banco) return null;
-  const b = banco.trim().toLowerCase();
-  for (const [key, src] of Object.entries(BANK_LOGOS)) {
-    if (b.includes(key)) return src;
-  }
-  return null;
-}
-
-function getBankInitial(banco?: string | null): string {
-  return (banco ?? '?')[0]?.toUpperCase() ?? '?';
-}
-
 export function TarjetasCard({ darkMode = false, canWrite: _canWrite = true, onNavigate }: Readonly<{ darkMode?: boolean; canWrite?: boolean; onNavigate?: (screen: string) => void }>) {
-  const { rows, loading, tipos, activeTab, visibles, isCredito, selectTab } = useDashboardAccounts();
+  const { rows, loading, tipos, activeTab, visibles, selectTab } = useDashboardAccounts();
   const t = getKpiPalette(darkMode);
   const [btnHovered, setBtnHovered] = React.useState(false);
-  const [selectedId, setSelectedId] = React.useState<string | null>(null);
 
   const accent = darkMode
     ? { bg: 'rgba(198,172,143,0.12)', border: 'rgba(198,172,143,0.28)', color: '#C6AC8F' }
     : { bg: 'rgba(140,111,78,0.10)',  border: 'rgba(140,111,78,0.26)',  color: '#8C6F4E' };
 
   const D = darkMode;
-  const trackBg = D ? 'rgba(255,255,255,0.05)' : 'rgba(17,24,39,0.06)';
 
   return (
     <div style={{ background: t.outerBg, borderRadius: RADIUS.dashboardCard }} className="relative rounded-xl overflow-hidden">
@@ -102,106 +78,32 @@ export function TarjetasCard({ darkMode = false, canWrite: _canWrite = true, onN
         <div
           key={activeTab ?? 'all'}
           className="fz-tab-content"
-          style={{
-            display: 'flex', flexDirection: 'column', gap: 6,
-            overflowY: 'auto', maxHeight: 208,
-            marginRight: -4, paddingRight: 4,
-            scrollbarWidth: 'thin',
-            scrollbarColor: `${accent.color}55 transparent`,
-          }}
+          style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', minHeight: 196 }}
         >
-          {loading && [1, 2, 3].map(i => (
-            <div key={i} style={{ height: 48, borderRadius: 10, background: t.border, opacity: 0.5 }} />
-          ))}
-
-          {!loading && rows.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '20px 0', color: t.label, fontSize: 12 }}>
-              Sin cuentas registradas.
+          {loading && (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 168, paddingTop: 8 }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{ flex: 1, height: `${38 + i * 16}%`, borderRadius: 10, background: t.border, opacity: 0.5 }} />
+              ))}
             </div>
           )}
 
-          {[...visibles].sort((x, y) => (y.balance ?? 0) - (x.balance ?? 0)).map((cuenta, i) => {
-            const saldo      = cuenta.balance ?? 0;
-            const limite     = cuenta.credito ?? 0;
-            const disponible = limite - saldo;
-            const utilPct    = isCredito && limite > 0 ? Math.min(100, Math.round((saldo / limite) * 100)) : 0;
-            const utilColor  = utilPct > 80 ? (D ? '#f87171' : '#dc2626')
-              : utilPct > 50 ? (D ? '#fbbf24' : '#d97706')
-              : (D ? '#34d399' : '#16a34a');
-            const logoSrc    = getBankLogo(cuenta.banco);
-            const isSelected = selectedId === (cuenta.id ?? String(i));
+          {!loading && visibles.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: t.label, fontSize: 12 }}>
+              {rows.length === 0 ? 'Sin cuentas registradas.' : 'Sin cuentas en esta categoría.'}
+            </div>
+          )}
 
-            return (
-              <div
-                key={cuenta.id ?? i}
-                onClick={() => setSelectedId(prev =>
-                  prev === (cuenta.id ?? String(i)) ? null : (cuenta.id ?? String(i))
-                )}
-                style={{
-                  padding: '10px 12px', borderRadius: 10,
-                  background: isSelected ? `${accent.color}18` : 'transparent',
-                  border: `1px solid ${isSelected ? accent.border : t.border}`,
-                  cursor: 'pointer',
-                  transition: 'background .15s, border-color .15s',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isCredito && limite > 0 ? 8 : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-                    <div style={{
-                      width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                      background: logoSrc ? '#fff' : accent.bg,
-                      color: accent.color,
-                      display: 'grid', placeItems: 'center',
-                      fontSize: 9, fontWeight: 900, overflow: 'hidden',
-                    }}>
-                      {logoSrc
-                        ? <Image src={logoSrc} alt={cuenta.banco ?? ''} width={30} height={30} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : getBankInitial(cuenta.banco)
-                      }
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: D ? 'rgba(255,255,255,0.88)' : '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {cuenta.nombre}
-                      </div>
-                      <div style={{ fontSize: 10, color: t.subtitle, fontWeight: 600, marginTop: 1 }}>
-                        {cuenta.banco}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color: isCredito ? (D ? '#e07878' : '#dc2626') : (D ? 'rgba(255,255,255,0.88)' : '#111827') }}>
-                      {isCredito
-                        ? (saldo > 0 ? `−${formatIntegerCurrency(saldo)}` : formatIntegerCurrency(0))
-                        : formatIntegerCurrency(saldo)}
-                    </div>
-                    {isCredito && limite > 0 && (
-                      <div style={{ fontSize: 9, color: t.subtitle, fontWeight: 600, marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>
-                        lím. {formatIntegerCurrency(limite)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {isCredito && limite > 0 && (
-                  <>
-                    <div style={{ height: 4, borderRadius: 10, background: trackBg, overflow: 'hidden', marginBottom: 5 }}>
-                      <div style={{
-                        height: '100%', width: `${utilPct}%`, borderRadius: 10,
-                        background: utilPct > 80 ? `linear-gradient(90deg,${utilColor}99,${utilColor})` : 'linear-gradient(90deg,#16a34a,#22c55e)',
-                        transition: 'width .4s',
-                      }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: utilColor }}>{utilPct}%{utilPct >= 100 ? ' ⚠' : ''}</span>
-                      <span style={{ fontSize: 10, color: t.subtitle, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                        disponible {formatIntegerCurrency(disponible)}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
+          {!loading && visibles.length > 0 && (
+            <AccountsBarChart
+              data={[...visibles]
+                .sort((a, b) => (b.balance ?? 0) - (a.balance ?? 0))
+                .map(c => ({ label: c.nombre, amount: c.balance ?? 0 }))}
+              darkMode={D}
+              accentColor={accent.color}
+              onDetail={() => onNavigate?.('cards')}
+            />
+          )}
         </div>
       </div>
     </div>

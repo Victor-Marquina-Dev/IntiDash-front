@@ -1,5 +1,5 @@
 import { SectionHeading } from './SectionHeading';
-import { landingColors } from './theme';
+import { cardShadow, landingColors, landingRadius, sectionPadding } from './theme';
 
 const steps = [
   {
@@ -21,7 +21,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="py-[112px]" style={{ background: landingColors.paper }}>
+    <section style={{ background: landingColors.paper, paddingBlock: sectionPadding }}>
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="flex justify-center mb-16">
           <SectionHeading
@@ -31,10 +31,10 @@ export function HowItWorks() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
           <div
-            className="hidden md:block absolute top-10 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px"
-            style={{ background: `linear-gradient(to right, ${landingColors.income}, ${landingColors.debt}, ${landingColors.expense})` }}
+            className="hidden md:block absolute top-10 left-[calc(16.67%+24px)] right-[calc(16.67%+24px)] h-px opacity-50"
+            style={{ background: `linear-gradient(to right, ${landingColors.sky}, ${landingColors.apricot}, ${landingColors.sky})` }}
             aria-hidden="true"
           />
 
@@ -42,10 +42,18 @@ export function HowItWorks() {
             const color = [landingColors.income, landingColors.debt, landingColors.expense][i];
             const soft = [landingColors.incomeSoft, landingColors.debtSoft, landingColors.expenseSoft][i];
             return (
-              <div key={s.n} className="flex flex-col items-center text-center md:items-start md:text-left">
+              <article
+                key={s.n}
+                className="flex flex-col items-center border bg-white p-7 text-center md:items-start md:text-left"
+                style={{
+                  borderColor: 'rgba(23,25,28,0.07)',
+                  borderRadius: landingRadius.card,
+                  boxShadow: cardShadow,
+                }}
+              >
                 <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center mb-6 relative z-10"
-                  style={{ border: `2px solid ${color}55`, background: soft }}
+                  className="w-16 h-16 flex items-center justify-center mb-6 relative z-10"
+                  style={{ background: soft, borderRadius: landingRadius.media }}
                 >
                   <span
                     style={{
@@ -60,13 +68,13 @@ export function HowItWorks() {
                   </span>
                 </div>
                 <h3
-                  className="text-[20px] font-semibold text-[#171C1A] mb-3 leading-[1.3]"
-                  style={{ fontFamily: 'var(--font-ui)' }}
+                  className="text-[20px] font-semibold mb-3 leading-[1.3]"
+                  style={{ color: landingColors.ink, fontFamily: 'var(--font-ui)' }}
                 >
                   {s.title}
                 </h3>
-                <p className="text-[16px] text-[#5A6661] leading-[1.65]">{s.desc}</p>
-              </div>
+                <p className="text-[16px] leading-[1.65]" style={{ color: landingColors.muted }}>{s.desc}</p>
+              </article>
             );
           })}
         </div>
